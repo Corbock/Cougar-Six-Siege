@@ -202,6 +202,50 @@
     .operator-code { color: var(--acid); font: 600 10px/1 "Barlow Condensed", sans-serif; letter-spacing: 1px; }
     .operator-name { overflow: hidden; color: #e7e8e1; font: 600 15px/1 "Barlow Condensed", sans-serif; text-overflow: ellipsis; }
 
+    .play-select { display: none; width: min(390px, 100%); }
+    .show-play .play-select { display: block; }
+    .show-play .operator-strip { display: none; }
+    .select-group + .select-group { margin-top: 16px; }
+    .options { display: grid; gap: 8px; }
+    .modes { grid-template-columns: repeat(2, 1fr); }
+    .maps { grid-template-columns: repeat(3, 1fr); }
+    .option { min-width: 0; padding: 10px 11px 9px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); color: #e7e8e1; cursor: pointer; text-align: left; transition: border-color .2s ease, background .2s ease; }
+    .option:hover:not(:disabled) { border-color: #b0b6a3; }
+    .option.selected { border-color: var(--acid); background: rgba(47,53,34,.78); }
+    .option:disabled { cursor: not-allowed; opacity: .35; }
+    .option-name { display: block; overflow: hidden; font: 600 15px/1 "Barlow Condensed", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .option-detail { display: block; margin-top: 5px; color: var(--acid); font-size: 9px; font-weight: 600; letter-spacing: 1px; }
+    .range { position: fixed; z-index: 10; inset: 0; display: none; flex-direction: column; background: #0b0d0b; }
+    .range.open { display: flex; }
+    .range-hud { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 5vw; border-bottom: 1px solid var(--line); font: 600 16px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.5px; }
+    .range-hud strong { color: var(--acid); font-weight: 700; }
+    .range-exit { padding: 8px 14px; border: 1px solid var(--line); background: transparent; cursor: pointer; letter-spacing: 1.2px; }
+    .range-exit:hover { border-color: var(--acid); color: var(--acid); }
+    .range canvas { flex: 1; width: 100%; min-height: 0; cursor: crosshair; touch-action: none; }
+    .range-result { position: absolute; inset: 62px 0 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(11,13,11,.86); text-align: center; }
+    .range-result.open { display: flex; }
+    .range-result h2 { margin: 0; font: 700 56px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; }
+    .range-result p { margin: 0; color: #c1c3ba; font-size: 14px; }
+    .loadout-panel { display: none; width: min(390px, 100%); margin-bottom: 18px; padding: 16px 18px; border-left: 2px solid var(--acid); background: linear-gradient(100deg, rgba(16,18,16,.83), rgba(16,18,16,.43)); backdrop-filter: blur(7px); }
+    .show-loadout .loadout-panel { display: block; }
+    .show-loadout .intel-card { display: none; }
+    .show-loadout { justify-content: flex-start; }
+    .slot-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+    .slot-tab { padding: 8px 4px 7px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); cursor: pointer; text-align: left; }
+    .slot-tab.active { border-color: var(--acid); background: rgba(47,53,34,.78); }
+    .slot-label { display: block; color: #a9ada2; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; }
+    .slot-value { display: block; overflow: hidden; margin-top: 4px; font: 600 14px/1 "Barlow Condensed", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .items { display: grid; gap: 7px; }
+    .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 9px 11px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); color: #e7e8e1; cursor: pointer; text-align: left; transition: border-color .2s ease, background .2s ease; }
+    .item:hover { border-color: #b0b6a3; }
+    .item.selected { border-color: var(--acid); background: rgba(47,53,34,.78); }
+    .item-name { font: 600 16px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; }
+    .item-type { color: var(--acid); font-size: 9px; font-weight: 600; letter-spacing: 1px; }
+    .item-desc { grid-column: 1 / -1; color: #9c9f98; font-size: 10px; line-height: 1.4; }
+    .item-stats { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat { color: #a9ada2; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
+    .stat i { display: block; height: 3px; margin-top: 4px; background: rgba(255,255,255,.12); }
+    .stat i b { display: block; height: 100%; background: var(--acid); }
     .bottom-bar { display: flex; align-items: center; justify-content: space-between; min-height: 62px; padding: 0 5.2vw; border-top: 1px solid rgba(255,255,255,.11); background: rgba(12, 14, 13, .48); }
     .event { display: flex; align-items: center; gap: 12px; color: #aeb1a8; font-size: 10px; font-weight: 600; letter-spacing: 1px; }
     .event-mark { color: var(--red); font: 700 17px/1 "Barlow Condensed", sans-serif; }
@@ -287,18 +331,17 @@
   <div class="scene">
     <header class="topbar">
       <div class="brand" aria-label="Cougar Six">
-        <div class="brand-mark" aria-hidden="true">C6</div>
+        <div class="brand-mark" aria-hidden="true">:3</div>
         <div class="brand-copy">
           <span class="brand-name">COUGAR SIX</span>
-          <span class="brand-caption">TACTICAL RESPONSE</span>
+          <span class="brand-caption">SIEGE</span>
         </div>
       </div>
       <nav class="primary-nav" aria-label="Main menu">
-        <button class="nav-button active" data-section="OPERATIONS">OPERATIONS</button>
-        <button class="nav-button" data-section="MULTIPLAYER">MULTIPLAYER</button>
+        <button class="nav-button active" data-section="PLAY">PLAY</button>
         <button class="nav-button" data-section="TRAINING">TRAINING</button>
-        <button class="nav-button" data-section="OPERATORS">OPERATORS</button>
-        <button class="nav-button" data-section="ARMORY">ARMORY</button>
+        <button class="nav-button" data-section="LOADOUT">LOADOUT</button>
+        <button class="nav-button" data-section="SETTINGS">SETTINGS</button>
       </nav>
       <div class="profile" aria-label="Player profile">
         <span class="connection">ONLINE</span>
@@ -310,9 +353,9 @@
 
     <main class="main">
       <section class="briefing" aria-labelledby="page-title">
-        <div class="eyebrow" id="eyebrow">SEASON 04 · LIVE NOW</div>
+        <div class="eyebrow" id="eyebrow">SEASON 01</div>
         <h1 id="page-title">NIGHT<br>FALL</h1>
-        <div class="season"><span class="season-index">04</span><span id="season-label">OPERATION: BLACKOUT</span></div>
+        <div class="season"><span class="season-index">01</span><span id="season-label">OPERATION: BLACKOUT</span></div>
         <p class="briefing-copy" id="briefing-copy">A hostile signal is moving through the city grid. Assemble your unit, breach the perimeter, and shut it down before sunrise.</p>
         <div class="mission-line"><span>●</span><span id="mission-label">LIMITED-TIME OPERATION</span></div>
         <div class="actions">
@@ -321,12 +364,27 @@
         </div>
       </section>
 
-      <aside class="right-column" aria-label="Mission and operator selection">
+      <aside class="right-column" id="right-column" aria-label="Mission and operator selection">
         <section class="intel-card" aria-labelledby="intel-title">
-          <div class="intel-top"><span>FIELD INTEL / 01</span><strong>THREAT: ELEVATED</strong></div>
+          <div class="intel-top"><span id="intel-code">FIELD INTEL / 01</span><strong id="intel-threat">THREAT: ELEVATED</strong></div>
           <h2 id="intel-title">METRO DISTRICT</h2>
-          <p>Low visibility across the east sector. Thermal readings indicate movement inside the central station.</p>
-          <div class="intel-footer"><span>DEPLOYMENT WINDOW</span><span>02:14:38</span></div>
+          <p id="intel-copy">Low visibility across the east sector. Thermal readings indicate movement inside the central station.</p>
+          <div class="intel-footer"><span id="intel-footer-label">DEPLOYMENT WINDOW</span><span id="intel-footer-value">02:14:38</span></div>
+        </section>
+        <section class="loadout-panel" aria-label="Loadout selection">
+          <div class="strip-heading"><span>LOADOUT</span><span id="loadout-count"></span></div>
+          <div class="slot-tabs" id="slot-tabs" role="tablist" aria-label="Loadout slot"></div>
+          <div class="items" id="loadout-items"></div>
+        </section>
+        <section class="play-select" aria-label="Game mode and map select">
+          <div class="select-group">
+            <div class="strip-heading"><span id="mode-heading">GAME MODE</span><span id="mode-count"></span></div>
+            <div class="options modes" id="mode-options" role="radiogroup" aria-label="Game mode"></div>
+          </div>
+          <div class="select-group">
+            <div class="strip-heading"><span>MAP</span><span id="map-count"></span></div>
+            <div class="options maps" id="map-options" role="radiogroup" aria-label="Map"></div>
+          </div>
         </section>
         <section class="operator-strip" aria-label="Choose an operator">
           <div class="strip-heading"><span>YOUR OPERATORS</span><span id="operator-count">01 / 04</span></div>
@@ -340,71 +398,347 @@
       </aside>
     </main>
 
+    <div class="range" id="range" role="dialog" aria-label="Firing range" aria-modal="true">
+      <div class="range-hud">
+        <span id="range-title">FIRING RANGE</span>
+        <span>SCORE <strong id="range-score">0</strong></span>
+        <span>HITS <strong id="range-hits">0</strong></span>
+        <span>ACCURACY <strong id="range-acc">--</strong></span>
+        <span>TIME <strong id="range-time">0</strong></span>
+        <button class="range-exit" id="range-exit">EXIT (ESC)</button>
+      </div>
+      <canvas id="range-canvas"></canvas>
+      <div class="range-result" id="range-result">
+        <h2>Range complete</h2>
+        <p id="range-summary"></p>
+        <div class="actions"><button class="play-button" id="range-again"><span id="range-again-label">RUN AGAIN</span></button><button class="mode-button" id="range-back">BACK TO MENU</button></div>
+      </div>
+    </div>
+
     <footer class="bottom-bar">
       <div class="event"><span class="event-mark">//</span><span>BLACKOUT EVENT</span><span>·</span><span>ENDS IN 06D 14H</span></div>
       <div class="bottom-right"><span>PATCH 4.2.1</span><span>·</span><span class="social">3 FRIENDS ONLINE</span></div>
     </footer>
-    <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-mark">C6</span><span id="toast-message"></span></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-mark">:3</span><span id="toast-message"></span></div>
   </div>
   <script>
     const sectionContent = {
-      OPERATIONS: {
-        eyebrow: "SEASON 04 · LIVE NOW",
-        title: "NIGHT<br>FALL",
-        season: "OPERATION: BLACKOUT",
-        copy: "A hostile signal is moving through the city grid. Assemble your unit, breach the perimeter, and shut it down before sunrise.",
+      PLAY: {
+        eyebrow: "SEASON 01",
+        title: "PLAY",
+        season: "PHONE BAN",
+        copy: "A hostile signal is moving through the city grid. Assemble your unit, or queue into a squad match and outplay the opposition.",
         mission: "LIMITED-TIME OPERATION",
         action: "DEPLOY",
         mode: "QUICK MATCH",
         detail: "STANDARD · 5V5"
       },
-      MULTIPLAYER: {
-        eyebrow: "SQUAD UP · 5V5",
-        title: "NO ROOM<br>TO HIDE",
-        season: "COMPETITIVE PLAYLIST",
-        copy: "Coordinate your entry, hold the objective, and outplay the opposing squad. Every round is a new plan.",
-        mission: "RANKED / UNRANKED",
-        action: "FIND MATCH",
-        mode: "RANKED",
-        detail: "STANDARD · 5V5"
-      },
       TRAINING: {
         eyebrow: "PREPARE · IMPROVE",
-        title: "BUILD<br>THE EDGE",
+        title: "PRACTICE",
         season: "TRAINING GROUNDS",
         copy: "Sharpen your aim and learn the routes before the real operation starts. Solo drills or squad warm-up.",
         mission: "PRACTICE AT YOUR PACE",
-        action: "START DRILL",
-        mode: "TARGET RANGE",
-        detail: "SOLO · 10 MIN"
+        action: "START RANGE",
+        mode: "FIRING RANGE",
+        detail: "SOLO · 30 SEC"
       },
-      OPERATORS: {
-        eyebrow: "ROSTER · 04 AVAILABLE",
-        title: "PICK YOUR<br>OPERATOR",
-        season: "SPECIALIST ROSTER",
-        copy: "Choose a role that fits your squad. Select an operator below to review your field assignment.",
+      LOADOUT: {
+        eyebrow: "ROSTER · LOADOUT READY",
+        title: "PREPARE",
+        season: "OPERATORS & ARMORY",
+        copy: "Choose an operator and fine-tune their weapons and equipment before deployment.",
         mission: "CURRENT PICK: VIPER",
-        action: "CONFIRM PICK",
-        mode: "ROSTER",
-        detail: "4 SPECIALISTS"
-      },
-      ARMORY: {
-        eyebrow: "LOADOUT · READY",
-        title: "CHECK<br>YOUR KIT",
-        season: "WEAPONS & EQUIPMENT",
-        copy: "Fine-tune your loadout before deployment. Your squad is counting on every tool in the kit.",
-        mission: "LOADOUT: NIGHT RUNNER",
-        action: "OPEN ARMORY",
+        action: "SAVE LOADOUT",
         mode: "ACTIVE KIT",
         detail: "Viper · Mk. 18"
+      },
+      SETTINGS: {
+        eyebrow: "PREFERENCES",
+        title: "OPTIONS",
+        season: "GAME SETTINGS",
+        copy: "Adjust controls, video, audio, and account options to match how you play.",
+        mission: "CHANGES SAVE AUTOMATICALLY",
+        action: "APPLY",
+        mode: "CONTROLS",
+        detail: "KEYBOARD · MOUSE"
       }
     };
+
+    const catalogs = {
+      PLAY: {
+        label: "Game mode",
+        modes: [
+          { id: "quick", name: "Quick Match", detail: "STANDARD · 5V5", maps: ["metro", "harbor", "foundry"] },
+          { id: "ranked", name: "Ranked", detail: "COMPETITIVE · 5V5", maps: ["metro", "harbor"] },
+          { id: "defuse", name: "Bomb Defusal", detail: "ATTACK / DEFEND · 5V5", maps: ["metro", "foundry"] },
+          { id: "rescue", name: "Hostage Rescue", detail: "OBJECTIVE · 5V5", maps: ["harbor", "foundry"] }
+        ],
+        maps: [
+          { id: "metro", name: "Metro District", threat: "ELEVATED", copy: "Low visibility across the east sector. Thermal readings indicate movement inside the central station.", window: "02:14:38" },
+          { id: "harbor", name: "Black Harbor", threat: "HIGH", copy: "Fog rolls across the docks. Cargo stacks and cranes create tight lanes and long sightlines.", window: "01:48:12" },
+          { id: "foundry", name: "Iron Foundry", threat: "MODERATE", copy: "A derelict steel works with narrow catwalks and heated furnace rooms. Expect close-quarters fights.", window: "03:05:51" }
+        ]
+      },
+      TRAINING: {
+        label: "Training mode",
+        modes: [
+          { id: "range", name: "Firing Range", detail: "SOLO · 30 SEC", maps: ["indoor", "outdoor", "night"], game: { time: 30, targets: 4, ttl: 3500, moving: false, size: 1 } },
+          { id: "reaction", name: "Reaction Drill", detail: "SOLO · 20 SEC", maps: ["indoor", "night"], game: { time: 20, targets: 2, ttl: 1300, moving: false, size: 1 } },
+          { id: "moving", name: "Moving Targets", detail: "SOLO · 30 SEC", maps: ["outdoor", "night"], game: { time: 30, targets: 3, ttl: 4500, moving: true, size: 1 } },
+          { id: "precision", name: "Precision", detail: "SOLO · 30 SEC", maps: ["indoor", "outdoor"], game: { time: 30, targets: 3, ttl: 3000, moving: false, size: .55 } }
+        ],
+        maps: [
+          { id: "indoor", name: "Indoor Range", threat: "NONE", copy: "Climate-controlled lanes with fixed lighting. The best place to warm up your aim.", window: "OPEN", bg: ["#1a1d1a", "#101210"] },
+          { id: "outdoor", name: "Outdoor Range", threat: "WIND", copy: "Open-air lanes with long sightlines. Targets sit farther out and drift side to side.", window: "OPEN", bg: ["#2a3a3a", "#141b17"] },
+          { id: "night", name: "Night Range", threat: "LOW LIGHT", copy: "Dark lanes lit only by target spotlights. Stay calm and pick your shots.", window: "OPEN", bg: ["#0a0e18", "#050609"] }
+        ]
+      }
+    };
+    const selection = {};
+    Object.entries(catalogs).forEach(([key, catalog]) => { selection[key] = { mode: catalog.modes[0], map: catalog.maps[0] }; });
+    const isSelectable = (section) => Boolean(catalogs[section]);
+
+    function renderSelect() {
+      const catalog = catalogs[activeSection];
+      const { mode: selectedMode, map: selectedMap } = selection[activeSection];
+      const { modes, maps } = catalog;
+      const modeBox = document.querySelector("#mode-options");
+      const mapBox = document.querySelector("#map-options");
+      modeBox.innerHTML = "";
+      mapBox.innerHTML = "";
+      document.querySelector("#mode-heading").textContent = catalog.label.toUpperCase();
+      modes.forEach((mode) => {
+        const button = document.createElement("button");
+        button.className = "option" + (mode === selectedMode ? " selected" : "");
+        button.setAttribute("role", "radio");
+        button.setAttribute("aria-checked", String(mode === selectedMode));
+        button.innerHTML = `<span class="option-name">${mode.name}</span><span class="option-detail">${mode.detail.split(" · ")[0]}</span>`;
+        button.addEventListener("click", () => selectMode(mode));
+        modeBox.appendChild(button);
+      });
+      maps.forEach((map) => {
+        const supported = selectedMode.maps.includes(map.id);
+        const button = document.createElement("button");
+        button.className = "option" + (map === selectedMap ? " selected" : "");
+        button.disabled = !supported;
+        button.title = supported ? "" : `Not available in ${selectedMode.name}`;
+        button.setAttribute("role", "radio");
+        button.setAttribute("aria-checked", String(map === selectedMap));
+        button.innerHTML = `<span class="option-name">${map.name}</span><span class="option-detail">${map.threat}</span>`;
+        button.addEventListener("click", () => selectMap(map));
+        mapBox.appendChild(button);
+      });
+      document.querySelector("#mode-count").textContent = `0${modes.indexOf(selectedMode) + 1} / 0${modes.length}`;
+      document.querySelector("#map-count").textContent = `0${maps.indexOf(selectedMap) + 1} / 0${maps.length}`;
+      document.querySelector("#mode-button").innerHTML = `${selectedMode.name.toUpperCase()}<span>${selectedMode.detail}</span>`;
+      document.querySelector("#intel-code").textContent = `MAP / 0${maps.indexOf(selectedMap) + 1}`;
+      document.querySelector("#intel-threat").textContent = `THREAT: ${selectedMap.threat}`;
+      document.querySelector("#intel-title").textContent = selectedMap.name.toUpperCase();
+      document.querySelector("#intel-copy").textContent = selectedMap.copy;
+      document.querySelector("#intel-footer-label").textContent = activeSection === "TRAINING" ? "RANGE STATUS" : "DEPLOYMENT WINDOW";
+      document.querySelector("#intel-footer-value").textContent = selectedMap.window;
+    }
+
+    function selectMode(mode) {
+      const current = selection[activeSection];
+      current.mode = mode;
+      if (!mode.maps.includes(current.map.id)) current.map = catalogs[activeSection].maps.find((map) => map.id === mode.maps[0]);
+      renderSelect();
+    }
+
+    function selectMap(map) {
+      selection[activeSection].map = map;
+      renderSelect();
+    }
+
+    const range = {
+      el: document.querySelector("#range"),
+      canvas: document.querySelector("#range-canvas"),
+      result: document.querySelector("#range-result"),
+      running: false
+    };
+
+    function startRange() {
+      const { mode, map } = selection.TRAINING;
+      const game = mode.game;
+      const ctx = range.canvas.getContext("2d");
+      range.el.classList.add("open");
+      range.result.classList.remove("open");
+      range.canvas.width = range.canvas.clientWidth || window.innerWidth;
+      range.canvas.height = range.canvas.clientHeight || window.innerHeight - 62;
+      document.querySelector("#range-title").textContent = `${mode.name.toUpperCase()} · ${map.name.toUpperCase()}`;
+      const state = { score: 0, hits: 0, shots: 0, targets: [], start: performance.now(), last: performance.now() };
+      range.state = state;
+      range.running = true;
+
+      function spawn() {
+        const radius = (28 + Math.random() * 18) * game.size;
+        const w = range.canvas.width, h = range.canvas.height;
+        const target = {
+          x: radius + Math.random() * (w - radius * 2),
+          y: radius + h * .12 + Math.random() * (h * .7 - radius),
+          r: radius,
+          born: performance.now(),
+          vx: game.moving ? (Math.random() < .5 ? -1 : 1) * (70 + Math.random() * 90) : 0
+        };
+        state.targets.push(target);
+      }
+
+      function drawTarget(t) {
+        const colors = ["#df563c", "#f3f2ec", "#df563c", "#f3f2ec", "#d3ef59"];
+        ctx.save();
+        if (map.id === "night") { ctx.shadowColor = "#d3ef59"; ctx.shadowBlur = 24; }
+        colors.forEach((color, i) => {
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, t.r * (1 - i * .2), 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      function frame(now) {
+        if (!range.running || range.state !== state) return;
+        const dt = (now - state.last) / 1000;
+        state.last = now;
+        const left = game.time - (now - state.start) / 1000;
+        const w = range.canvas.width, h = range.canvas.height;
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, map.bg[0]);
+        gradient.addColorStop(1, map.bg[1]);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = "rgba(255,255,255,.07)";
+        for (let i = 1; i < 6; i++) { ctx.beginPath(); ctx.moveTo(w / 2, h * .1); ctx.lineTo(w * i / 6, h); ctx.stroke(); }
+        state.targets = state.targets.filter((t) => now - t.born < game.ttl);
+        state.targets.forEach((t) => {
+          t.x += t.vx * dt;
+          if (t.x < t.r || t.x > w - t.r) t.vx *= -1;
+          drawTarget(t);
+        });
+        while (left > 0 && state.targets.length < game.targets) spawn();
+        document.querySelector("#range-time").textContent = Math.max(0, Math.ceil(left));
+        if (left <= 0) return endRange(false);
+        requestAnimationFrame(frame);
+      }
+      updateRangeHud();
+      requestAnimationFrame(frame);
+    }
+
+    function updateRangeHud() {
+      const s = range.state;
+      document.querySelector("#range-score").textContent = s.score;
+      document.querySelector("#range-hits").textContent = s.hits;
+      document.querySelector("#range-acc").textContent = s.shots ? `${Math.round(s.hits / s.shots * 100)}%` : "--";
+    }
+
+    function endRange(aborted) {
+      range.running = false;
+      if (aborted) {
+        range.el.classList.remove("open");
+        return;
+      }
+      const s = range.state;
+      const acc = s.shots ? Math.round(s.hits / s.shots * 100) : 0;
+      document.querySelector("#range-summary").textContent = `Score ${s.score} · ${s.hits} hits / ${s.shots} shots · ${acc}% accuracy`;
+      range.result.classList.add("open");
+    }
+
+    range.canvas.addEventListener("pointerdown", (event) => {
+      if (!range.running) return;
+      const s = range.state;
+      const rect = range.canvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left) * range.canvas.width / rect.width;
+      const y = (event.clientY - rect.top) * range.canvas.height / rect.height;
+      s.shots++;
+      for (let i = s.targets.length - 1; i >= 0; i--) {
+        const t = s.targets[i];
+        const d = Math.hypot(x - t.x, y - t.y) / t.r;
+        if (d <= 1) {
+          s.hits++;
+          s.score += d < .2 ? 10 : d < .6 ? 5 : 2;
+          s.targets.splice(i, 1);
+          break;
+        }
+      }
+      updateRangeHud();
+    });
+    document.querySelector("#range-exit").addEventListener("click", () => endRange(true));
+    document.querySelector("#range-back").addEventListener("click", () => endRange(true));
+    document.querySelector("#range-again").addEventListener("click", startRange);
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && range.el.classList.contains("open")) endRange(true); });
+
+    const loadoutSlots = [
+      { id: "primary", label: "PRIMARY", stats: true, items: [
+        { id: "mk18", name: "Mk. 18", type: "ASSAULT RIFLE", desc: "Reliable all-rounder with controllable recoil.", dmg: 6, rng: 7, mob: 6 },
+        { id: "vector", name: "V-9 Vector", type: "SMG", desc: "High fire rate for fast, close entries.", dmg: 4, rng: 4, mob: 9 },
+        { id: "hammer", name: "Hammer 12", type: "SHOTGUN", desc: "Devastating up close, weak at distance.", dmg: 9, rng: 2, mob: 5 },
+        { id: "longwatch", name: "Longwatch", type: "MARKSMAN RIFLE", desc: "Semi-auto precision for long sightlines.", dmg: 8, rng: 9, mob: 3 }
+      ] },
+      { id: "secondary", label: "SECONDARY", stats: true, items: [
+        { id: "p45", name: "P45 Sidearm", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
+        { id: "rattler", name: "Rattler", type: "MACHINE PISTOL", desc: "Automatic fire in a compact frame.", dmg: 3, rng: 3, mob: 9 },
+        { id: "magnum", name: "Magnum .44", type: "REVOLVER", desc: "Heavy hitting, slow to reload.", dmg: 8, rng: 6, mob: 7 },
+        { id: "sledgehammer", name: "Sledgehammer", type: "MELEE", desc: "Heavy close-range tool for smashing barriers.", dmg: 8, rng: 1, mob: 4 }
+      ] },
+      { id: "gadget", label: "GADGET", items: [
+        { id: "shield", name: "Ballistic Shield", type: "DEFENSE", desc: "Deployable cover that absorbs incoming fire." },
+        { id: "drone", name: "Recon Drone", type: "INTEL", desc: "Scout rooms and tag hostile units." },
+        { id: "steel-bars", name: "Galvanized Steel Bars", type: "FORTIFICATION", desc: "Reinforce player barricades with galvanized steel bars." },
+        { id: "medkit", name: "Field Medkit", type: "SUPPORT", desc: "Heal yourself or revive a downed teammate." }
+      ] },
+      { id: "equipment", label: "EQUIPMENT", items: [
+        { id: "frag", name: "Frag Grenade", type: "LETHAL", desc: "Timed explosive for clearing cover." },
+        { id: "flash", name: "Flashbang", type: "TACTICAL", desc: "Blinds and disorients anyone nearby." },
+        { id: "smoke", name: "Smoke Grenade", type: "TACTICAL", desc: "Blocks line of sight for a short time." },
+        { id: "claymore", name: "Proximity Mine", type: "LETHAL", desc: "Detonates when an enemy crosses its sensor." }
+      ] }
+    ];
+    const loadout = { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" };
+    try { Object.assign(loadout, JSON.parse(localStorage.getItem("c6-loadout") || "{}")); } catch (error) {}
+    loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === loadout[slot.id])) loadout[slot.id] = slot.items[0].id; });
+    let activeSlot = loadoutSlots[0];
+    const chosen = (slot) => slot.items.find((item) => item.id === loadout[slot.id]);
+
+    function renderLoadout() {
+      const tabs = document.querySelector("#slot-tabs");
+      const list = document.querySelector("#loadout-items");
+      tabs.innerHTML = "";
+      list.innerHTML = "";
+      loadoutSlots.forEach((slot) => {
+        const tab = document.createElement("button");
+        tab.className = "slot-tab" + (slot === activeSlot ? " active" : "");
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-selected", String(slot === activeSlot));
+        tab.innerHTML = `<span class="slot-label">${slot.label}</span><span class="slot-value">${chosen(slot).name}</span>`;
+        tab.addEventListener("click", () => { activeSlot = slot; renderLoadout(); });
+        tabs.appendChild(tab);
+      });
+      activeSlot.items.forEach((item) => {
+        const button = document.createElement("button");
+        const selected = loadout[activeSlot.id] === item.id;
+        button.className = "item" + (selected ? " selected" : "");
+        button.setAttribute("aria-pressed", String(selected));
+        const stat = (label, value) => `<span class="stat">${label}<i><b style="width:${value * 10}%"></b></i></span>`;
+        button.innerHTML = `<span class="item-name">${item.name}</span><span class="item-type">${item.type}</span><span class="item-desc">${item.desc}</span>` +
+          (activeSlot.stats ? `<span class="item-stats">${stat("DAMAGE", item.dmg)}${stat("RANGE", item.rng)}${stat("MOBILITY", item.mob)}</span>` : "");
+        button.addEventListener("click", () => {
+          loadout[activeSlot.id] = item.id;
+          try { localStorage.setItem("c6-loadout", JSON.stringify(loadout)); } catch (error) {}
+          renderLoadout();
+        });
+        list.appendChild(button);
+      });
+      document.querySelector("#loadout-count").textContent = `0${loadoutSlots.indexOf(activeSlot) + 1} / 0${loadoutSlots.length}`;
+      document.querySelector("#mode-button").innerHTML = `ACTIVE KIT<span>${chosen(loadoutSlots[0]).name} · ${chosen(loadoutSlots[1]).name}</span>`;
+    }
 
     const navButtons = [...document.querySelectorAll(".nav-button")];
     const operators = [...document.querySelectorAll(".operator")];
     const toast = document.querySelector("#toast");
     let toastTimer;
-    let activeSection = "OPERATIONS";
+    let activeSection = "PLAY";
 
     function showToast(message) {
       document.querySelector("#toast-message").textContent = message;
@@ -429,6 +763,18 @@
       document.querySelector("#mission-label").textContent = content.mission;
       document.querySelector("#play-label").textContent = content.action;
       document.querySelector("#mode-button").innerHTML = `${content.mode}<span>${content.detail}</span>`;
+      document.querySelector("#right-column").classList.toggle("show-play", isSelectable(section));
+      document.querySelector("#right-column").classList.toggle("show-loadout", section === "LOADOUT");
+      if (section === "LOADOUT") renderLoadout();
+      if (isSelectable(section)) {
+        renderSelect();
+      } else {
+        document.querySelector("#intel-code").textContent = "FIELD INTEL / 01";
+        document.querySelector("#intel-threat").textContent = "THREAT: ELEVATED";
+        document.querySelector("#intel-title").textContent = "METRO DISTRICT";
+        document.querySelector("#intel-copy").textContent = catalogs.PLAY.maps[0].copy;
+        document.querySelector("#intel-footer-value").textContent = catalogs.PLAY.maps[0].window;
+      }
     }
 
     navButtons.forEach((button) => button.addEventListener("click", () => setSection(button.dataset.section)));
@@ -440,23 +786,37 @@
           operator.setAttribute("aria-pressed", String(selected));
         });
         document.querySelector("#operator-count").textContent = `0${index + 1} / 04`;
-        if (activeSection === "OPERATORS") {
+        if (activeSection === "LOADOUT") {
           document.querySelector("#mission-label").textContent = `CURRENT PICK: ${button.dataset.name.toUpperCase()}`;
         }
       });
     });
 
+    setSection("PLAY");
+
     document.querySelector("#play-button").addEventListener("click", () => {
       const messages = {
-        OPERATIONS: "Deployment ready. Your squad is being assembled.",
-        MULTIPLAYER: "Searching for a competitive match...",
-        TRAINING: "Training grounds are ready. Good hunting.",
-        OPERATORS: "Operator selection confirmed.",
-        ARMORY: "Loadout saved. Kit is ready for deployment."
+        PLAY: `Deploying to ${selection.PLAY.map.name} · ${selection.PLAY.mode.name}. Your squad is being assembled.`,
+        LOADOUT: `Loadout saved: ${loadoutSlots.map((slot) => chosen(slot).name).join(" · ")}.`,
+        SETTINGS: "Settings applied."
       };
+      if (activeSection === "TRAINING") return startRange();
       showToast(messages[activeSection]);
     });
     document.querySelector("#mode-button").addEventListener("click", () => {
+      if (isSelectable(activeSection)) {
+        const { modes } = catalogs[activeSection];
+        selectMode(modes[(modes.indexOf(selection[activeSection].mode) + 1) % modes.length]);
+        const { mode, map } = selection[activeSection];
+        showToast(`${catalogs[activeSection].label}: ${mode.name} on ${map.name}.`);
+        return;
+      }
+      if (activeSection === "LOADOUT") {
+        activeSlot = loadoutSlots[(loadoutSlots.indexOf(activeSlot) + 1) % loadoutSlots.length];
+        renderLoadout();
+        showToast(`Editing ${activeSlot.label.toLowerCase()} slot.`);
+        return;
+      }
       showToast(`Playlist selected: ${sectionContent[activeSection].mode}.`);
     });
   </script>
