@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101210">
+  <title>Cougar Six | Command</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f3f2ec;
+      --muted: #9c9f98;
+      --line: rgba(235, 239, 226, .18);
+      --acid: #d3ef59;
+      --red: #df563c;
+      --panel: rgba(16, 18, 16, .86);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: #101210;
+      font-family: "DM Sans", sans-serif;
+    }
+    button { color: inherit; font: inherit; }
+    .scene {
+      position: relative;
+      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow: hidden;
+      background: #101210;
+    }
+    .scene::before {
+      position: absolute;
+      z-index: -2;
+      inset: 0;
+      content: "";
+      background: url("assets/scene-background.jpg") center 48% / cover no-repeat;
+      filter: saturate(.62) brightness(.53);
+      transform: scale(1.025);
+      animation: arrive 1.2s ease-out both;
+    }
+    .scene::after {
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      content: "";
+      background:
+        linear-gradient(90deg, rgba(12, 14, 13, .96) 0%, rgba(12, 14, 13, .79) 29%, rgba(12, 14, 13, .26) 67%, rgba(12, 14, 13, .7) 100%),
+        linear-gradient(0deg, #101210 0%, rgba(16, 18, 16, .74) 13%, transparent 42%, rgba(12, 14, 13, .5) 100%);
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 92px;
+      padding: 0 5.2vw;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 205px; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid var(--acid);
+      color: var(--acid);
+      font: 700 20px/1 "Barlow Condensed", sans-serif;
+      transform: skew(-8deg);
+    }
+    .brand-copy { display: flex; flex-direction: column; gap: 2px; }
+    .brand-name { font: 700 20px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.5px; }
+    .brand-caption { color: #a4a79e; font-size: 9px; font-weight: 700; letter-spacing: 2.2px; }
+    .primary-nav { display: flex; align-self: stretch; gap: clamp(18px, 3.2vw, 52px); }
+    .nav-button {
+      position: relative;
+      padding: 4px 0 0;
+      border: 0;
+      background: transparent;
+      color: #a7aaa2;
+      cursor: pointer;
+      font: 600 15px/1 "Barlow Condensed", sans-serif;
+      letter-spacing: 1.5px;
+      transition: color .2s ease;
+    }
+    .nav-button:hover, .nav-button.active { color: var(--ink); }
+    .nav-button.active::after {
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      background: var(--acid);
+      content: "";
+    }
+    .profile { display: flex; align-items: center; justify-content: flex-end; gap: 14px; min-width: 205px; }
+    .connection { display: flex; align-items: center; gap: 8px; color: #bcc0b5; font-size: 10px; font-weight: 700; letter-spacing: 1.3px; }
+    .connection::before { width: 7px; height: 7px; border-radius: 50%; background: var(--acid); box-shadow: 0 0 12px #d3ef5980; content: ""; }
+    .profile-rule { width: 1px; height: 30px; background: var(--line); }
+    .rank { color: var(--acid); font: 700 18px/1 "Barlow Condensed", sans-serif; }
+    .profile-name { color: #e5e6df; font-size: 12px; font-weight: 600; }
+
+    .main {
+      display: grid;
+      flex: 1;
+      grid-template-columns: minmax(290px, 390px) minmax(0, 1fr);
+      align-items: center;
+      gap: 4vw;
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 4vh 8vw 3vh;
+    }
+    .briefing { position: relative; z-index: 1; padding-bottom: 1.5vh; animation: rise .7s .1s both; }
+    .eyebrow { display: flex; align-items: center; gap: 11px; color: var(--acid); font-size: 10px; font-weight: 700; letter-spacing: 2.5px; }
+    .eyebrow::before { width: 27px; height: 1px; background: var(--acid); content: ""; }
+    h1 {
+      max-width: 390px;
+      margin: 18px 0 9px;
+      font: 700 clamp(64px, 8vw, 112px)/.79 "Barlow Condensed", sans-serif;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .season { display: flex; align-items: center; gap: 12px; margin-top: 21px; color: #d0d1c9; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; }
+    .season-index { color: var(--acid); }
+    .briefing-copy { max-width: 330px; margin: 23px 0 0; color: #c1c3ba; font-size: 13px; line-height: 1.8; }
+    .mission-line { display: flex; align-items: center; gap: 10px; margin-top: 24px; color: #ecece5; font: 600 13px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.1px; }
+    .mission-line span { color: var(--red); }
+    .actions { display: flex; align-items: center; gap: 19px; margin-top: 30px; }
+    .play-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      min-width: 190px;
+      min-height: 54px;
+      padding: 0 23px;
+      border: 0;
+      background: var(--acid);
+      color: #151812;
+      cursor: pointer;
+      font: 700 17px/1 "Barlow Condensed", sans-serif;
+      letter-spacing: 1.7px;
+      clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 0 100%);
+      transition: background .2s ease, transform .2s ease;
+    }
+    .play-button:hover { background: #e1fa76; transform: translateY(-2px); }
+    .play-button:active { transform: translateY(0); }
+    .play-arrow { font-size: 14px; }
+    .mode-button { padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: #e2e3dc; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 1px; }
+    .mode-button:hover { color: var(--acid); }
+    .mode-button span { display: block; margin-top: 5px; color: #898d83; font-size: 9px; font-weight: 500; letter-spacing: 1.1px; }
+
+    .right-column { display: flex; align-self: stretch; flex-direction: column; justify-content: flex-end; align-items: flex-end; padding: 3vh 0 2vh; }
+    .intel-card {
+      width: min(390px, 100%);
+      margin-bottom: auto;
+      padding: 19px 21px 17px;
+      border-left: 2px solid var(--acid);
+      background: linear-gradient(100deg, rgba(16, 18, 16, .83), rgba(16, 18, 16, .43));
+      backdrop-filter: blur(7px);
+      animation: rise .7s .25s both;
+    }
+    .intel-top { display: flex; justify-content: space-between; color: #a9ada2; font-size: 9px; font-weight: 700; letter-spacing: 1.7px; }
+    .intel-top strong { color: var(--acid); font-weight: 700; }
+    .intel-card h2 { margin: 14px 0 7px; font: 600 26px/1 "Barlow Condensed", sans-serif; letter-spacing: .8px; }
+    .intel-card p { margin: 0; color: #b7bab1; font-size: 11px; line-height: 1.65; }
+    .intel-footer { display: flex; justify-content: space-between; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); color: #daddd2; font-size: 9px; font-weight: 600; letter-spacing: 1px; }
+    .intel-footer span:last-child { color: var(--acid); }
+
+    .operator-strip { width: min(390px, 100%); }
+    .strip-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #bfc2b9; font-size: 9px; font-weight: 700; letter-spacing: 1.8px; }
+    .strip-heading span:last-child { color: var(--acid); }
+    .operators { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .operator {
+      position: relative;
+      display: flex;
+      min-width: 0;
+      min-height: 65px;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px 11px 9px;
+      overflow: hidden;
+      border: 1px solid rgba(230,235,220,.19);
+      background: rgba(17, 19, 17, .72);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .operator::after { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: transparent; content: ""; }
+    .operator:hover { border-color: #b0b6a3; }
+    .operator.selected { border-color: var(--acid); background: rgba(47, 53, 34, .78); }
+    .operator.selected::after { background: var(--acid); }
+    .operator-code { color: var(--acid); font: 600 10px/1 "Barlow Condensed", sans-serif; letter-spacing: 1px; }
+    .operator-name { overflow: hidden; color: #e7e8e1; font: 600 15px/1 "Barlow Condensed", sans-serif; text-overflow: ellipsis; }
+
+    .bottom-bar { display: flex; align-items: center; justify-content: space-between; min-height: 62px; padding: 0 5.2vw; border-top: 1px solid rgba(255,255,255,.11); background: rgba(12, 14, 13, .48); }
+    .event { display: flex; align-items: center; gap: 12px; color: #aeb1a8; font-size: 10px; font-weight: 600; letter-spacing: 1px; }
+    .event-mark { color: var(--red); font: 700 17px/1 "Barlow Condensed", sans-serif; }
+    .bottom-right { display: flex; align-items: center; gap: 24px; color: #858980; font-size: 9px; font-weight: 600; letter-spacing: 1px; }
+    .social { display: flex; align-items: center; gap: 7px; color: #d0d2ca; }
+    .social::before { width: 6px; height: 6px; border-radius: 50%; background: var(--acid); content: ""; }
+    .toast {
+      position: fixed;
+      z-index: 5;
+      right: 28px;
+      bottom: 82px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: min(360px, calc(100vw - 32px));
+      padding: 15px 18px;
+      border: 1px solid rgba(211,239,89,.45);
+      background: var(--panel);
+      box-shadow: 0 12px 38px #0008;
+      color: #e9ebe3;
+      font-size: 11px;
+      line-height: 1.5;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    .toast-mark { color: var(--acid); font: 700 19px/1 "Barlow Condensed", sans-serif; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    @keyframes arrive { from { opacity: .25; transform: scale(1.06); } to { opacity: 1; transform: scale(1.025); } }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 850px) {
+      body { overflow: auto; }
+      .scene { min-height: 100svh; }
+      .topbar { min-height: 76px; padding: 0 5vw; }
+      .brand { min-width: 0; }
+      .primary-nav { gap: 18px; }
+      .nav-button { font-size: 13px; letter-spacing: 1px; }
+      .profile { min-width: 0; }
+      .connection, .profile-rule, .profile-name { display: none; }
+      .main { grid-template-columns: minmax(0, 1fr) minmax(240px, .8fr); gap: 4vw; padding: 5vh 6vw; }
+      .right-column { justify-content: space-between; }
+      .intel-card, .operator-strip { width: 100%; }
+      h1 { font-size: clamp(62px, 10vw, 88px); }
+    }
+    @media (max-width: 600px) {
+      .scene::before { background-position: 58% center; }
+      .scene::after { background: linear-gradient(90deg, rgba(12,14,13,.92), rgba(12,14,13,.56)), linear-gradient(0deg, #101210 0%, rgba(16,18,16,.72) 24%, transparent 75%); }
+      .topbar { min-height: 68px; flex-wrap: wrap; padding: 12px 5vw 0; }
+      .brand-mark { width: 32px; height: 32px; font-size: 17px; }
+      .brand-name { font-size: 18px; }
+      .brand-caption { font-size: 8px; }
+      .profile { min-width: auto; }
+      .primary-nav { order: 3; width: 100%; height: 42px; justify-content: space-between; gap: 8px; }
+      .nav-button { font-size: 12px; }
+      .main { display: flex; flex-direction: column; align-items: stretch; gap: 34px; padding: 7vh 7vw 28px; }
+      .briefing { padding: 0; }
+      h1 { max-width: 330px; margin-top: 15px; font-size: clamp(66px, 18vw, 92px); }
+      .briefing-copy { max-width: 310px; margin-top: 17px; font-size: 12px; }
+      .season { margin-top: 17px; }
+      .mission-line { margin-top: 16px; }
+      .actions { margin-top: 23px; }
+      .right-column { display: grid; grid-template-columns: 1fr; gap: 21px; padding: 0; }
+      .intel-card { margin: 0; padding: 15px 17px; }
+      .intel-card h2 { font-size: 23px; }
+      .operator { min-height: 58px; padding: 8px; }
+      .operator-name { font-size: 14px; }
+      .bottom-bar { min-height: 55px; padding: 0 5vw; }
+      .event { gap: 7px; font-size: 9px; }
+      .bottom-right { gap: 10px; font-size: 8px; }
+      .bottom-right span:first-child { display: none; }
+      .toast { right: 16px; bottom: 68px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <header class="topbar">
+      <div class="brand" aria-label="Cougar Six">
+        <div class="brand-mark" aria-hidden="true">C6</div>
+        <div class="brand-copy">
+          <span class="brand-name">COUGAR SIX</span>
+          <span class="brand-caption">TACTICAL RESPONSE</span>
+        </div>
+      </div>
+      <nav class="primary-nav" aria-label="Main menu">
+        <button class="nav-button active" data-section="OPERATIONS">OPERATIONS</button>
+        <button class="nav-button" data-section="MULTIPLAYER">MULTIPLAYER</button>
+        <button class="nav-button" data-section="TRAINING">TRAINING</button>
+        <button class="nav-button" data-section="OPERATORS">OPERATORS</button>
+        <button class="nav-button" data-section="ARMORY">ARMORY</button>
+      </nav>
+      <div class="profile" aria-label="Player profile">
+        <span class="connection">ONLINE</span>
+        <span class="profile-rule" aria-hidden="true"></span>
+        <span class="rank">34</span>
+        <span class="profile-name">RAVEN_06</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="briefing" aria-labelledby="page-title">
+        <div class="eyebrow" id="eyebrow">SEASON 04 · LIVE NOW</div>
+        <h1 id="page-title">NIGHT<br>FALL</h1>
+        <div class="season"><span class="season-index">04</span><span id="season-label">OPERATION: BLACKOUT</span></div>
+        <p class="briefing-copy" id="briefing-copy">A hostile signal is moving through the city grid. Assemble your unit, breach the perimeter, and shut it down before sunrise.</p>
+        <div class="mission-line"><span>●</span><span id="mission-label">LIMITED-TIME OPERATION</span></div>
+        <div class="actions">
+          <button class="play-button" id="play-button"><span class="play-arrow" aria-hidden="true">▶</span><span id="play-label">DEPLOY</span></button>
+          <button class="mode-button" id="mode-button">QUICK MATCH<span>STANDARD · 5V5</span></button>
+        </div>
+      </section>
+
+      <aside class="right-column" aria-label="Mission and operator selection">
+        <section class="intel-card" aria-labelledby="intel-title">
+          <div class="intel-top"><span>FIELD INTEL / 01</span><strong>THREAT: ELEVATED</strong></div>
+          <h2 id="intel-title">METRO DISTRICT</h2>
+          <p>Low visibility across the east sector. Thermal readings indicate movement inside the central station.</p>
+          <div class="intel-footer"><span>DEPLOYMENT WINDOW</span><span>02:14:38</span></div>
+        </section>
+        <section class="operator-strip" aria-label="Choose an operator">
+          <div class="strip-heading"><span>YOUR OPERATORS</span><span id="operator-count">01 / 04</span></div>
+          <div class="operators">
+            <button class="operator selected" data-name="Viper" data-code="ENTRY / 01" aria-pressed="true"><span class="operator-code">01 / ENTRY</span><span class="operator-name">Viper</span></button>
+            <button class="operator" data-name="Mako" data-code="BREACH / 02" aria-pressed="false"><span class="operator-code">02 / BREACH</span><span class="operator-name">Mako</span></button>
+            <button class="operator" data-name="Cipher" data-code="INTEL / 03" aria-pressed="false"><span class="operator-code">03 / INTEL</span><span class="operator-name">Cipher</span></button>
+            <button class="operator" data-name="Atlas" data-code="SUPPORT / 04" aria-pressed="false"><span class="operator-code">04 / SUPPORT</span><span class="operator-name">Atlas</span></button>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="bottom-bar">
+      <div class="event"><span class="event-mark">//</span><span>BLACKOUT EVENT</span><span>·</span><span>ENDS IN 06D 14H</span></div>
+      <div class="bottom-right"><span>PATCH 4.2.1</span><span>·</span><span class="social">3 FRIENDS ONLINE</span></div>
+    </footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-mark">C6</span><span id="toast-message"></span></div>
+  </div>
+  <script>
+    const sectionContent = {
+      OPERATIONS: {
+        eyebrow: "SEASON 04 · LIVE NOW",
+        title: "NIGHT<br>FALL",
+        season: "OPERATION: BLACKOUT",
+        copy: "A hostile signal is moving through the city grid. Assemble your unit, breach the perimeter, and shut it down before sunrise.",
+        mission: "LIMITED-TIME OPERATION",
+        action: "DEPLOY",
+        mode: "QUICK MATCH",
+        detail: "STANDARD · 5V5"
+      },
+      MULTIPLAYER: {
+        eyebrow: "SQUAD UP · 5V5",
+        title: "NO ROOM<br>TO HIDE",
+        season: "COMPETITIVE PLAYLIST",
+        copy: "Coordinate your entry, hold the objective, and outplay the opposing squad. Every round is a new plan.",
+        mission: "RANKED / UNRANKED",
+        action: "FIND MATCH",
+        mode: "RANKED",
+        detail: "STANDARD · 5V5"
+      },
+      TRAINING: {
+        eyebrow: "PREPARE · IMPROVE",
+        title: "BUILD<br>THE EDGE",
+        season: "TRAINING GROUNDS",
+        copy: "Sharpen your aim and learn the routes before the real operation starts. Solo drills or squad warm-up.",
+        mission: "PRACTICE AT YOUR PACE",
+        action: "START DRILL",
+        mode: "TARGET RANGE",
+        detail: "SOLO · 10 MIN"
+      },
+      OPERATORS: {
+        eyebrow: "ROSTER · 04 AVAILABLE",
+        title: "PICK YOUR<br>OPERATOR",
+        season: "SPECIALIST ROSTER",
+        copy: "Choose a role that fits your squad. Select an operator below to review your field assignment.",
+        mission: "CURRENT PICK: VIPER",
+        action: "CONFIRM PICK",
+        mode: "ROSTER",
+        detail: "4 SPECIALISTS"
+      },
+      ARMORY: {
+        eyebrow: "LOADOUT · READY",
+        title: "CHECK<br>YOUR KIT",
+        season: "WEAPONS & EQUIPMENT",
+        copy: "Fine-tune your loadout before deployment. Your squad is counting on every tool in the kit.",
+        mission: "LOADOUT: NIGHT RUNNER",
+        action: "OPEN ARMORY",
+        mode: "ACTIVE KIT",
+        detail: "Viper · Mk. 18"
+      }
+    };
+
+    const navButtons = [...document.querySelectorAll(".nav-button")];
+    const operators = [...document.querySelectorAll(".operator")];
+    const toast = document.querySelector("#toast");
+    let toastTimer;
+    let activeSection = "OPERATIONS";
+
+    function showToast(message) {
+      document.querySelector("#toast-message").textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2800);
+    }
+
+    function setSection(section) {
+      const content = sectionContent[section];
+      if (!content) return;
+      activeSection = section;
+      navButtons.forEach((button) => {
+        const selected = button.dataset.section === section;
+        button.classList.toggle("active", selected);
+        button.setAttribute("aria-current", selected ? "page" : "false");
+      });
+      document.querySelector("#eyebrow").textContent = content.eyebrow;
+      document.querySelector("#page-title").innerHTML = content.title;
+      document.querySelector("#season-label").textContent = content.season;
+      document.querySelector("#briefing-copy").textContent = content.copy;
+      document.querySelector("#mission-label").textContent = content.mission;
+      document.querySelector("#play-label").textContent = content.action;
+      document.querySelector("#mode-button").innerHTML = `${content.mode}<span>${content.detail}</span>`;
+    }
+
+    navButtons.forEach((button) => button.addEventListener("click", () => setSection(button.dataset.section)));
+    operators.forEach((button, index) => {
+      button.addEventListener("click", () => {
+        operators.forEach((operator) => {
+          const selected = operator === button;
+          operator.classList.toggle("selected", selected);
+          operator.setAttribute("aria-pressed", String(selected));
+        });
+        document.querySelector("#operator-count").textContent = `0${index + 1} / 04`;
+        if (activeSection === "OPERATORS") {
+          document.querySelector("#mission-label").textContent = `CURRENT PICK: ${button.dataset.name.toUpperCase()}`;
+        }
+      });
+    });
+
+    document.querySelector("#play-button").addEventListener("click", () => {
+      const messages = {
+        OPERATIONS: "Deployment ready. Your squad is being assembled.",
+        MULTIPLAYER: "Searching for a competitive match...",
+        TRAINING: "Training grounds are ready. Good hunting.",
+        OPERATORS: "Operator selection confirmed.",
+        ARMORY: "Loadout saved. Kit is ready for deployment."
+      };
+      showToast(messages[activeSection]);
+    });
+    document.querySelector("#mode-button").addEventListener("click", () => {
+      showToast(`Playlist selected: ${sectionContent[activeSection].mode}.`);
+    });
+  </script>
+</body>
+</html>
