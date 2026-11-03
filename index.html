@@ -159,7 +159,7 @@
     .mode-button:hover { color: var(--acid); }
     .mode-button span { display: block; margin-top: 5px; color: #898d83; font-size: 9px; font-weight: 500; letter-spacing: 1.1px; }
 
-    .right-column { display: flex; align-self: stretch; flex-direction: column; justify-content: flex-end; align-items: flex-end; padding: 3vh 0 2vh; }
+    .right-column { position: relative; display: flex; align-self: stretch; flex-direction: column; justify-content: flex-end; align-items: flex-end; padding: 3vh 0 2vh; }
     .intel-card {
       width: min(390px, 100%);
       margin-bottom: auto;
@@ -246,6 +246,31 @@
     .stat { color: #a9ada2; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
     .stat i { display: block; height: 3px; margin-top: 4px; background: rgba(255,255,255,.12); }
     .stat i b { display: block; height: 100%; background: var(--acid); }
+    .inspect { display: none; position: absolute; top: 3vh; right: calc(min(390px, 100%) + 22px); width: 340px; padding: 14px 16px; border-right: 2px solid var(--acid); background: linear-gradient(260deg, rgba(16,18,16,.88), rgba(16,18,16,.5)); backdrop-filter: blur(7px); }
+    .show-loadout .inspect { display: block; }
+    .inspect-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; color: var(--acid); font-size: 9px; font-weight: 700; letter-spacing: 1.4px; }
+    .inspect-view { position: relative; margin-bottom: 10px; border: 1px solid rgba(230,235,220,.16); background: radial-gradient(ellipse at 50% 60%, rgba(60,68,52,.55), rgba(12,14,12,.7)); }
+    .inspect-view canvas { display: block; width: 100%; height: 210px; cursor: grab; touch-action: none; }
+    .inspect-view canvas:active { cursor: grabbing; }
+    .inspect-hint { position: absolute; right: 8px; bottom: 6px; color: #858980; font-size: 8px; letter-spacing: 1px; pointer-events: none; }
+    .inspect-name { font: 700 26px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; text-transform: uppercase; }
+    .inspect-desc { margin: 5px 0 10px; color: #9c9f98; font-size: 11px; line-height: 1.4; }
+    .inspect .item-stats { margin-bottom: 12px; }
+    .stat em { float: right; font-style: normal; }
+    .stat em.up { color: var(--acid); }
+    .stat em.down { color: var(--red); }
+    .custom-group { margin-top: 10px; }
+    .custom-label { margin-bottom: 5px; color: #a9ada2; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; }
+    .swatches, .choices { display: flex; flex-wrap: wrap; gap: 6px; }
+    .swatch { width: 24px; height: 24px; border: 1px solid rgba(230,235,220,.3); cursor: pointer; }
+    .swatch.selected { outline: 2px solid var(--acid); outline-offset: 1px; }
+    .choice { padding: 6px 9px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); color: #e7e8e1; font: 600 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; cursor: pointer; }
+    .choice:hover { border-color: #b0b6a3; }
+    .choice:disabled { cursor: not-allowed; opacity: .45; }
+    .choice.selected { border-color: var(--acid); background: rgba(47,53,34,.78); }
+    .choice small { margin-left: 5px; color: var(--acid); font: 600 9px/1 "DM Sans", sans-serif; }
+    .reset-custom { margin-top: 12px; padding: 6px 10px; border: 1px solid var(--line); background: transparent; color: #c1c3ba; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; cursor: pointer; }
+    .reset-custom:hover { border-color: var(--acid); color: var(--acid); }
     .bottom-bar { display: flex; align-items: center; justify-content: space-between; min-height: 62px; padding: 0 5.2vw; border-top: 1px solid rgba(255,255,255,.11); background: rgba(12, 14, 13, .48); }
     .event { display: flex; align-items: center; gap: 12px; color: #aeb1a8; font-size: 10px; font-weight: 600; letter-spacing: 1px; }
     .event-mark { color: var(--red); font: 700 17px/1 "Barlow Condensed", sans-serif; }
@@ -281,6 +306,7 @@
     @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
     @media (max-width: 850px) {
+      .inspect { position: static; width: min(390px, 100%); margin-bottom: 18px; }
       body { overflow: auto; }
       .scene { min-height: 100svh; }
       .topbar { min-height: 76px; padding: 0 5vw; }
@@ -376,6 +402,14 @@
           <div class="slot-tabs" id="slot-tabs" role="tablist" aria-label="Loadout slot"></div>
           <div class="items" id="loadout-items"></div>
         </section>
+        <aside class="inspect" id="inspect" aria-label="Item inspection">
+          <div class="inspect-head"><span>INSPECT</span><span id="inspect-type"></span></div>
+          <div class="inspect-view"><canvas id="inspect-canvas" aria-label="3D model of the selected item"></canvas><span class="inspect-hint">DRAG TO ROTATE</span></div>
+          <div class="inspect-name" id="inspect-name"></div>
+          <p class="inspect-desc" id="inspect-desc"></p>
+          <div id="inspect-stats"></div>
+          <div id="inspect-custom"></div>
+        </aside>
         <section class="play-select" aria-label="Game mode and map select">
           <div class="select-group">
             <div class="strip-heading"><span id="mode-heading">GAME MODE</span><span id="mode-count"></span></div>
@@ -405,6 +439,7 @@
         <span>HITS <strong id="range-hits">0</strong></span>
         <span>ACCURACY <strong id="range-acc">--</strong></span>
         <span>TIME <strong id="range-time">0</strong></span>
+        <span>LMB PRIMARY · RMB SECONDARY</span>
         <button class="range-exit" id="range-exit">EXIT (ESC)</button>
       </div>
       <canvas id="range-canvas"></canvas>
@@ -652,11 +687,13 @@
       const x = (event.clientX - rect.left) * range.canvas.width / rect.width;
       const y = (event.clientY - rect.top) * range.canvas.height / rect.height;
       s.shots++;
+      const weapon = loadout[event.button === 2 ? "secondary" : "primary"];
       for (let i = s.targets.length - 1; i >= 0; i--) {
         const t = s.targets[i];
         const d = Math.hypot(x - t.x, y - t.y) / t.r;
         if (d <= 1) {
           s.hits++;
+          recordHit(weapon);
           s.score += d < .2 ? 10 : d < .6 ? 5 : 2;
           s.targets.splice(i, 1);
           break;
@@ -664,6 +701,7 @@
       }
       updateRangeHud();
     });
+    range.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     document.querySelector("#range-exit").addEventListener("click", () => endRange(true));
     document.querySelector("#range-back").addEventListener("click", () => endRange(true));
     document.querySelector("#range-again").addEventListener("click", startRange);
@@ -712,7 +750,7 @@
         tab.setAttribute("role", "tab");
         tab.setAttribute("aria-selected", String(slot === activeSlot));
         tab.innerHTML = `<span class="slot-label">${slot.label}</span><span class="slot-value">${chosen(slot).name}</span>`;
-        tab.addEventListener("click", () => { activeSlot = slot; renderLoadout(); });
+        tab.addEventListener("click", () => { activeSlot = slot; inspector.item = chosen(slot); renderLoadout(); });
         tabs.appendChild(tab);
       });
       activeSlot.items.forEach((item) => {
@@ -725,6 +763,7 @@
           (activeSlot.stats ? `<span class="item-stats">${stat("DAMAGE", item.dmg)}${stat("RANGE", item.rng)}${stat("MOBILITY", item.mob)}</span>` : "");
         button.addEventListener("click", () => {
           loadout[activeSlot.id] = item.id;
+          inspector.item = item;
           try { localStorage.setItem("c6-loadout", JSON.stringify(loadout)); } catch (error) {}
           renderLoadout();
         });
@@ -732,6 +771,303 @@
       });
       document.querySelector("#loadout-count").textContent = `0${loadoutSlots.indexOf(activeSlot) + 1} / 0${loadoutSlots.length}`;
       document.querySelector("#mode-button").innerHTML = `ACTIVE KIT<span>${chosen(loadoutSlots[0]).name} · ${chosen(loadoutSlots[1]).name}</span>`;
+      renderInspect();
+    }
+
+    /* ---- Procedural 3D item models (software-rendered, no external assets) ---- */
+    const box = (cx, cy, cz, w, h, d, m) => ({ k: "box", c: [cx, cy, cz], s: [w, h, d], m });
+    const cyl = (axis, cx, cy, cz, len, r, m, r2 = r) => ({ k: "cyl", axis, c: [cx, cy, cz], len, r, r2, m });
+    const ball = (cx, cy, cz, r, m, sy = 1) => ({ k: "ball", c: [cx, cy, cz], r, m, sy });
+
+    const modelDefs = {
+      mk18: { mounts: { optic: [.5, .45, 0], muzzle: [6.5, 0, 0], grip: [3.6, -.4, 0] }, parts: [
+        box(0, 0, 0, 4, .9, .7, "body"), box(-3.2, -.1, 0, 2.2, .8, .6, "body"), box(-4.5, -.3, 0, .4, 1.6, .7, "dark"),
+        box(3.2, 0, 0, 2.6, .8, .7, "body"), cyl("x", 5.5, 0, 0, 2, .12, "metal"), box(-.8, -1, 0, .5, 1.1, .5, "dark"),
+        box(.8, -1.1, 0, .6, 1.4, .5, "dark"), box(1.5, .6, 0, .25, .3, .1, "dark"), box(4.3, .5, 0, .2, .3, .1, "dark") ] },
+      vector: { mounts: { optic: [0, .55, 0], muzzle: [3.2, 0, 0], grip: [1.3, -.55, 0] }, parts: [
+        box(0, 0, 0, 3.4, 1.1, .8, "body"), cyl("x", 2.45, 0, 0, 1.5, .14, "metal"), box(.2, -1.5, 0, .55, 2, .5, "dark"),
+        box(-1, -1, 0, .5, 1, .5, "dark"), box(-2.4, .1, 0, 1.6, .3, .2, "metal"), box(-3.2, -.3, 0, .3, 1.2, .5, "dark"), box(1.2, .6, 0, .3, .25, .1, "dark") ] },
+      hammer: { mounts: { optic: [0, .5, 0], muzzle: [7, 0, 0], grip: [4, -.9, 0] }, parts: [
+        box(0, 0, 0, 3, .9, .7, "body"), cyl("x", 4.25, 0, 0, 5.5, .22, "metal"), cyl("x", 4, -.45, 0, 5, .18, "dark"),
+        box(4, -.75, 0, 2, .5, .6, "body"), box(-2.6, -.2, 0, 2.6, .8, .6, "body"), box(-4, -.3, 0, .3, 1.2, .6, "dark"), box(-1, -.9, 0, .5, .9, .5, "dark") ] },
+      longwatch: { mounts: { optic: [.5, .4, 0], muzzle: [8, 0, 0], grip: [4, -.35, 0] }, parts: [
+        box(0, 0, 0, 4, .8, .6, "body"), cyl("x", 5, 0, 0, 6, .13, "metal"), box(3.5, 0, 0, 3, .6, .55, "body"),
+        box(-3.4, -.1, 0, 2.8, .9, .55, "body"), box(-3.2, .5, 0, 1.4, .25, .45, "dark"), box(-1, -.9, 0, .5, 1, .45, "dark"), box(.6, -.8, 0, .6, .9, .45, "dark"),
+        box(5.5, -.4, .25, .1, .8, .1, "metal"), box(5.5, -.4, -.25, .1, .8, .1, "metal") ] },
+      p45: { mounts: { optic: [0, .7, 0], muzzle: [1.7, .3, 0] }, parts: [
+        box(0, .3, 0, 3, .7, .6, "body"), box(-.2, -.2, 0, 2.8, .35, .5, "dark"), box(-1, -1.1, 0, .9, 1.8, .55, "dark"),
+        box(.6, -.5, 0, .8, .12, .4, "dark"), cyl("x", 1.7, .3, 0, .3, .13, "metal"), box(1.3, .72, 0, .2, .15, .1, "dark") ] },
+      rattler: { mounts: { optic: [0, .6, 0], muzzle: [1.8, .2, 0] }, parts: [
+        box(0, .2, 0, 2.6, .8, .7, "body"), box(-.9, -.8, 0, .7, 1.4, .55, "dark"), box(.4, -1.5, 0, .45, 1.8, .4, "dark"),
+        cyl("x", 1.6, .2, 0, .5, .16, "metal"), box(.5, -.3, 0, .8, .1, .4, "dark"), box(-1.1, .75, 0, .5, .15, .4, "metal") ] },
+      magnum: { mounts: { optic: [.8, .6, 0], muzzle: [3.5, .1, 0] }, parts: [
+        box(-.5, 0, 0, 1.6, .8, .5, "body"), cyl("x", 0, .05, 0, 1.4, .5, "body"), cyl("x", 2, .1, 0, 3, .2, "metal"),
+        box(2, .35, 0, 3, .12, .2, "metal"), box(-1.5, -1, 0, .8, 1.9, .55, "dark"), box(-1.3, .55, 0, .3, .35, .2, "metal"), box(.3, -.5, 0, .8, .12, .4, "dark") ] },
+      sledgehammer: { mounts: {}, parts: [
+        cyl("x", 0, 0, 0, 6, .18, "dark"), cyl("x", -2, 0, 0, 2, .23, "accent"), box(3.2, 0, 0, 1.6, 1.3, 1.1, "body"),
+        box(3.2, 0, 0, 1.7, .6, 1.2, "metal"), box(-3.1, 0, 0, .25, .5, .5, "dark") ] },
+      shield: { mounts: {}, parts: [
+        box(0, 0, 0, .4, 5, 3.2, "body"), box(.25, 1.2, 0, .1, .9, 1.8, "glass"), box(-.3, 0, 0, .4, .3, 1, "dark"),
+        box(.05, 2.55, 0, .5, .15, 3.3, "metal"), box(.05, -2.55, 0, .5, .15, 3.3, "metal"), box(.05, 0, 1.65, .5, 5.1, .15, "metal"), box(.05, 0, -1.65, .5, 5.1, .15, "metal") ] },
+      drone: { mounts: {}, parts: [
+        box(0, 0, 0, 1.6, .45, 1.6, "body"), box(0, 0, 0, 4.2, .12, .22, "dark"), box(0, 0, 0, .22, .12, 4.2, "dark"),
+        ...[[2, 0], [-2, 0], [0, 2], [0, -2]].flatMap(([x, z]) => [cyl("y", x, .15, z, .3, .22, "metal"), cyl("y", x, .35, z, .05, .85, "dark")]),
+        ball(.9, -.15, 0, .32, "glass"), box(0, -.35, 0, .8, .1, .8, "accent") ] },
+      "steel-bars": { mounts: {}, parts: [
+        ...[-2, -1, 0, 1, 2].map((x) => cyl("y", x * .8, 0, 0, 4.4, .15, "metal")),
+        box(0, 1.7, 0, 4.2, .3, .4, "body"), box(0, -1.7, 0, 4.2, .3, .4, "body"), box(0, 0, 0, 4.2, .25, .35, "body"),
+        box(-2.3, 0, 0, .3, 4, .4, "dark"), box(2.3, 0, 0, .3, 4, .4, "dark") ] },
+      medkit: { mounts: {}, parts: [
+        box(0, 0, 0, 3, 2, 1.4, "body"), box(0, 0, .72, 1.2, .35, .06, "red"), box(0, 0, .72, .35, 1.2, .06, "red"),
+        box(0, 1.2, 0, 1.4, .2, .3, "dark"), box(-1.2, 0, .72, .3, .5, .06, "metal"), box(1.2, 0, .72, .3, .5, .06, "metal") ] },
+      frag: { mounts: {}, parts: [
+        ball(0, 0, 0, 1, "body", 1.25), cyl("y", 0, 1.35, 0, .4, .3, "metal"), box(.55, 1.4, 0, 1.1, .1, .3, "metal"),
+        cyl("y", 0, 1.7, 0, .15, .18, "dark"), cyl("y", 0, .2, 0, .14, 1.02, "dark"), cyl("y", 0, -.4, 0, .14, 1.02, "dark") ] },
+      flash: { mounts: {}, parts: [
+        cyl("y", 0, 0, 0, 3.2, .65, "body"), cyl("y", 0, 1.7, 0, .3, .68, "dark"), cyl("y", 0, -1.7, 0, .3, .68, "dark"),
+        box(.5, 1.95, 0, 1.1, .1, .3, "metal"), cyl("y", 0, .6, 0, .15, .67, "accent") ] },
+      smoke: { mounts: {}, parts: [
+        cyl("y", 0, 0, 0, 3.2, .65, "body"), cyl("y", 0, 1.7, 0, .3, .5, "dark", .68), cyl("y", 0, -1.7, 0, .3, .68, "dark"),
+        cyl("y", 0, .2, 0, .5, .67, "accent"), box(.5, 1.95, 0, 1.1, .1, .3, "metal") ] },
+      claymore: { mounts: {}, parts: [
+        box(0, 0, 0, .6, 1.8, 3, "body"), box(.32, 0, 0, .05, .3, 2.6, "accent"), box(0, 1.05, 0, .5, .3, .5, "dark"),
+        box(0, -1.15, 1, .12, .5, .12, "metal"), box(0, -1.15, -1, .12, .5, .12, "metal"), box(-.35, 0, 0, .15, 1.2, 2.4, "dark") ] }
+    };
+
+    const finishes = [
+      { name: "Blackout", c: "#4b504a" }, { name: "Desert", c: "#b49c68" }, { name: "Olive", c: "#69783f" },
+      { name: "Arctic", c: "#d6dad2" }, { name: "Crimson", c: "#b04430" }, { name: "Acid", c: "#c4de4c" }
+    ];
+    const skins = [
+      { id: "night-digital", name: "Night Digital", src: "assets/skin-night-digital.jpg", need: 10 },
+      { id: "tiger-stripe", name: "Tiger Stripe", src: "assets/skin-tiger-stripe.jpg", need: 30 },
+      { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg", need: 60 },
+      { id: "ember", name: "Ember", src: "assets/skin-ember.jpg", need: 100 }
+    ];
+    skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); }; skin.img.src = skin.src; });
+    const usage = {};
+    try { Object.assign(usage, JSON.parse(localStorage.getItem("c6-usage") || "{}")); } catch (error) {}
+    const hitsWith = (id) => usage[id] || 0;
+    const UNLOCK_ALL_WRAPS = true; // testing switch; unlock toasts still follow the hit thresholds
+    const skinUnlocked = (skin, id) => UNLOCK_ALL_WRAPS || hitsWith(id) >= skin.need;
+    const weaponName = (id) => loadoutSlots.flatMap((slot) => slot.items).find((item) => item.id === id)?.name || id;
+    function recordHit(id) {
+      const before = hitsWith(id);
+      usage[id] = before + 1;
+      try { localStorage.setItem("c6-usage", JSON.stringify(usage)); } catch (error) {}
+      const unlocked = skins.find((skin) => before < skin.need && usage[id] >= skin.need);
+      if (unlocked) showToast(`Unlocked the ${unlocked.name} wrap for ${weaponName(id)}.`);
+    }
+
+    const attachmentOptions = {
+      optic: { label: "OPTIC", options: [
+        { id: "none", name: "Iron Sights", mod: {} },
+        { id: "dot", name: "Red Dot", mod: { rng: 1 } },
+        { id: "scope", name: "4x Scope", mod: { rng: 2, mob: -1 } } ] },
+      muzzle: { label: "MUZZLE", options: [
+        { id: "none", name: "Bare", mod: {} },
+        { id: "suppressor", name: "Suppressor", mod: { dmg: -1, rng: 1 } },
+        { id: "comp", name: "Compensator", mod: { mob: 1 } } ] },
+      grip: { label: "GRIP", options: [
+        { id: "none", name: "Stock", mod: {} },
+        { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
+    };
+    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c" };
+
+    const custom = {};
+    try { Object.assign(custom, JSON.parse(localStorage.getItem("c6-custom") || "{}")); } catch (error) {}
+    const customOf = (item) => custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", optic: "none", muzzle: "none", grip: "none" });
+    const saveCustom = () => { try { localStorage.setItem("c6-custom", JSON.stringify(custom)); } catch (error) {} };
+    const optionOf = (kind, id) => attachmentOptions[kind].options.find((o) => o.id === id) || attachmentOptions[kind].options[0];
+
+    function attachmentParts(item, cfg) {
+      const mounts = modelDefs[item.id].mounts;
+      const out = [];
+      if (mounts.optic && cfg.optic === "dot") {
+        const [x, y, z] = mounts.optic;
+        out.push(box(x, y + .25, z, 1, .3, .45, "dark"), box(x, y + .6, z, .8, .5, .4, "dark"), box(x + .42, y + .6, z, .05, .4, .32, "glass"));
+      } else if (mounts.optic && cfg.optic === "scope") {
+        const [x, y, z] = mounts.optic;
+        out.push(box(x - .6, y + .25, z, .3, .35, .3, "dark"), box(x + .6, y + .25, z, .3, .35, .3, "dark"), cyl("x", x, y + .75, z, 2.4, .3, "dark"),
+          cyl("x", x + 1.25, y + .75, z, .05, .27, "glass"), cyl("x", x - 1.25, y + .75, z, .05, .27, "glass"), cyl("y", x, y + 1.05, z, .25, .12, "metal"));
+      }
+      if (mounts.muzzle && cfg.muzzle === "suppressor") {
+        const [x, y, z] = mounts.muzzle;
+        out.push(cyl("x", x + 1.1, y, z, 2.2, .27, "dark"), cyl("x", x + 2.2, y, z, .05, .2, "metal"));
+      } else if (mounts.muzzle && cfg.muzzle === "comp") {
+        const [x, y, z] = mounts.muzzle;
+        out.push(cyl("x", x + .3, y, z, .6, .22, "metal"), box(x + .3, y + .25, z, .3, .08, .2, "dark"));
+      }
+      if (mounts.grip && cfg.grip === "vertical") {
+        const [x, y, z] = mounts.grip;
+        out.push(box(x, y - .55, z, .35, 1.1, .35, "dark"), box(x, y - 1.15, z, .45, .15, .45, "metal"));
+      }
+      return out;
+    }
+
+    function buildPolys(parts) {
+      const polys = [];
+      const add = (v, m, c) => {
+        const poly = { v, m, c };
+        if (m === "body") {
+          const a = v[1].map((q, i) => q - v[0][i]), b = v[2].map((q, i) => q - v[0][i]);
+          const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]].map(Math.abs);
+          const axis = n.indexOf(Math.max(...n));
+          poly.uv = v.map((q) => (axis === 0 ? [q[2], q[1]] : axis === 1 ? [q[0], q[2]] : [q[0], q[1]]).map((t) => t * 85));
+        }
+        polys.push(poly);
+      };
+      parts.forEach((p) => {
+        if (p.k === "box") {
+          const [cx, cy, cz] = p.c, [x0, y0, z0, x1, y1, z1] = [cx - p.s[0] / 2, cy - p.s[1] / 2, cz - p.s[2] / 2, cx + p.s[0] / 2, cy + p.s[1] / 2, cz + p.s[2] / 2];
+          const V = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+          [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [3, 2, 6, 7], [0, 3, 7, 4], [1, 2, 6, 5]].forEach((f) => add(f.map((i) => V[i]), p.m, p.c));
+        } else if (p.k === "cyl") {
+          const seg = 14, h = p.len / 2;
+          const map = (a, u, v) => p.axis === "x" ? [a, u, v] : p.axis === "y" ? [v, a, u] : [u, v, a];
+          const ring = (a, r) => Array.from({ length: seg }, (_, i) => { const t = i / seg * Math.PI * 2; const q = map(a, Math.cos(t) * r, Math.sin(t) * r); return [p.c[0] + q[0], p.c[1] + q[1], p.c[2] + q[2]]; });
+          const lo = ring(-h, p.r), hi = ring(h, p.r2);
+          for (let i = 0; i < seg; i++) { const j = (i + 1) % seg; add([lo[i], lo[j], hi[j], hi[i]], p.m, p.c); }
+          add(lo, p.m, p.c); add(hi, p.m, p.c);
+        } else {
+          const lat = 7, lon = 14, pt = (a, b) => [p.c[0] + p.r * Math.sin(a) * Math.cos(b), p.c[1] + p.r * p.sy * Math.cos(a), p.c[2] + p.r * Math.sin(a) * Math.sin(b)];
+          for (let i = 0; i < lat; i++) for (let j = 0; j < lon; j++) {
+            const a0 = i / lat * Math.PI, a1 = (i + 1) / lat * Math.PI, b0 = j / lon * Math.PI * 2, b1 = (j + 1) / lon * Math.PI * 2;
+            add([pt(a0, b0), pt(a1, b0), pt(a1, b1), pt(a0, b1)], p.m, p.c);
+          }
+        }
+      });
+      return polys;
+    }
+
+    const inspector = { item: null, slot: null, polys: [], radius: 6, yaw: -.55, pitch: .22, dragging: false, running: false, key: "" };
+    const inspectCanvas = document.querySelector("#inspect-canvas");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function rebuildModel() {
+      const item = inspector.item, def = modelDefs[item.id], cfg = customOf(item);
+      const base = buildPolys(def.parts), pts = base.flatMap((poly) => poly.v);
+      const lo = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
+      const mid = lo.map((v, i) => (v + hi[i]) / 2);
+      const shift = (q) => [q[0] - mid[0], q[1] - mid[1], q[2] - mid[2]];
+      inspector.polys = buildPolys([...def.parts, ...attachmentParts(item, cfg)]).map((poly) => ({ ...poly, v: poly.v.map(shift), c: shift(poly.c) }));
+      inspector.radius = Math.max(...pts.map((q) => Math.hypot(...shift(q)))) + .3;
+    }
+
+    function affineFromUv(uv, pts) {
+      const [[u0, v0], [u1, v1], [u2, v2]] = uv, det = (u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0);
+      if (Math.abs(det) < 1e-6) return null;
+      const solve = (k) => {
+        const du1 = pts[1][k] - pts[0][k], du2 = pts[2][k] - pts[0][k];
+        const a = (du1 * (v2 - v0) - du2 * (v1 - v0)) / det, c = (du2 * (u1 - u0) - du1 * (u2 - u0)) / det;
+        return [a, c, pts[0][k] - a * u0 - c * v0];
+      };
+      const [a, c, e] = solve(0), [b, d, f] = solve(1);
+      return [a, b, c, d, e, f];
+    }
+
+    function drawInspector() {
+      const dpr = window.devicePixelRatio || 1, w = inspectCanvas.clientWidth, h = inspectCanvas.clientHeight;
+      if (!w || !h) return;
+      if (inspectCanvas.width !== Math.round(w * dpr) || inspectCanvas.height !== Math.round(h * dpr)) { inspectCanvas.width = Math.round(w * dpr); inspectCanvas.height = Math.round(h * dpr); }
+      const ctx = inspectCanvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const s = Math.min(w, h * 1.25) * .42 / inspector.radius;
+      const cfg = customOf(inspector.item), finish = finishes[cfg.finish] || finishes[0];
+      const skin = inspector.item.dmg ? skins.find((k) => k.id === cfg.skin && skinUnlocked(k, inspector.item.id) && k.img.complete && k.img.naturalWidth) : null;
+      const color = (m) => skin ? (m === "metal" ? finish.c : materials[m]) : (m === "body" ? finish.c : materials[m]);
+      const cy = Math.cos(inspector.yaw), sy = Math.sin(inspector.yaw), cp = Math.cos(inspector.pitch), sp = Math.sin(inspector.pitch);
+      const rot = ([x, y, z]) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cp - z1 * sp, y * sp + z1 * cp]; };
+      ctx.fillStyle = "rgba(0,0,0,.35)";
+      ctx.beginPath(); ctx.ellipse(w / 2, h * .86, Math.min(w * .32, inspector.radius * s * .9), h * .05, 0, 0, Math.PI * 2); ctx.fill();
+      const light = [-.4, .7, .6], ll = Math.hypot(...light);
+      const draw = [];
+      inspector.polys.forEach((poly) => {
+        const v = poly.v.map(rot), c = rot(poly.c);
+        const a = [v[1][0] - v[0][0], v[1][1] - v[0][1], v[1][2] - v[0][2]], b = [v[2][0] - v[0][0], v[2][1] - v[0][1], v[2][2] - v[0][2]];
+        let n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        const mid = v.reduce((acc, q) => [acc[0] + q[0] / v.length, acc[1] + q[1] / v.length, acc[2] + q[2] / v.length], [0, 0, 0]);
+        if (n[0] * (mid[0] - c[0]) + n[1] * (mid[1] - c[1]) + n[2] * (mid[2] - c[2]) < 0) n = n.map((q) => -q);
+        const nl = Math.hypot(...n) || 1;
+        if (n[2] / nl <= 0) return;
+        draw.push({ v, uv: poly.uv, z: mid[2], shade: .5 + .6 * Math.max(0, (n[0] * light[0] + n[1] * light[1] + n[2] * light[2]) / (nl * ll)), m: poly.m });
+      });
+      draw.sort((p, q) => p.z - q.z);
+      ctx.lineJoin = "round"; ctx.lineWidth = .8;
+      draw.forEach((d) => {
+        const hex = color(d.m), ch = [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * Math.min(1.15, d.shade)));
+        const fill = `rgb(${ch.map((q) => Math.min(255, q)).join(",")})`;
+        ctx.beginPath();
+        d.v.forEach((q, i) => { const f = 36 / (36 - q[2]); const x = w / 2 + q[0] * s * f, y = h * .5 - q[1] * s * f; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.closePath();
+        ctx.fillStyle = fill; ctx.strokeStyle = fill; ctx.fill(); ctx.stroke();
+        const sc = skin && d.uv && affineFromUv(d.uv, d.v.map((q) => { const f = 36 / (36 - q[2]); return [w / 2 + q[0] * s * f, h * .5 - q[1] * s * f]; }));
+        if (sc) {
+          ctx.save();
+          ctx.clip();
+          ctx.transform(...sc);
+          if (!skin.pattern) skin.pattern = ctx.createPattern(skin.img, "repeat");
+          ctx.fillStyle = skin.pattern;
+          ctx.fillRect(-4000, -4000, 8000, 8000);
+          ctx.restore();
+          ctx.beginPath();
+          d.v.forEach((q, i) => { const f = 36 / (36 - q[2]); const x = w / 2 + q[0] * s * f, y = h * .5 - q[1] * s * f; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+          ctx.closePath();
+          ctx.fillStyle = `rgba(0,0,0,${Math.max(0, 1 - d.shade).toFixed(2)})`;
+          ctx.fill();
+        }
+      });
+    }
+
+    function inspectLoop() {
+      if (activeSection !== "LOADOUT") { inspector.running = false; return; }
+      if (!inspector.dragging && !reducedMotion) inspector.yaw += .008;
+      drawInspector();
+      requestAnimationFrame(inspectLoop);
+    }
+
+    inspectCanvas.addEventListener("pointerdown", (event) => { inspector.dragging = true; inspectCanvas.setPointerCapture(event.pointerId); inspector.last = [event.clientX, event.clientY]; });
+    inspectCanvas.addEventListener("pointermove", (event) => {
+      if (!inspector.dragging) return;
+      inspector.yaw += (event.clientX - inspector.last[0]) * .012;
+      inspector.pitch = Math.max(-.9, Math.min(.9, inspector.pitch + (event.clientY - inspector.last[1]) * .008));
+      inspector.last = [event.clientX, event.clientY];
+      if (reducedMotion) drawInspector();
+    });
+    ["pointerup", "pointercancel"].forEach((name) => inspectCanvas.addEventListener(name, () => { inspector.dragging = false; }));
+
+    function renderInspect() {
+      const slot = activeSlot, item = inspector.item && slot.items.includes(inspector.item) ? inspector.item : chosen(slot);
+      inspector.item = item;
+      const cfg = customOf(item);
+      const mods = { dmg: 0, rng: 0, mob: 0 };
+      if (slot.stats) Object.keys(attachmentOptions).forEach((kind) => { if (modelDefs[item.id].mounts[kind]) Object.entries(optionOf(kind, cfg[kind]).mod).forEach(([k, v]) => { mods[k] += v; }); });
+      document.querySelector("#inspect-type").textContent = `${slot.label} · ${item.type}`;
+      document.querySelector("#inspect-name").textContent = item.name;
+      document.querySelector("#inspect-desc").textContent = item.desc;
+      const stat = (label, base, mod) => {
+        const value = Math.max(1, Math.min(10, base + mod)), diff = value - base;
+        return `<span class="stat">${label}${diff ? `<em class="${diff > 0 ? "up" : "down"}">${diff > 0 ? "+" : ""}${diff}</em>` : ""}<i><b style="width:${value * 10}%"></b></i></span>`;
+      };
+      document.querySelector("#inspect-stats").innerHTML = slot.stats ? `<div class="item-stats">${stat("DAMAGE", item.dmg, mods.dmg)}${stat("RANGE", item.rng, mods.rng)}${stat("MOBILITY", item.mob, mods.mob)}</div>` : "";
+      const box_ = document.querySelector("#inspect-custom");
+      const wrapGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WRAP · ${hitsWith(item.id)} HITS</div><div class="choices"><button class="choice wrap${cfg.skin === "none" ? " selected" : ""}" data-skin="none">Factory</button>${skins.map((k) => {
+        const open = skinUnlocked(k, item.id);
+        return `<button class="choice wrap${cfg.skin === k.id ? " selected" : ""}" data-skin="${k.id}"${open ? "" : " disabled"}>${k.name}<small>${open ? "" : `LOCKED · ${k.need} HITS`}</small></button>`;
+      }).join("")}</div></div>` : "";
+      box_.innerHTML = wrapGroup + `<div class="custom-group"><div class="custom-label">COLOR · ${finishes[cfg.finish].name.toUpperCase()}</div><div class="swatches">${finishes.map((f, i) =>
+        `<button class="swatch${i === cfg.finish ? " selected" : ""}" data-finish="${i}" style="background:${f.c}" title="${f.name}" aria-label="${f.name}"></button>`).join("")}</div></div>` +
+        Object.entries(attachmentOptions).filter(([kind]) => slot.stats && modelDefs[item.id].mounts[kind]).map(([kind, group]) =>
+          `<div class="custom-group"><div class="custom-label">${group.label}</div><div class="choices">${group.options.map((o) => `<button class="choice${o.id === cfg[kind] ? " selected" : ""}" data-kind="${kind}" data-id="${o.id}">${o.name}</button>`).join("")}</div></div>`).join("") +
+        `<button class="reset-custom" id="reset-custom">RESET CUSTOMIZATION</button>`;
+      box_.querySelectorAll(".swatch").forEach((b) => b.addEventListener("click", () => { cfg.finish = Number(b.dataset.finish); saveCustom(); renderInspect(); }));
+      box_.querySelectorAll(".wrap").forEach((b) => b.addEventListener("click", () => { cfg.skin = b.dataset.skin; saveCustom(); renderInspect(); }));
+      box_.querySelectorAll(".choice:not(.wrap)").forEach((b) => b.addEventListener("click", () => { cfg[b.dataset.kind] = b.dataset.id; saveCustom(); renderInspect(); }));
+      box_.querySelector("#reset-custom").addEventListener("click", () => { delete custom[item.id]; saveCustom(); renderInspect(); });
+      rebuildModel();
+      drawInspector();
+      if (!inspector.running) { inspector.running = true; requestAnimationFrame(inspectLoop); }
     }
 
     const navButtons = [...document.querySelectorAll(".nav-button")];
