@@ -224,15 +224,55 @@
     .range canvas { flex: 1; width: 100%; min-height: 0; cursor: crosshair; touch-action: none; }
     .field { position: fixed; z-index: 11; inset: 0; display: none; background: #000; }
     .field.open { display: block; }
-    .field canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+    .field canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; transform-origin: center; will-change: transform; }
     .field-hud { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; pointer-events: none; font: 600 16px/1.4 "Barlow Condensed", sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: #f3f2ec; text-shadow: 0 1px 4px #000; }
     .field-hud button { pointer-events: auto; padding: 8px 14px; border: 1px solid var(--line); background: rgba(11,13,11,.8); color: inherit; font: inherit; cursor: pointer; }
     .field-hud button:hover { border-color: var(--acid); color: var(--acid); }
     .field-hud small { display: block; opacity: .8; letter-spacing: .8px; }
+    .field-scoreboard { position: absolute; top: 54px; left: 50%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; width: min(760px, 72vw); padding: 8px 12px; border: 1px solid rgba(230,235,220,.2); background: rgba(11,13,11,.72); color: #f3f2ec; font: 600 10px/1.5 "DM Sans", sans-serif; text-align: center; text-shadow: 0 1px 4px #000; transform: translateX(-50%); pointer-events: none; }
+    .field-scoreboard span:first-child { text-align: left; }
+    .field-scoreboard span:last-child { text-align: right; }
+    .field-scoreboard strong { color: #d3ef59; font: 700 16px/1 "Barlow Condensed", sans-serif; white-space: nowrap; }
+    .field-tags { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .field-tag { position: absolute; padding: 3px 6px; border: 1px solid rgba(211,239,89,.75); background: rgba(11,13,11,.72); color: #d3ef59; font: 700 10px/1.2 "DM Sans", sans-serif; letter-spacing: 1px; text-shadow: 0 1px 3px #000; white-space: nowrap; transform: translate(-50%, -100%); }
     .range-result { position: absolute; inset: 62px 0 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(11,13,11,.86); text-align: center; }
     .range-result.open { display: flex; }
     .range-result h2 { margin: 0; font: 700 56px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; }
     .range-result p { margin: 0; color: #c1c3ba; font-size: 14px; }
+    .match-lobby { position: fixed; z-index: 20; inset: 0; display: none; place-items: center; padding: 20px; background: rgba(5,7,6,.86); backdrop-filter: blur(8px); }
+    .match-lobby.open { display: grid; }
+    .lobby-panel { width: min(760px, 100%); max-height: min(720px, 92vh); overflow: auto; border: 1px solid rgba(230,235,220,.2); border-top: 2px solid var(--acid); background: #111411; box-shadow: 0 24px 80px #000b; animation: rise .2s ease-out both; }
+    .lobby-header, .lobby-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 21px; }
+    .lobby-header { border-bottom: 1px solid var(--line); color: var(--acid); font: 700 13px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.8px; }
+    .lobby-close { width: 36px; height: 36px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; font-size: 19px; }
+    .lobby-close:hover { border-color: var(--acid); color: var(--acid); }
+    .lobby-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .lobby-section { min-width: 0; padding: 22px; }
+    .lobby-section + .lobby-section { border-left: 1px solid var(--line); }
+    .lobby-heading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; color: #e7e8e1; font: 700 22px/1 "Barlow Condensed", sans-serif; letter-spacing: .8px; }
+    .lobby-heading small { color: #a9ada2; font: 700 9px/1 "DM Sans", sans-serif; letter-spacing: 1px; }
+    .party-code { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; padding: 0 13px; border: 1px dashed rgba(211,239,89,.45); color: var(--acid); font: 700 22px/1 "Barlow Condensed", sans-serif; letter-spacing: 3px; }
+    .party-code.empty { color: #777d73; border-color: var(--line); font: 600 11px/1 "DM Sans", sans-serif; letter-spacing: 1px; }
+    .party-copy { padding: 6px 8px; border: 0; background: transparent; color: inherit; cursor: pointer; font: 700 9px/1 "DM Sans", sans-serif; letter-spacing: 1px; }
+    .party-members { display: grid; gap: 6px; min-height: 50px; margin-bottom: 14px; }
+    .party-member { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,.04); color: #d9dbd2; font-size: 11px; }
+    .party-member span:last-child { color: var(--acid); font-size: 9px; font-weight: 700; letter-spacing: 1px; }
+    .lobby-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .lobby-button { min-height: 40px; padding: 0 12px; border: 1px solid rgba(230,235,220,.2); background: rgba(17,19,17,.8); color: #e7e8e1; cursor: pointer; font: 700 12px/1 "Barlow Condensed", sans-serif; letter-spacing: 1px; }
+    .lobby-button:hover:not(:disabled) { border-color: var(--acid); color: var(--acid); }
+    .lobby-button.primary { border-color: var(--acid); background: var(--acid); color: #151812; }
+    .lobby-button.primary:hover:not(:disabled) { background: #e1fa76; color: #151812; }
+    .lobby-button:disabled { cursor: not-allowed; opacity: .4; }
+    .join-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 10px; }
+    .join-form input { min-width: 0; padding: 0 12px; border: 1px solid rgba(230,235,220,.2); background: #0c0f0c; color: var(--ink); font: 700 13px/1 "DM Sans", sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+    .lobby-playlist { min-height: 60px; display: flex; flex-direction: column; justify-content: center; gap: 5px; margin-bottom: 16px; padding: 10px 13px; border-left: 2px solid var(--acid); background: rgba(255,255,255,.04); color: #e7e8e1; font: 700 17px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; }
+    .lobby-playlist small { color: #a9ada2; font: 600 9px/1.3 "DM Sans", sans-serif; letter-spacing: 1px; }
+    .lobby-status { min-height: 38px; margin: 12px 0; color: #b7bab1; font-size: 11px; line-height: 1.55; }
+    .lobby-status.error { color: #f08a70; }
+    .lobby-footer { min-height: 48px; border-top: 1px solid var(--line); color: #92968c; font-size: 9px; font-weight: 700; letter-spacing: 1px; }
+    .lobby-connection { display: flex; align-items: center; gap: 7px; }
+    .lobby-connection::before { width: 6px; height: 6px; border-radius: 50%; background: #777d73; content: ""; }
+    .lobby-connection.connected::before { background: var(--acid); box-shadow: 0 0 10px #d3ef5980; }
     .loadout-panel { display: none; width: min(390px, 100%); margin-bottom: 18px; padding: 16px 18px; border-left: 2px solid var(--acid); background: linear-gradient(100deg, rgba(16,18,16,.83), rgba(16,18,16,.43)); backdrop-filter: blur(7px); }
     .show-loadout .loadout-panel { display: block; }
     .show-loadout .intel-card { display: none; }
@@ -354,6 +394,12 @@
       .bottom-right { gap: 10px; font-size: 8px; }
       .bottom-right span:first-child { display: none; }
       .toast { right: 16px; bottom: 68px; }
+      .match-lobby { padding: 10px; }
+      .lobby-panel { max-height: 94vh; }
+      .lobby-grid { grid-template-columns: 1fr; }
+      .lobby-section { padding: 16px; }
+      .lobby-section + .lobby-section { border-top: 1px solid var(--line); border-left: 0; }
+      .lobby-header, .lobby-footer { padding: 12px 16px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -445,10 +491,40 @@
       <div id="field-cross" style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none"><i style="position:absolute;left:-1px;top:-9px;width:2px;height:6px;background:#f3f2ec"></i><i style="position:absolute;left:-1px;top:3px;width:2px;height:6px;background:#f3f2ec"></i><i style="position:absolute;left:-9px;top:-1px;width:6px;height:2px;background:#f3f2ec"></i><i style="position:absolute;left:3px;top:-1px;width:6px;height:2px;background:#f3f2ec"></i><b id="field-hitmark" style="position:absolute;left:-12px;top:-14px;font:700 28px/1 sans-serif;color:#d3ef59;opacity:0;transition:opacity .25s">✕</b></div>
       <div id="field-weapon" style="position:absolute;right:22px;bottom:20px;text-align:right;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 4px #000;font:600 16px/1.4 'Barlow Condensed',sans-serif;letter-spacing:1.2px;text-transform:uppercase"></div>
       <div id="field-msg" style="position:absolute;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;color:#d3ef59;font:700 24px 'Barlow Condensed',sans-serif;letter-spacing:2px;text-shadow:0 1px 6px #000;opacity:0;transition:opacity .3s"></div>
+      <div id="field-tags" class="field-tags" aria-hidden="true"></div>
       <div class="field-hud">
-        <span>THE FIELD<small>WASD move · MOUSE look · CLICK fire · R reload · F barricade · 1/2 weapon · SHIFT sprint · SPACE jump · ESC exit</small></span>
+        <span>THE FIELD<small>WASD move · MOUSE look · CLICK fire/deploy · RMB ADS · Q/E lean · C crouch · R reload · F barricade · 1/2 weapon · SHIFT sprint · SPACE scan (drone) · G recall drone · ESC exit</small></span>
         <span id="field-pos"></span>
         <button id="field-exit">EXIT (ESC)</button>
+      </div>
+      <div class="field-scoreboard" aria-label="Match scoreboard"><span id="scoreboard-team1"></span><strong id="scoreboard-score">0 — 0</strong><span id="scoreboard-team2"></span></div>
+    </div>
+    <div class="match-lobby" id="match-lobby" role="dialog" aria-label="Party and matchmaking" aria-modal="true">
+      <div class="lobby-panel">
+        <header class="lobby-header"><span>COUGAR SIX / MATCHMAKING</span><button class="lobby-close" id="lobby-close" aria-label="Close matchmaking">×</button></header>
+        <div class="lobby-grid">
+          <section class="lobby-section" aria-labelledby="party-heading">
+            <div class="lobby-heading"><span id="party-heading">PARTY</span><small id="party-count">SOLO</small></div>
+            <div class="party-code empty" id="party-code">CREATE OR JOIN A PARTY</div>
+            <div class="party-members" id="party-members"></div>
+            <div class="lobby-actions">
+              <button class="lobby-button" id="create-party">CREATE PARTY</button>
+              <button class="lobby-button" id="leave-party" disabled>LEAVE PARTY</button>
+            </div>
+            <form class="join-form" id="join-party-form">
+              <label class="sr-only" for="party-code-input">Party code</label>
+              <input id="party-code-input" name="code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="6" placeholder="ENTER CODE" aria-label="Party code">
+              <button class="lobby-button" id="join-party" type="submit">JOIN</button>
+            </form>
+          </section>
+          <section class="lobby-section" aria-labelledby="queue-heading">
+            <div class="lobby-heading"><span id="queue-heading">QUEUE</span><small id="queue-size">UP TO 10 PLAYERS</small></div>
+            <div class="lobby-playlist" id="queue-playlist"></div>
+            <div class="lobby-status" id="queue-status" role="status" aria-live="polite">Connect to matchmaking to find a game.</div>
+            <button class="lobby-button primary" id="queue-action" disabled>FIND MATCH</button>
+          </section>
+        </div>
+        <footer class="lobby-footer"><span class="lobby-connection" id="lobby-connection">OFFLINE</span><span>PARTIES STAY ON THE SAME TEAM</span></footer>
       </div>
     </div>
     <div class="range" id="range" role="dialog" aria-label="Firing range" aria-modal="true">
@@ -526,7 +602,8 @@
           { id: "quick", name: "Quick Match", detail: "STANDARD · 5V5", maps: ["field", "harbor", "foundry"] },
           { id: "ranked", name: "Ranked", detail: "COMPETITIVE · 5V5", maps: ["field", "harbor"] },
           { id: "defuse", name: "Bomb Defusal", detail: "ATTACK / DEFEND · 5V5", maps: ["field", "foundry"] },
-          { id: "rescue", name: "Hostage Rescue", detail: "OBJECTIVE · 5V5", maps: ["harbor", "foundry"] }
+          { id: "rescue", name: "Hostage Rescue", detail: "OBJECTIVE · 5V5", maps: ["harbor", "foundry"] },
+          { id: "duel", name: "1v1 Duel", detail: "SOLO · 1V1", maps: ["field"] }
         ],
         maps: [
           { id: "field", name: "The Field", threat: "ELEVATED", copy: "Friday night lights. A high school football field with bleachers, goalposts and open sightlines from end zone to end zone.", window: "02:14:38" },
@@ -540,18 +617,165 @@
           { id: "range", name: "Firing Range", detail: "SOLO · 30 SEC", maps: ["indoor", "outdoor", "night"], game: { time: 30, targets: 4, ttl: 3500, moving: false, size: 1 } },
           { id: "reaction", name: "Reaction Drill", detail: "SOLO · 20 SEC", maps: ["indoor", "night"], game: { time: 20, targets: 2, ttl: 1300, moving: false, size: 1 } },
           { id: "moving", name: "Moving Targets", detail: "SOLO · 30 SEC", maps: ["outdoor", "night"], game: { time: 30, targets: 3, ttl: 4500, moving: true, size: 1 } },
-          { id: "precision", name: "Precision", detail: "SOLO · 30 SEC", maps: ["indoor", "outdoor"], game: { time: 30, targets: 3, ttl: 3000, moving: false, size: .55 } }
+          { id: "precision", name: "Precision", detail: "SOLO · 30 SEC", maps: ["indoor", "outdoor"], game: { time: 30, targets: 3, ttl: 3000, moving: false, size: .55 } },
+          { id: "freeplay", name: "Freeplay", detail: "SOLO · THE FIELD", maps: ["field"] }
         ],
         maps: [
           { id: "indoor", name: "Indoor Range", threat: "NONE", copy: "Climate-controlled lanes with fixed lighting. The best place to warm up your aim.", window: "OPEN", bg: ["#1a1d1a", "#101210"] },
           { id: "outdoor", name: "Outdoor Range", threat: "WIND", copy: "Open-air lanes with long sightlines. Targets sit farther out and drift side to side.", window: "OPEN", bg: ["#2a3a3a", "#141b17"] },
-          { id: "night", name: "Night Range", threat: "LOW LIGHT", copy: "Dark lanes lit only by target spotlights. Stay calm and pick your shots.", window: "OPEN", bg: ["#0a0e18", "#050609"] }
+          { id: "night", name: "Night Range", threat: "LOW LIGHT", copy: "Dark lanes lit only by target spotlights. Stay calm and pick your shots.", window: "OPEN", bg: ["#0a0e18", "#050609"] },
+          { id: "field", name: "The Field", threat: "SOLO", copy: "Explore the live field map at your own pace. Moving targets are active; no matchmaking or other players are loaded.", window: "FREEPLAY" }
         ]
       }
     };
     const selection = {};
     Object.entries(catalogs).forEach(([key, catalog]) => { selection[key] = { mode: catalog.modes[0], map: catalog.maps[0] }; });
     const isSelectable = (section) => Boolean(catalogs[section]);
+    const multiplayer = { socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, remotePlayers: new Map(), lastStateAt: 0 };
+    const lobby = {
+      el: document.querySelector("#match-lobby"),
+      status: document.querySelector("#queue-status"),
+      code: document.querySelector("#party-code"),
+      members: document.querySelector("#party-members"),
+      connection: document.querySelector("#lobby-connection"),
+      queueAction: document.querySelector("#queue-action")
+    };
+
+    function lobbyStatus(text, error = false) {
+      lobby.status.textContent = text;
+      lobby.status.classList.toggle("error", error);
+    }
+
+    function updateLobby() {
+      const connected = multiplayer.connected;
+      const party = multiplayer.party;
+      const partySize = party?.members.length || 1;
+      const isDuel = selection.PLAY.mode.id === "duel";
+      const mapPlayable = selection.PLAY.map.id === "field";
+      lobby.connection.textContent = connected ? "MATCHMAKING ONLINE" : "CONNECTING TO MATCHMAKING";
+      lobby.connection.classList.toggle("connected", connected);
+      document.querySelector("#party-count").textContent = party ? `${partySize} / 5` : "SOLO";
+      const codeLabel = party?.code || "CREATE OR JOIN A PARTY";
+      lobby.code.textContent = codeLabel;
+      lobby.code.classList.toggle("empty", !party);
+      lobby.code.innerHTML = "";
+      lobby.code.append(document.createTextNode(codeLabel));
+      if (party) {
+        const copy = document.createElement("button");
+        copy.className = "party-copy";
+        copy.type = "button";
+        copy.textContent = "COPY";
+        copy.title = "Copy party code";
+        copy.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(party.code); lobbyStatus("Party code copied."); }
+          catch { lobbyStatus(`Share code ${party.code} with your party.`); }
+        });
+        lobby.code.append(copy);
+      }
+      lobby.members.replaceChildren();
+      (party?.members || []).forEach((member) => {
+        const row = document.createElement("div");
+        row.className = "party-member";
+        const name = document.createElement("span");
+        name.textContent = member.name;
+        const role = document.createElement("span");
+        role.textContent = member.id === party.leader ? "LEADER" : "READY";
+        row.append(name, role);
+        lobby.members.append(row);
+      });
+      const playlist = selection.PLAY.mode;
+      document.querySelector("#queue-playlist").innerHTML = `<span>${playlist.name.toUpperCase()}</span><small>${isDuel ? "SOLO QUEUE · FIRST TO A MATCH" : "PARTIES STAY TOGETHER · SOLO PLAYERS ARE FILLED IN"}</small>`;
+      document.querySelector("#queue-size").textContent = isDuel ? "1V1 · 2 PLAYERS" : "5V5 · 10 PLAYERS";
+      document.querySelector("#create-party").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
+      document.querySelector("#leave-party").disabled = !connected || !party || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
+      document.querySelector("#party-code-input").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
+      document.querySelector("#join-party").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
+      lobby.queueAction.disabled = !connected || !mapPlayable || (isDuel && partySize > 1) || (party && party.leader !== multiplayer.playerId) || Boolean(multiplayer.match);
+      lobby.queueAction.textContent = multiplayer.queuedMode ? "CANCEL SEARCH" : "FIND MATCH";
+      if (isDuel && partySize > 1) lobbyStatus("1v1 is solo only. Leave your party to queue.");
+      else if (!mapPlayable) lobbyStatus("Online matches are currently available on The Field.");
+    }
+
+    function connectMultiplayer() {
+      if (multiplayer.socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(multiplayer.socket.readyState)) return;
+      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+      const socket = multiplayer.socket = new WebSocket(`${protocol}//${location.host}/ws`);
+      socket.addEventListener("open", () => {
+        multiplayer.connected = true;
+        let name = sessionStorage.getItem("cougarPlayerName");
+        if (!name) { name = `CADET_${Math.random().toString(36).slice(2, 6).toUpperCase()}`; sessionStorage.setItem("cougarPlayerName", name); }
+        socket.send(JSON.stringify({ type: "set_name", name }));
+        lobbyStatus("Matchmaking online. Create a party or find a match.");
+        updateLobby();
+      });
+      socket.addEventListener("message", (event) => {
+        let message;
+        try { message = JSON.parse(event.data); } catch { return; }
+        if (message.type === "welcome") multiplayer.playerId = message.playerId;
+        if (message.type === "party_update") multiplayer.party = message.code ? message : null;
+        if (message.type === "queue_status") {
+          multiplayer.queuedMode = message.status === "searching" ? message.mode : null;
+          if (message.status === "searching") lobbyStatus(`Searching for ${message.mode === "duel" ? "a 1v1 opponent" : "players to complete the match"}...`);
+          if (message.status === "cancelled") lobbyStatus("Queue cancelled.");
+        }
+        if (message.type === "error") lobbyStatus(message.message, true);
+        if (message.type === "match_found") {
+          multiplayer.match = message;
+          multiplayer.remotePlayers.clear();
+          lobby.el.classList.remove("open");
+          openField();
+        }
+        if (message.type === "snapshot" && message.matchId === multiplayer.match?.matchId) {
+          multiplayer.match.players = message.players;
+          multiplayer.remotePlayers = new Map(message.players.filter((player) => player.id !== multiplayer.playerId).map((player) => [player.id, player]));
+        }
+        if (message.type === "player_damaged" && multiplayer.match) {
+          const victim = multiplayer.match.players.find((player) => player.id === message.playerId);
+          if (victim) { victim.health = message.health; victim.deaths = message.deaths; }
+          const killer = multiplayer.match.players.find((player) => player.id === message.killerId);
+          if (killer) killer.kills = message.killerKills;
+          if (message.killerId === multiplayer.playerId) say("OPPONENT DOWN");
+        }
+        if (message.type === "player_left") multiplayer.remotePlayers.delete(message.playerId);
+        if (message.type === "match_ended") {
+          multiplayer.match = null;
+          multiplayer.remotePlayers.clear();
+          fieldView.close();
+          lobby.el.classList.add("open");
+          lobbyStatus(message.reason || "Match ended.", true);
+        }
+        updateLobby();
+      });
+      socket.addEventListener("close", () => {
+        multiplayer.connected = false;
+        multiplayer.queuedMode = null;
+        updateLobby();
+        if (lobby.el.classList.contains("open")) lobbyStatus("Disconnected from matchmaking. Reopen the queue to reconnect.", true);
+      });
+      socket.addEventListener("error", () => lobbyStatus("Could not reach the multiplayer server. Start the game with npm start.", true));
+    }
+
+    function openMatchLobby() {
+      lobby.el.classList.add("open");
+      lobbyStatus("Connecting to matchmaking...");
+      connectMultiplayer();
+      updateLobby();
+    }
+
+    document.querySelector("#lobby-close").addEventListener("click", () => lobby.el.classList.remove("open"));
+    document.querySelector("#create-party").addEventListener("click", () => multiplayer.socket?.send(JSON.stringify({ type: "create_party" })));
+    document.querySelector("#leave-party").addEventListener("click", () => multiplayer.socket?.send(JSON.stringify({ type: "leave_party" })));
+    document.querySelector("#join-party-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = document.querySelector("#party-code-input");
+      multiplayer.socket?.send(JSON.stringify({ type: "join_party", code: input.value }));
+      input.value = "";
+    });
+    lobby.queueAction.addEventListener("click", () => {
+      if (multiplayer.queuedMode) multiplayer.socket?.send(JSON.stringify({ type: "leave_queue" }));
+      else multiplayer.socket?.send(JSON.stringify({ type: "queue", mode: selection.PLAY.mode.id === "duel" ? "duel" : "squad" }));
+    });
+    document.querySelector("#party-code-input").addEventListener("input", (event) => { event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
 
     function renderSelect() {
       const catalog = catalogs[activeSection];
@@ -590,8 +814,10 @@
       document.querySelector("#intel-threat").textContent = `THREAT: ${selectedMap.threat}`;
       document.querySelector("#intel-title").textContent = selectedMap.name.toUpperCase();
       document.querySelector("#intel-copy").textContent = selectedMap.copy;
-      document.querySelector("#intel-footer-label").textContent = activeSection === "TRAINING" ? "RANGE STATUS" : "DEPLOYMENT WINDOW";
+      document.querySelector("#intel-footer-label").textContent = activeSection === "TRAINING" ? (selectedMode.id === "freeplay" ? "FIELD STATUS" : "RANGE STATUS") : "DEPLOYMENT WINDOW";
       document.querySelector("#intel-footer-value").textContent = selectedMap.window;
+      if (activeSection === "TRAINING") document.querySelector("#play-label").textContent = selectedMode.id === "freeplay" ? "ENTER FIELD" : "START RANGE";
+      if (lobby.el.classList.contains("open")) updateLobby();
     }
 
     function selectMode(mode) {
@@ -799,27 +1025,27 @@
     const ball = (cx, cy, cz, r, m, sy = 1) => ({ k: "ball", c: [cx, cy, cz], r, m, sy });
 
     const modelDefs = {
-      mk18: { mounts: { optic: [.5, .45, 0], muzzle: [6.5, 0, 0], grip: [3.6, -.4, 0] }, parts: [
+      mk18: { mounts: { optic: [.5, .45, 0], muzzle: [6.5, 0, 0], grip: [3.6, -.4, 0] }, sight: [1.5, .6, 0], parts: [
         box(0, 0, 0, 4, .9, .7, "body"), box(-3.2, -.1, 0, 2.2, .8, .6, "body"), box(-4.5, -.3, 0, .4, 1.6, .7, "dark"),
         box(3.2, 0, 0, 2.6, .8, .7, "body"), cyl("x", 5.5, 0, 0, 2, .12, "metal"), box(-.8, -1, 0, .5, 1.1, .5, "dark"),
-        box(.8, -1.1, 0, .6, 1.4, .5, "dark"), box(1.5, .6, 0, .25, .3, .1, "dark"), box(4.3, .5, 0, .2, .3, .1, "dark") ] },
-      vector: { mounts: { optic: [0, .55, 0], muzzle: [3.2, 0, 0], grip: [1.3, -.55, 0] }, parts: [
+        box(1.5, .6, 0, .25, .3, .1, "dark"), box(4.3, .5, 0, .2, .3, .1, "dark") ], mag: [box(.8, -1.1, 0, .6, 1.4, .5, "dark")] },
+      vector: { mounts: { optic: [0, .55, 0], muzzle: [3.2, 0, 0], grip: [1.3, -.55, 0] }, sight: [-.45, .55, 0], parts: [
         box(0, 0, 0, 3.4, 1.1, .8, "body"), cyl("x", 2.45, 0, 0, 1.5, .14, "metal"), box(.2, -1.5, 0, .55, 2, .5, "dark"),
         box(-1, -1, 0, .5, 1, .5, "dark"), box(-2.4, .1, 0, 1.6, .3, .2, "metal"), box(-3.2, -.3, 0, .3, 1.2, .5, "dark"), box(1.2, .6, 0, .3, .25, .1, "dark") ] },
-      hammer: { mounts: { optic: [0, .5, 0], muzzle: [7, 0, 0], grip: [4, -.9, 0] }, parts: [
+      hammer: { mounts: { optic: [0, .5, 0], muzzle: [7, 0, 0], grip: [4, -.9, 0] }, sight: [0, .52, 0], parts: [
         box(0, 0, 0, 3, .9, .7, "body"), cyl("x", 4.25, 0, 0, 5.5, .22, "metal"), cyl("x", 4, -.45, 0, 5, .18, "dark"),
         box(4, -.75, 0, 2, .5, .6, "body"), box(-2.6, -.2, 0, 2.6, .8, .6, "body"), box(-4, -.3, 0, .3, 1.2, .6, "dark"), box(-1, -.9, 0, .5, .9, .5, "dark") ] },
-      longwatch: { mounts: { optic: [.5, .4, 0], muzzle: [8, 0, 0], grip: [4, -.35, 0] }, parts: [
+      longwatch: { mounts: { optic: [.5, .4, 0], muzzle: [8, 0, 0], grip: [4, -.35, 0] }, sight: [-3.2, .5, 0], parts: [
         box(0, 0, 0, 4, .8, .6, "body"), cyl("x", 5, 0, 0, 6, .13, "metal"), box(3.5, 0, 0, 3, .6, .55, "body"),
         box(-3.4, -.1, 0, 2.8, .9, .55, "body"), box(-3.2, .5, 0, 1.4, .25, .45, "dark"), box(-1, -.9, 0, .5, 1, .45, "dark"), box(.6, -.8, 0, .6, .9, .45, "dark"),
         box(5.5, -.4, .25, .1, .8, .1, "metal"), box(5.5, -.4, -.25, .1, .8, .1, "metal") ] },
-      p45: { mounts: { optic: [0, .7, 0], muzzle: [1.7, .3, 0] }, parts: [
+      p45: { mounts: { optic: [0, .7, 0], muzzle: [1.7, .3, 0] }, sight: [-.25, .7, 0], parts: [
         box(0, .3, 0, 3, .7, .6, "body"), box(-.2, -.2, 0, 2.8, .35, .5, "dark"), box(-1, -1.1, 0, .9, 1.8, .55, "dark"),
         box(.6, -.5, 0, .8, .12, .4, "dark"), cyl("x", 1.7, .3, 0, .3, .13, "metal"), box(1.3, .72, 0, .2, .15, .1, "dark") ] },
-      rattler: { mounts: { optic: [0, .6, 0], muzzle: [1.8, .2, 0] }, parts: [
+      rattler: { mounts: { optic: [0, .6, 0], muzzle: [1.8, .2, 0] }, sight: [-.35, .68, 0], parts: [
         box(0, .2, 0, 2.6, .8, .7, "body"), box(-.9, -.8, 0, .7, 1.4, .55, "dark"), box(.4, -1.5, 0, .45, 1.8, .4, "dark"),
         cyl("x", 1.6, .2, 0, .5, .16, "metal"), box(.5, -.3, 0, .8, .1, .4, "dark"), box(-1.1, .75, 0, .5, .15, .4, "metal") ] },
-      magnum: { mounts: { optic: [.8, .6, 0], muzzle: [3.5, .1, 0] }, parts: [
+      magnum: { mounts: { optic: [.8, .6, 0], muzzle: [3.5, .1, 0] }, sight: [.1, .6, 0], parts: [
         box(-.5, 0, 0, 1.6, .8, .5, "body"), cyl("x", 0, .05, 0, 1.4, .5, "body"), cyl("x", 2, .1, 0, 3, .2, "metal"),
         box(2, .35, 0, 3, .12, .2, "metal"), box(-1.5, -1, 0, .8, 1.9, .55, "dark"), box(-1.3, .55, 0, .3, .35, .2, "metal"), box(.3, -.5, 0, .8, .12, .4, "dark") ] },
       sledgehammer: { mounts: {}, parts: [
@@ -1423,19 +1649,23 @@
       concession(-90, -38, 1, -1);
       concession(90, 38, -1, 1);
       const cam = { x: -30, y: 1.8, z: HW + 4, yaw: Math.atan2(30, -(HW + 4)), pitch: -.05, vy: 0 };
+      let renderCam = cam, viewScale = 1.8, ads = 0, lean = 0, crouched = false, eyeHeight = 1.8;
       const keys = new Set();
-      const R = .35, STEP = .7, EYE = 1.8;
+      const isSprinting = () => keys.has("shift") && (keys.has("w") || keys.has("arrowup") || keys.has("s") || keys.has("arrowdown") || keys.has("a") || keys.has("d"));
+      const R = .35, STEP = .7, EYE = 1.8, CROUCH_EYE = 1.05;
       let grounded = true;
       const probe = (x, z, feet) => {
         let ground = 0;
         for (const c of colliders) {
           if (x + R <= c.x0 || x - R >= c.x1 || z + R <= c.z0 || z - R >= c.z1) continue;
           if (c.y1 <= feet + STEP) { if (c.y1 > ground) ground = c.y1; }
-          else if (c.y0 < feet + EYE) return -1;
+          else if (c.y0 < feet + eyeHeight) return -1;
         }
         return ground;
       };
-      let running = false, last = 0, gl, prog, loc, groundBuf, solidBuf, groundN, solidN;
+      let running = false, last = 0, lastRender = 0, lastHudAt = 0, gl, prog, loc, groundBuf, solidBuf, groundN, solidN;
+      const lowPowerDevice = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
+      const frameInterval = 16.67;
       const SKY = [.5, .87, 1];
       const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
       const LIGHT = [.35, .8, .5];
@@ -1519,9 +1749,9 @@
         if (!groups.length) return;
         gl.useProgram(texProg);
         const u = (n) => gl.getUniformLocation(texProg, n);
-        gl.uniform3f(u("cam"), cam.x, cam.y, cam.z);
+        gl.uniform3f(u("cam"), renderCam.x, renderCam.y, renderCam.z);
         gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
-        gl.uniform2f(u("fs"), 1.8 * gl.drawingBufferHeight / gl.drawingBufferWidth, 1.8);
+        gl.uniform2f(u("fs"), viewScale * gl.drawingBufferHeight / gl.drawingBufferWidth, viewScale);
         gl.uniform3f(u("sky"), ...SKY);
         setSmoke(texProg, true);
         gl.uniform1i(u("tex"), 0);
@@ -1571,7 +1801,7 @@
         gl.useProgram(skyProg);
         const u = (n) => gl.getUniformLocation(skyProg, n);
         gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
-        gl.uniform2f(u("fs"), 1.8 * gl.drawingBufferHeight / gl.drawingBufferWidth, 1.8);
+        gl.uniform2f(u("fs"), viewScale * gl.drawingBufferHeight / gl.drawingBufferWidth, viewScale);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, skyTex); gl.uniform1i(u("tex"), 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf);
         gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -1629,9 +1859,9 @@
         if (!logoReady) return;
         gl.useProgram(logoProg);
         const u = (n) => gl.getUniformLocation(logoProg, n);
-        gl.uniform3f(u("cam"), cam.x, cam.y, cam.z);
+        gl.uniform3f(u("cam"), renderCam.x, renderCam.y, renderCam.z);
         gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
-        gl.uniform2f(u("fs"), 1.8 * gl.drawingBufferHeight / gl.drawingBufferWidth, 1.8);
+        gl.uniform2f(u("fs"), viewScale * gl.drawingBufferHeight / gl.drawingBufferWidth, viewScale);
         gl.uniform3f(u("sky"), ...SKY);
         gl.bindTexture(gl.TEXTURE_2D, logoTex); gl.uniform1i(u("tex"), 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, logoBuf);
@@ -1676,10 +1906,11 @@
       const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return skinOf(w) ? (m === "metal" ? fin : materials[m]) : (m === "body" ? fin : materials[m]); };
       function buildWeapon(item) {
         const def = modelDefs[item.id], cfg = customOf(item), kind = kinds[item.type];
-        const base = buildPolys(def.parts).flatMap((poly) => poly.v);
+        const base = buildPolys([...def.parts, ...(def.mag || [])]).flatMap((poly) => poly.v);
         const lo = [0, 1, 2].map((i) => Math.min(...base.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...base.map((q) => q[i])));
         const mid = lo.map((v, i) => (v + hi[i]) / 2);
         const polys = buildPolys([...def.parts, ...attachmentParts(item, cfg)]);
+        const magPolys = buildPolys(def.mag || []);
         const all = polys.flatMap((poly) => poly.v), tip = Math.max(...all.map((q) => q[0])) - mid[0], rear = mid[0] - Math.min(...all.map((q) => q[0]));
         const mods = { dmg: 0, rng: 0, mob: 0 };
         Object.keys(attachmentOptions).forEach((kd) => { if (def.mounts[kd]) Object.entries(optionOf(kd, cfg[kd]).mod).forEach(([a, v]) => { mods[a] += v; }); });
@@ -1687,7 +1918,8 @@
         const stats = { dmg: f(item.dmg, mods.dmg), rng: f(item.rng, mods.rng), mob: f(item.mob, mods.mob) };
         const old = weapons[item.id];
         const mag = kind.mag;
-        return { item, kind, cfg, polys, mid, tip, rear, stats, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
+        const sight = cfg.optic !== "none" && def.mounts.optic ? def.mounts.optic : def.sight || def.mounts.optic || [0, 0, 0];
+        return { item, kind, cfg, polys, magPolys, mid, tip, rear, stats, sight, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
           ammo: old ? old.ammo : mag, reserve: old ? old.reserve : mag * 4, next: 0, reloadEnd: 0, swingStart: -1, swingHit: false, kick: 0, flash: 0 };
       }
       const wpn = () => weapons[loadout[curSlot]];
@@ -1714,6 +1946,53 @@
         qb(list, -.46, -.3, 1.0, 1.5, -.1, .1, body, tf); qb(list, .3, .46, 1.0, 1.5, -.1, .1, body, tf);
         qb(list, -.2, .2, 1.58, 2, -.2, .2, skin, tf);
         qb(list, -.21, .21, 1.76, 1.82, -.21, .21, "#c42a30", tf);
+      }
+      function operatorMeshQuads(list, player, teamColor) {
+        const state = player.state, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
+        const height = state.crouched ? CROUCH_EYE : EYE, base = state.y - height, leanAngle = -(state.lean || 0) * .24;
+        const lc = Math.cos(leanAngle), ls = Math.sin(leanAngle);
+        const transform = ([x, y, z]) => {
+          const lx = x * lc - y * ls, ly = x * ls + y * lc;
+          return [state.x + lx * c + z * s, base + ly, state.z - lx * s + z * c];
+        };
+        const box = (x, y, z, w, h, d, color) => qb(list, x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - d / 2, z + d / 2, color, transform);
+        if (state.crouched) {
+          box(-.16, .15, .26, .24, .24, .54, "#252b25"); box(.16, .15, .26, .24, .24, .54, "#252b25");
+          box(-.16, .42, -.02, .27, .38, .43, "#414a3d"); box(.16, .42, -.02, .27, .38, .43, "#414a3d");
+          box(0, .62, -.01, .46, .28, .42, "#343a33");
+          box(0, 1.0, -.02, .65, .63, .38, teamColor);
+          box(-.43, .95, .04, .2, .58, .24, "#414a3d"); box(.43, .95, .04, .2, .58, .24, "#414a3d");
+          box(0, 1.0, .21, .4, .4, .08, "#343a33");
+          box(0, 1.43, -.01, .3, .32, .3, "#c8a47a");
+          box(0, 1.62, -.02, .4, .15, .38, "#414a3d");
+        } else {
+          box(-.16, .14, .03, .24, .28, .42, "#252b25"); box(.16, .14, .03, .24, .28, .42, "#252b25");
+          box(-.16, .51, 0, .25, .48, .3, "#414a3d"); box(.16, .51, 0, .25, .48, .3, "#414a3d");
+          box(0, .91, 0, .48, .34, .34, "#343a33");
+          box(0, 1.32, 0, .68, .68, .4, teamColor);
+          box(-.43, 1.27, .01, .2, .62, .25, "#414a3d"); box(.43, 1.27, .01, .2, .62, .25, "#414a3d");
+          box(0, 1.28, .22, .42, .42, .08, "#343a33");
+          box(0, 1.78, 0, .31, .34, .31, "#c8a47a");
+          box(0, 1.97, -.01, .41, .15, .39, "#414a3d");
+        }
+        box(0, state.crouched ? .79 : 1.22, .245, .12, .12, .035, "#d3ef59");
+      }
+      function droneWorldQuads(list, state) {
+        const c = Math.cos(state.yaw || 0), s = Math.sin(state.yaw || 0);
+        const transform = ([x, y, z]) => [state.x + x * c + z * s, state.y + y, state.z - x * s + z * c];
+        const box = (x, y, z, w, h, d, color, tf = transform) => qb(list, x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - d / 2, z + d / 2, color, tf);
+        box(0, .12, 0, .34, .12, .34, "#343a3b");
+        box(0, .13, 0, .92, .035, .06, "#262c2d"); box(0, .13, 0, .06, .035, .92, "#262c2d");
+        [[-.4, -.4], [-.4, .4], [.4, -.4], [.4, .4]].forEach(([x, z], index) => {
+          box(x, .18, z, .14, .05, .14, "#707a72");
+          const angle = tNow * 32 + index, rc = Math.cos(angle), rs = Math.sin(angle);
+          const rotor = ([px, py, pz]) => {
+            const rx = px * rc - pz * rs, rz = px * rs + pz * rc;
+            return transform([x + rx, py + .21, z + rz]);
+          };
+          box(0, 0, 0, .34, .012, .04, "#a9b5a2", rotor);
+        });
+        box(0, .1, .2, .12, .09, .06, "#d3ef59");
       }
 
       // ---- Ray casting against colliders, ground and dummies ----
@@ -1824,14 +2103,14 @@
       }
       function placeBarricade() {
         if (barCount <= 0) return say("NO BARRICADES LEFT");
-        const ex = aimedBarricade([cam.x, cam.y, cam.z], aimDir(), 4.2);
+        const ex = aimedBarricade([renderCam.x, renderCam.y, renderCam.z], aimDir(), 4.2);
         if (ex) {
           const cap = ex.steel ? STEEL_HP : CELL_HP;
           if (ex.hp.every((v) => v >= cap)) return say("BARRICADE INTACT");
           ex.hp.fill(cap); ex.dirty = true; barCount--; return say("BARRICADE REPAIRED");
         }
         const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
-        const dr = [sy * cp, sp2, cy * cp], o = [cam.x, cam.y, cam.z];
+        const dr = [sy * cp, sp2, cy * cp], o = [renderCam.x, renderCam.y, renderCam.z];
         const axes = Math.abs(dr[0]) > Math.abs(dr[2]) ? [0, 2] : [2, 0];
         let fit = null;
         for (let t = .4; t <= 4.2 && !fit; t += .04) {
@@ -1841,9 +2120,9 @@
         }
         if (!fit) return say("NO OPENING TO BARRICADE");
         const h = BAR_TH / 2 + R, pl = [cam.x, 0, cam.z];
-        if (Math.abs(pl[fit.ax] - fit.n) < h && pl[fit.ta] > fit.a0 - R && pl[fit.ta] < fit.a1 + R && cam.y - EYE < fit.y1 && cam.y > fit.y0) return say("STEP BACK");
+        if (Math.abs(pl[fit.ax] - fit.n) < h && pl[fit.ta] > fit.a0 - R && pl[fit.ta] < fit.a1 + R && cam.y - eyeHeight < fit.y1 && cam.y > fit.y0) return say("STEP BACK");
         const cols = Math.max(2, Math.round((fit.a1 - fit.a0) / CELL)), rows = Math.max(2, Math.round((fit.y1 - fit.y0) / CELL));
-        const b = Object.assign(fit, { cols, rows, cw: (fit.a1 - fit.a0) / cols, ch: (fit.y1 - fit.y0) / rows, hp: new Float32Array(cols * rows).fill(CELL_HP), solids: [], quads: [], dirty: true, seed: Math.floor(Math.random() * 4) });
+        const b = Object.assign(fit, { cols, rows, cw: (fit.a1 - fit.a0) / cols, ch: (fit.y1 - fit.y0) / rows, hp: new Float32Array(cols * rows).fill(CELL_HP), solids: [], quads: [], dirty: true, seed: 0 });
         barricades.push(b); rebuildBarricade(b); barCount--; say("BARRICADE PLACED");
       }
       function resetBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; debris = []; projectiles = []; smokes = []; barCount = 6; Object.keys(charges).forEach((k) => delete charges[k]); }
@@ -1854,7 +2133,7 @@
         const rx = (Math.random() * 2 - 1) * spread, ry = (Math.random() * 2 - 1) * spread;
         let dr = fwd.map((v, i) => v + right[i] * rx + up[i] * ry);
         const n = Math.hypot(...dr); dr = dr.map((v) => v / n);
-        const o = [cam.x, cam.y, cam.z];
+        const o = [renderCam.x, renderCam.y, renderCam.z];
         let tw = dr[1] < 0 ? -o[1] / dr[1] : Infinity;
         let wall = null;
         for (const c of colliders) { const t = rayBox(o, dr, c); if (t < tw) { tw = t; wall = c; } }
@@ -1866,6 +2145,22 @@
           const t = Math.min(bb, hb);
           if (t < bt) { bt = t; best = d; head = hb < bb; }
         });
+        let playerTarget = null, playerDistance = Infinity;
+        multiplayer.remotePlayers.forEach((other) => {
+          const state = other.state;
+          if (!state || other.team === multiplayer.match?.team || other.health <= 0) return;
+          const base = state.y - (state.crouched ? CROUCH_EYE : EYE), leanX = Math.cos(state.yaw) * (state.lean || 0) * .7, leanZ = -Math.sin(state.yaw) * (state.lean || 0) * .7;
+          const distance = rayBox(o, dr, { x0: state.x + leanX - .45, x1: state.x + leanX + .45, y0: base + .05, y1: base + (state.crouched ? 1.7 : 2), z0: state.z + leanZ - .35, z1: state.z + leanZ + .35 });
+          if (distance < playerDistance) { playerDistance = distance; playerTarget = other; }
+        });
+        if (playerTarget && playerDistance < tw && playerDistance < bt && playerDistance <= reach) {
+          const effectiveRange = reach / 2;
+          const falloff = playerDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (playerDistance - effectiveRange) / effectiveRange * .65);
+          const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul);
+          multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage, direction: { x: dr[0], y: dr[1], z: dr[2] } }));
+          recordHit(w.item.id); mark(false);
+          return;
+        }
         if (wall && wall.bar && tw <= reach && tw < bt) {
           const k = w.kind, p = o.map((v, i) => v + dr[i] * (tw + .01));
           const power = w.stats.dmg * k.mult * damageMul;
@@ -1889,15 +2184,103 @@
       }
       // ---- Gadgets and equipment ----
       let projectiles = [], smokes = [];
+      const drone = { active: false, returnTo: null, nextScan: 0, tags: new Map() };
       const SMOKE_R = 4.5, SMOKE_LIFE = 16;
       const charges = {};
+      let droneAudioContext = null, droneHumNodes = [];
+      function getDroneAudioContext() {
+        if (!window.AudioContext) return null;
+        droneAudioContext ||= new AudioContext();
+        if (droneAudioContext.state === "suspended") droneAudioContext.resume().catch((error) => console.warn("Drone audio could not start:", error));
+        return droneAudioContext;
+      }
+      function startDroneHum() {
+        const context = getDroneAudioContext();
+        if (!context || droneHumNodes.length) return;
+        const master = context.createGain();
+        master.gain.setValueAtTime(.026, context.currentTime);
+        master.connect(context.destination);
+        const nodes = [master];
+        [[72, .6], [76, .35]].forEach(([frequency, volume]) => {
+          const oscillator = context.createOscillator(), gain = context.createGain();
+          oscillator.type = "sawtooth"; oscillator.frequency.value = frequency; gain.gain.value = volume;
+          oscillator.connect(gain); gain.connect(master); oscillator.start();
+          nodes.push(oscillator, gain);
+        });
+        const lfo = context.createOscillator(), lfoGain = context.createGain();
+        lfo.frequency.value = 18; lfoGain.gain.value = .009; lfo.connect(lfoGain); lfoGain.connect(master.gain); lfo.start();
+        nodes.push(lfo, lfoGain);
+        droneHumNodes = nodes;
+      }
+      function stopDroneHum() {
+        if (!droneHumNodes.length) return;
+        const context = droneAudioContext, [master, ...nodes] = droneHumNodes;
+        master.gain.cancelScheduledValues(context.currentTime);
+        master.gain.setTargetAtTime(0, context.currentTime, .04);
+        nodes.filter((node) => typeof node.stop === "function").forEach((node) => node.stop(context.currentTime + .18));
+        droneHumNodes = [];
+      }
+      function playDronePing() {
+        const context = getDroneAudioContext();
+        if (!context) return;
+        const oscillator = context.createOscillator(), gain = context.createGain(), start = context.currentTime;
+        oscillator.type = "sine"; oscillator.frequency.setValueAtTime(720, start); oscillator.frequency.exponentialRampToValueAtTime(1180, start + .18);
+        gain.gain.setValueAtTime(.045, start); gain.gain.exponentialRampToValueAtTime(.0001, start + .24);
+        oscillator.connect(gain); gain.connect(context.destination); oscillator.start(start); oscillator.stop(start + .25);
+      }
+      function droneTargets() {
+        const targets = [];
+        dummies.forEach((dummy, index) => {
+          if (dummy.hp > 0) targets.push({ id: `dummy-${index}`, name: "TRAINING TARGET", x: dummy.x, y: 1.9, z: dummy.z });
+        });
+        multiplayer.remotePlayers.forEach((player) => {
+          const state = player.state;
+          if (!state || player.team === multiplayer.match?.team || player.health <= 0) return;
+          targets.push({ id: `player-${player.id}`, name: player.name || "HOSTILE", x: state.x + Math.cos(state.yaw) * (state.lean || 0) * .7, y: state.y - Math.abs(state.lean || 0) * .12 - (state.crouched ? CROUCH_EYE : EYE) + (state.crouched ? 1.43 : 1.8), z: state.z - Math.sin(state.yaw) * (state.lean || 0) * .7 });
+        });
+        return targets;
+      }
+      function scanDrone() {
+        if (tNow < drone.nextScan) return say(`SCAN RECHARGING · ${Math.ceil(drone.nextScan - tNow)}s`);
+        drone.nextScan = tNow + 4;
+        let tagged = 0;
+        droneTargets().forEach((target) => {
+          const dx = target.x - cam.x, dy = target.y - cam.y, dz = target.z - cam.z, distance = Math.hypot(dx, dy, dz);
+          if (distance < .001 || distance > 22 || colliders.some((collider) => rayBox([cam.x, cam.y, cam.z], [dx / distance, dy / distance, dz / distance], collider) < distance - .15)) return;
+          drone.tags.set(target.id, { expires: tNow + 8, name: target.name });
+          tagged++;
+        });
+        playDronePing();
+        say(tagged ? `SCAN COMPLETE · ${tagged} HOSTILE${tagged === 1 ? "" : "S"} TAGGED` : "SCAN COMPLETE · NO HOSTILES");
+      }
       const flashEl = document.createElement("div");
       flashEl.style.cssText = "position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity 1.6s ease-out";
       el.appendChild(flashEl);
       const aimDir = () => { const cp = Math.cos(cam.pitch); return [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp]; };
+      function deployDrone() {
+        if (drone.active) return;
+        drone.returnTo = { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch, vy: cam.vy, lean, crouched };
+        const direction = aimDir();
+        cam.x += direction[0] * .8; cam.z += direction[2] * .8;
+        cam.y = .42; cam.vy = 0; cam.pitch = 0; lean = 0; mouseDown = false;
+        drone.active = true;
+        drone.nextScan = tNow;
+        startDroneHum();
+        say("DRONE DEPLOYED · WASD DRIVE · SPACE SCAN · G RECALL");
+      }
+      function recallDrone() {
+        if (!drone.active || !drone.returnTo) return;
+        const returnTo = drone.returnTo;
+        Object.assign(cam, returnTo);
+        crouched = returnTo.crouched; eyeHeight = crouched ? CROUCH_EYE : EYE;
+        drone.active = false; drone.returnTo = null; lean = returnTo.lean; mouseDown = false;
+        stopDroneHum();
+        say("DRONE RECALLED");
+      }
       function useHeld(w) {
         const id = w.item.id, left = charges[id] ?? w.kind.uses;
-        const o = [cam.x, cam.y, cam.z], dr = aimDir();
+        const o = [renderCam.x, renderCam.y, renderCam.z], dr = aimDir();
+        if (id === "drone") { deployDrone(); return; }
         if (id === "steel-bars") {
           if (left <= 0) return say("OUT OF STEEL BARS");
           const bar = aimedBarricade(o, dr, 3.5);
@@ -1925,7 +2308,7 @@
           const sm = smokes[smokes.length - 1 - i];
           if (!sm || !on) continue;
           const g = smokeFade(sm);
-          c.set([sm.x - cam.x, sm.y - cam.y, sm.z - cam.z, SMOKE_R * (.4 + .6 * Math.min(1, (tNow - sm.t0) / 1.5))], i * 4); f[i] = g;
+          c.set([sm.x - renderCam.x, sm.y - renderCam.y, sm.z - renderCam.z, SMOKE_R * (.4 + .6 * Math.min(1, (tNow - sm.t0) / 1.5))], i * 4); f[i] = g;
         }
         gl.uniform4fv(gl.getUniformLocation(program, "smc"), c); gl.uniform3fv(gl.getUniformLocation(program, "smf"), f);
       }
@@ -1994,21 +2377,37 @@
           if (t >= .3 && !w.swingHit) { w.swingHit = true; trace(w, 2.5 + w.stats.rng * .5 + 1, 1); }
           if (t >= 1) w.swingStart = -1;
         }
-        const wantsFire = locked() && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
+        const sprinting = !crouched && isSprinting();
+        if (sprinting) pressedAt = -1;
+        const wantsFire = !sprinting && locked() && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
         if (wantsFire && !w.reloadEnd && tNow >= w.next && w.swingStart < 0) { fire(w); pressedAt = -1; }
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
-      let mouseDown = false, lastT = 0, pressedAt = -1;
+      let mouseDown = false, mouseAim = false, sprintPose = 0, lastT = 0, pressedAt = -1;
       function viewmodelQuads(w, moving) {
         const k = w.kick, bob = moving ? Math.sin(tNow * 9) * .008 : Math.sin(tNow * 1.5) * .002;
         let ang = k * .07, offY = -.2 + bob, offX = .17 + Math.cos(tNow * 4.5) * (moving ? .006 : 0), offZ = .22 + w.rear * K - k * .05;
+        const reloadProgress = w.reloadEnd ? Math.max(0, Math.min(1, (tNow - w.reloadStart) / w.kind.reload)) : 1;
+        const reloadDip = w.reloadEnd ? Math.sin(Math.PI * reloadProgress) : 0;
         if (w.kind.melee) {
           ang = .9; offX = .3; offY = -.12; offZ = .55;
           if (w.swingStart >= 0) { const t = Math.min(1, (tNow - w.swingStart) / .45); ang = .9 - 1.8 * Math.sin(Math.PI * Math.min(1, t)); offZ += .15 * Math.sin(Math.PI * t); }
         }
         let vs = 1;
         if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
-        if (w.reloadEnd) { const t = (tNow - w.reloadStart) / w.kind.reload; ang -= .5 * Math.sin(Math.PI * t); offY -= .18 * Math.sin(Math.PI * t); }
+        if (w.reloadEnd) { ang -= .42 * reloadDip; offY -= .34 * reloadDip; offX += .1 * reloadDip; offZ -= .24 * reloadDip; }
+        offY -= sprintPose * .48;
+        offX += sprintPose * .12;
+        offZ -= sprintPose * .28;
+        ang += sprintPose * .38;
+        const aim = w.kind.held || w.kind.melee ? 0 : ads * (1 - sprintPose) * (1 - reloadDip);
+        vs = 1 - aim * .18;
+        if (aim) {
+          const sx = w.sight[0] - w.mid[0], sy = w.sight[1] - w.mid[1], sz = w.sight[2] - w.mid[2];
+          const sightY = (sx * Math.sin(ang) + sy * Math.cos(ang)) * K * vs;
+          offX += (-sz * K * vs - offX) * aim;
+          offY += (-sightY - offY) * aim;
+        }
         const ca = Math.cos(ang), sa = Math.sin(ang);
         const place = (q) => {
           const x = q[0] - w.mid[0], y = q[1] - w.mid[1], z = q[2] - w.mid[2];
@@ -2016,6 +2415,11 @@
           return [z * K * vs + offX, yr * K * vs + offY, xr * K * vs + offZ];
         };
         const list = w.polys.map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv }));
+        if (w.magPolys.length) {
+          const magOffset = w.reloadEnd ? Math.max(0, Math.min(1, (reloadProgress - .16) / .18, (.78 - reloadProgress) / .2)) : 0;
+          const placeMagazine = (q) => { const p = place(q); return [p[0] + .18 * magOffset, p[1] - .3 * magOffset, p[2]]; };
+          w.magPolys.forEach((poly) => list.push({ pts: poly.v.map(placeMagazine), color: colorOf(w, poly.m), uv: poly.uv }));
+        }
         if (w.flash > 0 && !w.kind.melee) {
           const mx = w.mid[0] + w.tip + .1, my = w.mid[1] + w.muzzle[0], mz = w.mid[2] + w.muzzle[1], r = .9 + Math.random() * .5;
           list.push({ pts: [[mx, my - r, mz], [mx + r * 2, my, mz], [mx, my + r, mz], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#ffd96b" });
@@ -2023,6 +2427,23 @@
         }
         const sk = skinOf(w);
         if (sk) list.forEach((q) => { if (q.uv) q.skin = sk; });
+        return list;
+      }
+      function droneViewmodelQuads() {
+        const list = [], y = -.55, z = 1.25;
+        qb(list, -.2, .2, y - .07, y + .07, z - .2, z + .2, "#343a3b");
+        qb(list, -.48, .48, y - .025, y + .025, z - .035, z + .035, "#262c2d");
+        qb(list, -.035, .035, y - .025, y + .025, z - .48, z + .48, "#262c2d");
+        [[-.4, -.4], [-.4, .4], [.4, -.4], [.4, .4]].forEach(([x, dz], index) => {
+          qb(list, x - .07, x + .07, y - .01, y + .02, z + dz - .07, z + dz + .07, "#707a72");
+          const angle = tNow * 32 + index;
+          const transform = ([px, py, pz]) => {
+            const dx = px * Math.cos(angle) - pz * Math.sin(angle), dz2 = px * Math.sin(angle) + pz * Math.cos(angle);
+            return [x + dx, y + py + .035, z + dz + dz2];
+          };
+          qb(list, -.19, .19, -.006, .006, -.025, .025, "#a9b5a2", transform);
+        });
+        qb(list, -.055, .055, y - .09, y - .015, z + .16, z + .23, "#d3ef59");
         return list;
       }
       const skinTex = {};
@@ -2043,7 +2464,7 @@
         const bySkin = new Map();
         list.forEach((q) => { if (!bySkin.has(q.skin)) bySkin.set(q.skin, []); bySkin.get(q.skin).push(q); });
         gl.useProgram(skinProg);
-        gl.uniform2f(gl.getUniformLocation(skinProg, "fs"), 1.8 * gl.drawingBufferHeight / gl.drawingBufferWidth, 1.8);
+        gl.uniform2f(gl.getUniformLocation(skinProg, "fs"), viewScale * gl.drawingBufferHeight / gl.drawingBufferWidth, viewScale);
         const lp = gl.getAttribLocation(skinProg, "p"), lt = gl.getAttribLocation(skinProg, "t"), ls = gl.getAttribLocation(skinProg, "s");
         bySkin.forEach((qs, sk) => {
           if (!skinTex[sk.id]) {
@@ -2081,50 +2502,125 @@
         drawBuf(dynBuf, d.length / 6);
       }
       const weaponHud = document.querySelector("#field-weapon");
+      const fieldPos = document.querySelector("#field-pos");
+      const fieldTags = document.querySelector("#field-tags");
+      const tagElements = new Map();
+      const scoreboardTeam1 = document.querySelector("#scoreboard-team1");
+      const scoreboardTeam2 = document.querySelector("#scoreboard-team2");
+      const scoreboardScore = document.querySelector("#scoreboard-score");
+      function operatorState() {
+        const body = drone.active ? drone.returnTo : cam, bodyLean = drone.active ? body.lean : lean;
+        return {
+          x: body.x, y: body.y, z: body.z,
+          yaw: body.yaw, pitch: body.pitch, crouched: drone.active ? body.crouched : crouched, lean: bodyLean
+        };
+      }
+      function updateDroneTags() {
+        const targets = new Map(droneTargets().map((target) => [target.id, target]));
+        drone.tags.forEach((tag, id) => {
+          const target = targets.get(id);
+          if (tag.expires <= tNow || !target) {
+            drone.tags.delete(id);
+            tagElements.get(id)?.remove();
+            tagElements.delete(id);
+            return;
+          }
+          let marker = tagElements.get(id);
+          if (!marker) {
+            marker = document.createElement("div"); marker.className = "field-tag"; marker.textContent = tag.name;
+            fieldTags.appendChild(marker); tagElements.set(id, marker);
+          }
+          const dx = target.x - renderCam.x, dy = target.y - renderCam.y, dz = target.z - renderCam.z;
+          const x1 = dx * Math.cos(cam.yaw) - dz * Math.sin(cam.yaw);
+          const z1 = dx * Math.sin(cam.yaw) + dz * Math.cos(cam.yaw);
+          const depth = z1 * Math.cos(cam.pitch) + dy * Math.sin(cam.pitch);
+          const x = 50 + (x1 / Math.max(.1, depth)) * viewScale * 50 * (canvas.clientHeight || 1) / (canvas.clientWidth || 1);
+          const y = 50 - ((dy * Math.cos(cam.pitch) - z1 * Math.sin(cam.pitch)) / Math.max(.1, depth)) * viewScale * 50;
+          marker.style.display = depth > 0 && x > 2 && x < 98 && y > 2 && y < 98 ? "block" : "none";
+          marker.style.left = `${x}%`; marker.style.top = `${y}%`;
+        });
+      }
       function updateHud() {
         const w = wpn(), k = w.kind;
         const ammo = k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
         weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">[1] ${weapons[loadout.primary].item.name} · [2] ${weapons[loadout.secondary].item.name} · [3] ${weapons[loadout.gadget].item.name} · [4] ${weapons[loadout.equipment].item.name} · KILLS ${kills}</div><div style="opacity:.75">[F] BARRICADES ${barCount}</div>`;
+        if (multiplayer.match) {
+          const players = multiplayer.match.players || [];
+          const first = players.filter((player) => player.team === 1), second = players.filter((player) => player.team === 2);
+          const score = (team) => team.reduce((sum, player) => sum + (player.kills || 0), 0);
+          const label = (team) => team.map((player) => `${player.name} ${player.kills || 0}/${player.deaths || 0} ${player.health ?? 100}HP`).join(" · ") || "WAITING";
+          scoreboardTeam1.textContent = `TEAM 1 · ${label(first)}`;
+          scoreboardTeam2.textContent = `TEAM 2 · ${label(second)}`;
+          scoreboardScore.textContent = `${score(first)} — ${score(second)}`;
+        } else {
+          scoreboardTeam1.textContent = ""; scoreboardTeam2.textContent = "";
+          scoreboardScore.textContent = "PRACTICE";
+        }
       }
 
       function frame(now) {
         if (!running) return;
+        if (lastRender && now - lastRender < frameInterval) { requestAnimationFrame(frame); return; }
         const dt = Math.min(.05, (now - last) / 1000); last = now;
+        lastRender = now;
         const k = (n) => keys.has(n);
-        cam.yaw += ((k("arrowright") || k("e")) - (k("arrowleft") || k("q"))) * 1.8 * dt;
+        cam.yaw += (k("arrowright") - k("arrowleft")) * 1.8 * dt;
+        const sprinting = !drone.active && !crouched && isSprinting();
+        ads += ((mouseAim && !sprinting ? 1 : 0) - ads) * Math.min(1, dt * 12);
+        sprintPose += ((sprinting ? 1 : 0) - sprintPose) * Math.min(1, dt * 8);
+        lean += (((!drone.active && k("e") ? 1 : 0) - (!drone.active && k("q") ? 1 : 0)) - lean) * Math.min(1, dt * 10);
+        viewScale = 1.8 * (1 + ads * .2);
         tNow = now / 1000;
         if (!lastT) lastT = tNow;
         dummies.forEach((d, i) => { d.hit = Math.max(0, d.hit - (tNow - lastT)); if (d.move && d.hp > 0) d.z = d.z0 + Math.sin(tNow * .7 + i) * 4; });
         const cw = wpn();
-        const sp = (k("shift") ? 11 : 5.5) * dt * (.85 + cw.stats.mob * .03);
+        const sp = (drone.active ? 3.5 : sprinting ? 8.5 : 5.5) * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
         const fwd = (k("w") || k("arrowup")) - (k("s") || k("arrowdown")), str = k("d") - k("a");
         const mx = (Math.sin(cam.yaw) * fwd + Math.cos(cam.yaw) * str) * sp, mz = (Math.cos(cam.yaw) * fwd - Math.sin(cam.yaw) * str) * sp;
-        let feet = cam.y - EYE;
+        let feet = drone.active ? .1 : cam.y - eyeHeight;
+        if (drone.active) { cam.y = .42; cam.vy = 0; }
         if (probe(cam.x + mx, cam.z, feet) >= 0) cam.x += mx;
         if (probe(cam.x, cam.z + mz, feet) >= 0) cam.z += mz;
         cam.x = Math.max(-HL - 40, Math.min(HL + 40, cam.x));
         cam.z = Math.max(-ZB - 9.4, Math.min(ZB + 3.4, cam.z));
-        cam.vy -= 20 * dt;
-        let nf = feet + cam.vy * dt;
-        const g = Math.max(0, probe(cam.x, cam.z, feet));
-        if (cam.vy > 0) {
-          for (const c of colliders) {
-            if (cam.x + R <= c.x0 || cam.x - R >= c.x1 || cam.z + R <= c.z0 || cam.z - R >= c.z1) continue;
-            if (c.y0 >= feet + EYE - 1e-6 && c.y0 < nf + EYE) { nf = c.y0 - EYE; cam.vy = 0; }
+        if (drone.active) { cam.y = .42; cam.vy = 0; grounded = false; }
+        else {
+          cam.vy -= 20 * dt;
+          let nf = feet + cam.vy * dt;
+          const g = Math.max(0, probe(cam.x, cam.z, feet));
+          if (cam.vy > 0) {
+            for (const c of colliders) {
+              if (cam.x + R <= c.x0 || cam.x - R >= c.x1 || cam.z + R <= c.z0 || cam.z - R >= c.z1) continue;
+              if (c.y0 >= feet + eyeHeight - 1e-6 && c.y0 < nf + eyeHeight) { nf = c.y0 - eyeHeight; cam.vy = 0; }
+            }
           }
+          grounded = false;
+          if (nf <= g) { nf = g; cam.vy = 0; grounded = true; }
+          cam.y = nf + eyeHeight;
         }
-        grounded = false;
-        if (nf <= g) { nf = g; cam.vy = 0; grounded = true; }
-        cam.y = nf + EYE;
-        const dpr = window.devicePixelRatio || 1;
-        const w = canvas.width = Math.round(canvas.clientWidth * dpr), h = canvas.height = Math.round(canvas.clientHeight * dpr);
+        renderCam = { x: cam.x + Math.cos(cam.yaw) * lean * .7, y: cam.y - Math.abs(lean) * .12, z: cam.z - Math.sin(cam.yaw) * lean * .7 };
+        const roll = lean * 12 * Math.PI / 180;
+        const leanScale = Math.cos(Math.abs(roll)) + Math.sin(Math.abs(roll)) * canvas.clientWidth / Math.max(1, canvas.clientHeight);
+        canvas.style.transform = drone.active ? "none" : `rotate(${-lean * 12}deg) scale(${leanScale})`;
+        fieldTags.style.transform = canvas.style.transform;
+        if (multiplayer.match && multiplayer.connected && now - multiplayer.lastStateAt >= 50) {
+          const bodyState = operatorState();
+          multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch } : null } }));
+          multiplayer.lastStateAt = now;
+        }
+        const cssWidth = canvas.clientWidth || window.innerWidth, cssHeight = canvas.clientHeight || window.innerHeight;
+        const dpr = Math.min(window.devicePixelRatio || 1, lowPowerDevice ? 1 : 1.25);
+        const pixelBudget = lowPowerDevice ? 850000 : 1800000;
+        const pixelScale = Math.min(1, Math.sqrt(pixelBudget / (cssWidth * cssHeight)));
+        const w = Math.max(1, Math.round(cssWidth * dpr * pixelScale)), h = Math.max(1, Math.round(cssHeight * dpr * pixelScale));
+        if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
         gl.viewport(0, 0, w, h);
         gl.clearColor(...SKY, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.useProgram(prog);
         const u = (n) => gl.getUniformLocation(prog, n);
-        gl.uniform3f(u("cam"), cam.x, cam.y, cam.z);
+        gl.uniform3f(u("cam"), renderCam.x, renderCam.y, renderCam.z);
         gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
-        gl.uniform2f(u("fs"), 1.8 * h / w, 1.8);
+        gl.uniform2f(u("fs"), viewScale * h / w, viewScale);
         gl.uniform3f(u("sky"), ...SKY);
         setSmoke(prog, true);
         gl.disable(gl.DEPTH_TEST);
@@ -2137,6 +2633,14 @@
         drawTex(texSolid);
         const dq = [];
         dummies.forEach((d) => dummyQuads(dq, d));
+        multiplayer.remotePlayers.forEach((player) => {
+          const state = player.state;
+          if (!state || player.health <= 0) return;
+          const uniform = player.team === multiplayer.match?.team;
+          operatorMeshQuads(dq, player, uniform ? "#667653" : "#8e4a3e");
+          if (state.droneState) droneWorldQuads(dq, state.droneState);
+        });
+        if (drone.active) operatorMeshQuads(dq, { state: operatorState() }, "#667653");
         barricades.slice().forEach((b) => { if (b.dirty) rebuildBarricade(b); dq.push(...b.quads); });
         const bdt = tNow - lastT;
         debris = debris.filter((p) => (p.life -= bdt) > 0);
@@ -2147,54 +2651,93 @@
         });
         stepProjectiles(bdt, dq);
         drawDynamic(dq, true);
-        updateWeapon(cw);
+        if (!drone.active) updateWeapon(cw);
         lastT = tNow;
         gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.uniform3f(u("cam"), 0, 0, 0);
         gl.uniform4f(u("rot"), 1, 0, 1, 0);
         setSmoke(prog, false);
-        const vm = viewmodelQuads(cw, fwd !== 0 || str !== 0);
+        const vm = drone.active ? droneViewmodelQuads() : viewmodelQuads(cw, fwd !== 0 || str !== 0);
         drawDynamic(vm.filter((q) => !q.skin), true);
         drawSkinned(vm.filter((q) => q.skin));
-        updateHud();
-        document.querySelector("#field-pos").textContent = `YARD ${Math.max(0, Math.round(50 - Math.abs(cam.x)))} · ${Math.round(((cam.yaw * 180 / Math.PI) % 360 + 360) % 360)}°`;
+        if (now - lastHudAt >= 100) {
+          updateDroneTags();
+          updateHud();
+          fieldPos.textContent = drone.active ? `DRONE · SCAN ${Math.max(0, Math.ceil(drone.nextScan - tNow))}s · ${drone.tags.size} TAGGED` : `YARD ${Math.max(0, Math.round(50 - Math.abs(cam.x)))} · ${Math.round(((cam.yaw * 180 / Math.PI) % 360 + 360) % 360)}°${crouched ? " · CROUCH" : ""}${ads > .5 ? " · ADS" : ""}${lean > .5 ? " · LEAN RIGHT" : lean < -.5 ? " · LEAN LEFT" : ""}`;
+          lastHudAt = now;
+        }
         requestAnimationFrame(frame);
       }
 
       const locked = () => document.pointerLockElement === canvas;
       canvas.addEventListener("click", () => { if (!locked()) canvas.requestPointerLock(); });
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
-      document.addEventListener("mousedown", (e) => { if (running && locked() && e.button === 0) { mouseDown = true; pressedAt = tNow; } });
-      document.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; });
-      document.addEventListener("pointerlockchange", () => { hint.style.display = running && !locked() ? "grid" : "none"; });
+      document.addEventListener("mousedown", (e) => { if (running && locked() && e.button === 0) { mouseDown = true; pressedAt = tNow; if (wpn().item.id === "drone") getDroneAudioContext(); } });
+      document.addEventListener("mousedown", (e) => { if (running && locked() && e.button === 2) mouseAim = true; });
+      document.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; if (e.button === 2) mouseAim = false; });
+      document.addEventListener("pointerlockchange", () => {
+        hint.style.display = running && !locked() ? "grid" : "none";
+        if (!locked()) { mouseDown = false; mouseAim = false; }
+      });
       document.addEventListener("mousemove", (e) => {
         if (!running || !locked()) return;
-        cam.yaw += e.movementX * .0025;
-        cam.pitch = Math.max(-1.4, Math.min(1.4, cam.pitch - e.movementY * .0025));
+        cam.yaw += e.movementX * .0025 * (1 - ads * .45);
+        cam.pitch = Math.max(-1.4, Math.min(1.4, cam.pitch - e.movementY * .0025 * (1 - ads * .45)));
       });
       document.addEventListener("keydown", (e) => {
         if (!running) return;
         const key = e.key.toLowerCase();
         if (key === "escape") return close();
-        if (key >= "1" && key <= "4") { const id = ["primary", "secondary", "gadget", "equipment"][key - 1]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
-        if (key === "r") startReload(wpn());
-        if (key === "f" && !e.repeat) placeBarricade();
-        if (key === " " && grounded) cam.vy = 6.5;
+        if (key === "g" && drone.active) { recallDrone(); return; }
+        if (key === " " && drone.active) { e.preventDefault(); if (!e.repeat) scanDrone(); return; }
+        if (!drone.active) {
+          if (key === "c" && !e.repeat) {
+            const feet = cam.y - eyeHeight;
+            crouched = !crouched; eyeHeight = crouched ? CROUCH_EYE : EYE; cam.y = feet + eyeHeight;
+          }
+          if (key >= "1" && key <= "4") { const id = ["primary", "secondary", "gadget", "equipment"][key - 1]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
+          if (key === "r") startReload(wpn());
+          if (key === "f" && !e.repeat) placeBarricade();
+          if (key === " " && grounded) cam.vy = 6.5;
+        }
         if (key.startsWith("arrow") || key === " ") e.preventDefault();
         keys.add(key);
       });
       document.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
       const hint = document.querySelector("#field-hint");
-      function close() { running = false; mouseDown = false; el.classList.remove("open"); keys.clear(); if (locked()) document.exitPointerLock(); }
+      function close() {
+        running = false; mouseDown = false; mouseAim = false; el.classList.remove("open"); keys.clear();
+        if (drone.active) recallDrone();
+        if (multiplayer.match && multiplayer.connected) multiplayer.socket.send(JSON.stringify({ type: "leave_match" }));
+        multiplayer.match = null; multiplayer.remotePlayers.clear();
+        if (locked()) document.exitPointerLock();
+      }
       document.querySelector("#field-exit").addEventListener("click", close);
-      return { open() {
+      return { close, open({ practice = false } = {}) {
+        if (drone.active) recallDrone();
+        crouched = false; eyeHeight = EYE; lean = 0;
         el.classList.add("open"); if (!gl) initGL();
+        if (practice) {
+          multiplayer.match = null; multiplayer.remotePlayers.clear();
+          cam.x = -30; cam.y = EYE; cam.z = HW + 4; cam.yaw = Math.atan2(30, -(HW + 4)); cam.pitch = -.05; cam.vy = 0;
+          resetDummies(); kills = 0;
+        } else if (multiplayer.match) {
+          const teammates = multiplayer.match.players.filter((player) => player.team === multiplayer.match.team);
+          const slot = Math.max(0, teammates.findIndex((player) => player.id === multiplayer.playerId));
+          cam.x = multiplayer.match.team === 1 ? -30 : 30;
+          cam.z = (slot - (teammates.length - 1) / 2) * 1.5;
+          cam.y = EYE;
+          cam.yaw = multiplayer.match.team === 1 ? Math.PI / 2 : -Math.PI / 2;
+          cam.pitch = 0;
+          cam.vy = 0;
+        }
         refreshWeapons(); resetBarricades(); if (!dummies.length) resetDummies(); curSlot = "primary"; lastT = 0;
-        running = true; last = performance.now(); requestAnimationFrame(frame);
+        running = true; last = performance.now(); lastRender = 0; lastHudAt = 0; requestAnimationFrame(frame);
         canvas.requestPointerLock && canvas.requestPointerLock();
       } };
     })();
     function openField() { fieldView.open(); }
+    function openFreeplay() { fieldView.open({ practice: true }); }
 
     setSection("PLAY");
 
@@ -2204,8 +2747,8 @@
         LOADOUT: `Loadout saved: ${loadoutSlots.map((slot) => chosen(slot).name).join(" · ")}.`,
         SETTINGS: "Settings applied."
       };
-      if (activeSection === "TRAINING") return startRange();
-      if (activeSection === "PLAY" && selection.PLAY.map.id === "field") return openField();
+      if (activeSection === "TRAINING") return selection.TRAINING.mode.id === "freeplay" ? openFreeplay() : startRange();
+      if (activeSection === "PLAY") return openMatchLobby();
       showToast(messages[activeSection]);
     });
     document.querySelector("#mode-button").addEventListener("click", () => {
