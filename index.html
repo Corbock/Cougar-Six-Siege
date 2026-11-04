@@ -446,7 +446,7 @@
       <div id="field-weapon" style="position:absolute;right:22px;bottom:20px;text-align:right;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 4px #000;font:600 16px/1.4 'Barlow Condensed',sans-serif;letter-spacing:1.2px;text-transform:uppercase"></div>
       <div id="field-msg" style="position:absolute;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;color:#d3ef59;font:700 24px 'Barlow Condensed',sans-serif;letter-spacing:2px;text-shadow:0 1px 6px #000;opacity:0;transition:opacity .3s"></div>
       <div class="field-hud">
-        <span>THE FIELD<small>WASD move · MOUSE look · CLICK fire · R reload · 1/2 weapon · SHIFT sprint · SPACE jump · ESC exit</small></span>
+        <span>THE FIELD<small>WASD move · MOUSE look · CLICK fire · R reload · F barricade · 1/2 weapon · SHIFT sprint · SPACE jump · ESC exit</small></span>
         <span id="field-pos"></span>
         <button id="field-exit">EXIT (ESC)</button>
       </div>
@@ -1206,7 +1206,7 @@
       const Z0 = HW + 11, D = 1.2, RH = .6, ROWS = 12, ZB = Z0 + ROWS * D, BX = 35.5, TOP = ROWS * RH;
       const SZ0 = -(ZB + 4.2), SZ1 = -(ZB + 7.2);
       const AISLE = 1.4, SEC = (2 * BX - 7 * AISLE) / 6;
-      const GREY = "#b9c0c6", GREY2 = "#8a9299", WALL = "#e9e2cf";
+      const GREY = "@light-grey-metal", GREY2 = "@dark-grey-metal", WALL = "#e9e2cf", DMETAL = "@dark-grey-metal", CONC = "@concrete", FAB = "@red-fabric", FABD = "@red-fabric*#9a9a9a", WOOD = "@wood-boards", PLANK = "@wood-plank", RUST = "@rusty-red-metal", BRICK = "@tan-brick", SNACK = "@snack-bags";
       [-1, 1].forEach((sd) => {
         const team = sd > 0 ? "#e03a3e" : "#a3232b", teamDark = sd > 0 ? "#9b1d22" : "#6e1a24";
         const fz = sd * (HW + 9);
@@ -1224,36 +1224,36 @@
             box(ax, ax + AISLE, h, h + .03, za, zb, "#efeadb", null, true);
             if (k === 6) continue;
             const sx = ax + AISLE;
-            box(sx + .05, sx + SEC - .05, h, h + .14, za + sd * .15, za + sd * .75, teamDark, team, true);
+            box(sx + .05, sx + SEC - .05, h, h + .14, za + sd * .15, za + sd * .75, sd > 0 ? FABD : FAB, sd > 0 ? FAB : FABD, true);
             for (let i = 0; i < 9; i++) {
               const bx = sx + .15 + i * ((SEC - .3) / 9);
-              box(bx, bx + (SEC - .3) / 9 - .08, h + .14, h + .62, za + sd * .72, za + sd * .82, team, teamDark, true);
+              box(bx, bx + (SEC - .3) / 9 - .08, h + .14, h + .62, za + sd * .72, za + sd * .82, sd > 0 ? FAB : FABD, sd > 0 ? FABD : FAB, true);
             }
           }
           // end walls and guard rails along the open sides
-          [-1, 1].forEach((e) => box(e * BX, e * (BX + .25), r < 3 ? 0 : h - .25, h + 1.6, za, zb, "#5c636a", "#4a5056"));
+          [-1, 1].forEach((e) => box(e * BX, e * (BX + .25), r < 3 ? 0 : h - .25, h + 1.6, za, zb, DMETAL, DMETAL));
         }
         // aisle handrails
         for (let k = 1; k < 6; k++) {
           const ax = -BX + k * (SEC + AISLE) + AISLE / 2;
           for (let r = 0; r < ROWS; r++) {
             const h = (r + 1) * RH, za = sd * (Z0 + r * D), zb = sd * (Z0 + (r + 1) * D);
-            box(ax - .04, ax + .04, h, h + 1.0, (za + zb) / 2 - .04, (za + zb) / 2 + .04, "#9aa2a8", null, true);
+            box(ax - .04, ax + .04, h, h + 1.0, (za + zb) / 2 - .04, (za + zb) / 2 + .04, DMETAL, null, true);
           }
         }
         // light-up facing banner above the first row
         box(-30, 30, .6, 1.1, sd * (Z0 - .1), sd * (Z0 - .02), team, "#f3f2ec", true);
         // concourse deck and back fence
         const deep = sd < 0 ? 8.5 : 3;
-        if (sd < 0) holeBox(-BX, BX, TOP - .3, TOP, sd * ZB, sd * (ZB + deep), SX0, SX1, SZ0, SZ1, "#8f979d", GREY2);
-        else box(-BX, BX, TOP - .3, TOP, sd * ZB, sd * (ZB + deep), "#8f979d", GREY2);
+        if (sd < 0) holeBox(-BX, BX, TOP - .3, TOP, sd * ZB, sd * (ZB + deep), SX0, SX1, SZ0, SZ1, CONC, GREY2);
+        else box(-BX, BX, TOP - .3, TOP, sd * ZB, sd * (ZB + deep), CONC, GREY2);
         // under-stand floor and support columns
-        quad(flat, [[-BX, 0, sd * Z0], [BX, 0, sd * Z0], [BX, 0, sd * (ZB + deep)], [-BX, 0, sd * (ZB + deep)]], "#5d6266");
+        quad(flat, [[-BX, 0, sd * Z0], [BX, 0, sd * Z0], [BX, 0, sd * (ZB + deep)], [-BX, 0, sd * (ZB + deep)]], CONC);
         [Z0 + 4.6 * D, Z0 + 8.6 * D, ZB + .3, ZB + deep - .3].forEach((zc, zi) => {
           const top = zi === 0 ? 5 * RH - .25 : zi === 1 ? 9 * RH - .25 : TOP - .3;
-          for (let k = 0; k <= 6; k++) { const cx = -BX + .3 + k * (2 * BX - .6) / 6; box(cx - .2, cx + .2, 0, top, sd * zc - .2, sd * zc + .2, "#7d848b", "#656b71"); }
+          for (let k = 0; k <= 6; k++) { const cx = -BX + .3 + k * (2 * BX - .6) / 6; box(cx - .2, cx + .2, 0, top, sd * zc - .2, sd * zc + .2, DMETAL, DMETAL); }
         });
-        box(-BX, BX, TOP, TOP + 2.4, sd * (ZB + deep), sd * (ZB + deep + .2), "#4d535a", "#3a3f45");
+        box(-BX, BX, TOP, TOP + 2.4, sd * (ZB + deep), sd * (ZB + deep + .2), DMETAL, DMETAL);
         box(-BX, BX, TOP + 2.4, TOP + 2.55, sd * (ZB + deep - .05), sd * (ZB + deep + .25), "#e8b92c", null, true);
         // light towers
         [-1, 1].forEach((e) => {
@@ -1272,7 +1272,7 @@
       {
         const pz = (t) => -(ZB + t), WB = 12;
         const Y0 = TOP, Y1 = TOP + 3.2;
-        holeBox(-WB, WB, Y0, Y0 + .05, pz(0), pz(8.5), SX0, SX1, SZ0, SZ1, "#5a2a2a", null, true);
+        holeBox(-WB, WB, Y0, Y0 + .05, pz(0), pz(8.5), SX0, SX1, SZ0, SZ1, WOOD, null, true);
         // sealed front wall with a window band (the stairs are the only way in)
         box(-WB, WB, Y0, Y0 + 1.2, pz(0), pz(.3), WALL);
         [[-WB, -WB + .4], [-6.2, -5.8], [-1.4, -1.2], [1.2, 1.4], [5.8, 6.2], [WB - .4, WB]].forEach(([x0, x1]) => box(x0, x1, Y0 + 1.2, Y1 - .6, pz(0), pz(.3), WALL));
@@ -1280,21 +1280,21 @@
         // side and back walls, roof
         [-1, 1].forEach((e) => box(e * WB - (e > 0 ? .3 : 0), e * WB + (e > 0 ? 0 : .3), Y0, Y1, pz(0), pz(8.3), WALL));
         box(-WB, WB, Y0, Y1, pz(8), pz(8.3), WALL);
-        box(-WB - .5, WB + .5, Y1, Y1 + .4, pz(-1), pz(9), "#2a2d31", "#1c1e20");
+        box(-WB - .5, WB + .5, Y1, Y1 + .4, pz(-1), pz(9), RUST, RUST);
         box(-WB - .5, WB + .5, Y1 + .4, Y1 + .55, pz(-1), pz(-.8), "#d3ef59", null, true);
         // interior: desks, monitors, chairs, shelves, ceiling lights
         [[-WB + .3, -1.8], [1.8, WB - .3]].forEach(([x0, x1]) => {
-          box(x0, x1, Y0, Y0 + .85, pz(.6), pz(1.5), "#6b4a2f", "#4e3622");
+          box(x0, x1, Y0, Y0 + .85, pz(.6), pz(1.5), WOOD, WOOD);
           for (let x = x0 + 1; x < x1 - 1; x += 3) {
             box(x, x + .9, Y0 + .85, Y0 + 1.4, pz(.9), pz(1.0), "#111", null, true);
             box(x + .3, x + .6, Y0 + .85, Y0 + .95, pz(.95), pz(1.2), "#222", null, true);
-            box(x - .1, x + .6, Y0 + .05, Y0 + .55, pz(2.2), pz(2.9), "#2a2d31", null, true);
-            box(x - .1, x + .6, Y0 + .55, Y0 + 1.2, pz(2.8), pz(2.9), "#2a2d31", null, true);
+            box(x - .1, x + .6, Y0 + .05, Y0 + .55, pz(2.2), pz(2.9), FAB, null, true);
+            box(x - .1, x + .6, Y0 + .55, Y0 + 1.2, pz(2.8), pz(2.9), FAB, null, true);
           }
         });
-        box(-WB + .3, WB - .3, Y0, Y0 + 2.2, pz(7.5), pz(8), "#4e3622", "#3a2a1b");
+        box(-WB + .3, WB - .3, Y0, Y0 + 2.2, pz(7.5), pz(8), WOOD, WOOD);
         for (let x = -9; x <= 9; x += 4.5) box(x - 1, x + 1, Y1 - .12, Y1, pz(3.5), pz(5.5), "#ffffff", null, true);
-        box(-2, 2, Y0 + .05, Y0 + .9, pz(4.5), pz(6.5), "#7a2c2c", "#5c2020");
+        box(-2, 2, Y0 + .05, Y0 + .9, pz(4.5), pz(6.5), WOOD, WOOD);
       }
       // Broken elevator shaft under the north stands with a wooden spiral staircase up to the press box
       {
@@ -1314,11 +1314,11 @@
             wall(j * PH, Math.min(j * PH + ph, top), i, i + 1, hsh % 2 ? "#8a4b32" : "#6f757a");
           }
         });
-        box(cx - .15, cx + .15, 0, top, cz - .15, cz + .15, "#4a2f18", "#3a2512");
+        box(cx - .15, cx + .15, 0, top, cz - .15, cz + .15, WOOD, WOOD);
         for (let i = 0; i < 36; i++) {
           const th = (15 + i * 15) * Math.PI / 180, x = cx + Math.cos(th), z = cz + Math.sin(th), y = (i + 1) * .2;
-          box(x - .3, x + .3, y - .12, y, z - .3, z + .3, i % 2 ? "#a0692f" : "#8f5a26", "#6e451c");
-          box(cx + Math.cos(th) * 1.38 - .03, cx + Math.cos(th) * 1.38 + .03, y, y + 1, cz + Math.sin(th) * 1.38 - .03, cz + Math.sin(th) * 1.38 + .03, "#5b3a1c", null, true);
+          box(x - .3, x + .3, y - .12, y, z - .3, z + .3, PLANK, PLANK);
+          box(cx + Math.cos(th) * 1.38 - .03, cx + Math.cos(th) * 1.38 + .03, y, y + 1, cz + Math.sin(th) * 1.38 - .03, cz + Math.sin(th) * 1.38 + .03, PLANK, null, true);
         }
         // rubble by the doorway
         box(SX1 + .6, SX1 + 1.2, 0, .35, cz - 1.7, cz - 1.1, "#6f757a", "#575d61");
@@ -1329,7 +1329,7 @@
       const RED = "#c42a30", REDD = "#7d1a20";
       const barricade = (x, z, along, len = 4.5, L) => {
         const H = 2.2, T = .18;
-        const wall = (cx, cz, ax, l) => ax === "x" ? box(cx - l / 2, cx + l / 2, 0, H, cz - T / 2, cz + T / 2, RED, REDD) : box(cx - T / 2, cx + T / 2, 0, H, cz - l / 2, cz + l / 2, RED, REDD);
+        const wall = (cx, cz, ax, l) => ax === "x" ? box(cx - l / 2, cx + l / 2, 0, H, cz - T / 2, cz + T / 2, RUST, RUST) : box(cx - T / 2, cx + T / 2, 0, H, cz - l / 2, cz + l / 2, RUST, RUST);
         wall(x, z, along, len);
         if (L) {
           const leg = len * .6, e = len / 2 - T / 2;
@@ -1341,15 +1341,15 @@
         const hw = w / 2, hd = d / 2, T = .12, g = .9, dh = wallH - .45;
         [-1, 1].forEach((sd) => {
           const zz = z + sd * (hd - T / 2), xx = x + sd * (hw - T / 2);
-          box(x - hw, x - g, 0, wallH, zz - T / 2, zz + T / 2, color, trim);
-          box(x + g, x + hw, 0, wallH, zz - T / 2, zz + T / 2, color, trim);
-          box(x - g, x + g, dh, wallH, zz - T / 2, zz + T / 2, trim, color);
-          box(xx - T / 2, xx + T / 2, 0, wallH, z - hd, z - g, color, trim);
-          box(xx - T / 2, xx + T / 2, 0, wallH, z + g, z + hd, color, trim);
-          box(xx - T / 2, xx + T / 2, dh, wallH, z - g, z + g, trim, color);
+          box(x - hw, x - g, 0, wallH, zz - T / 2, zz + T / 2, WOOD, WOOD);
+          box(x + g, x + hw, 0, wallH, zz - T / 2, zz + T / 2, WOOD, WOOD);
+          box(x - g, x + g, dh, wallH, zz - T / 2, zz + T / 2, WOOD, WOOD);
+          box(xx - T / 2, xx + T / 2, 0, wallH, z - hd, z - g, WOOD, WOOD);
+          box(xx - T / 2, xx + T / 2, 0, wallH, z + g, z + hd, WOOD, WOOD);
+          box(xx - T / 2, xx + T / 2, dh, wallH, z - g, z + g, WOOD, WOOD);
         });
         const o = .45, e = [[x - hw - o, wallH, z - hd - o], [x + hw + o, wallH, z - hd - o], [x + hw + o, wallH, z + hd + o], [x - hw - o, wallH, z + hd + o]], t = [x, apex, z];
-        e.forEach((q, i) => quad(solid, [q, e[(i + 1) % 4], t], i % 2 ? color : trim));
+        e.forEach((q, i) => quad(solid, [q, e[(i + 1) % 4], t], FAB));
         box(x - .04, x + .04, 0, apex, z - .04, z + .04, "#3a3f45", null, true);
       };
       [[-34, -8, "x"], [-34, 8, "x"], [-20, -18, "z"], [-20, 18, "z"], [-8, -5, "x"], [-8, 5, "x"], [6, -9, "z"], [6, 9, "z"], [18, -4, "x"], [18, 4, "x"],
@@ -1361,30 +1361,30 @@
       // Concession stands with outside restrooms in opposite corners
       const concession = (cx, cz, fx, fz) => {
         const b = (x0, x1, y0, y1, z0, z1, c, sc, nc) => box(cx + fx * x0, cx + fx * x1, y0, y1, cz + fz * z0, cz + fz * z1, c, sc, nc);
-        const CREAM = "#e9e2cf", DARK = "#2a2d31", H = 3.2, T = .2;
-        quad(flat, [[cx - fx * 3, 0, cz - fz * 8], [cx + fx * 18, 0, cz - fz * 8], [cx + fx * 18, 0, cz + fz * 17], [cx - fx * 3, 0, cz + fz * 17]], "#6a6e72");
+        const CREAM = BRICK, DARK = "#2a2d31", H = 3.2, T = .2;
+        quad(flat, [[cx - fx * 3, 0, cz - fz * 8], [cx + fx * 18, 0, cz - fz * 8], [cx + fx * 18, 0, cz + fz * 17], [cx - fx * 3, 0, cz + fz * 17]], CONC);
         // main shop: x 0..12, z -5..5; serving window on the front (x=12), door on the -z side
-        b(0, 12, 0, .1, -5, 5, "#8a8e92", null, true);
-        b(0, T, 0, H, -5, 5, CREAM, "#cfc7b0");
-        b(0, 12, 0, H, 5 - T, 5, CREAM, "#cfc7b0");
-        b(0, 5.2, 0, H, -5, -5 + T, CREAM, "#cfc7b0"); b(6.8, 12, 0, H, -5, -5 + T, CREAM, "#cfc7b0"); b(5.2, 6.8, 2.4, H, -5, -5 + T, RED, REDD);
-        b(12 - T, 12, 0, 1.1, -5, 5, CREAM, "#cfc7b0"); b(12 - T, 12, 2.3, H, -5, 5, RED, REDD);
-        b(12 - T, 12, 1.1, 2.3, -5, -3, CREAM, "#cfc7b0"); b(12 - T, 12, 1.1, 2.3, 3, 5, CREAM, "#cfc7b0");
+        b(0, 12, 0, .1, -5, 5, CONC, null, true);
+        b(0, T, 0, H, -5, 5, CREAM, BRICK);
+        b(0, 12, 0, H, 5 - T, 5, CREAM, BRICK);
+        b(0, 5.2, 0, H, -5, -5 + T, CREAM, BRICK); b(6.8, 12, 0, H, -5, -5 + T, CREAM, BRICK); b(5.2, 6.8, 2.4, H, -5, -5 + T, RED, REDD);
+        b(12 - T, 12, 0, 1.1, -5, 5, CREAM, BRICK); b(12 - T, 12, 2.3, H, -5, 5, RED, REDD);
+        b(12 - T, 12, 1.1, 2.3, -5, -3, CREAM, BRICK); b(12 - T, 12, 1.1, 2.3, 3, 5, CREAM, BRICK);
         b(12, 13.1, 0, 1.1, -3.4, 3.4, "#7a5230", "#5c3d22");
         for (let i = 0; i < 6; i++) b(12, 14.6, 2.55 - i * .04, 2.6 - i * .04 + .02, -3.6 + i * 1.2, -2.4 + i * 1.2, i % 2 ? "#f3f2ec" : RED, REDD, true);
         b(12.05, 12.15, 2.4, 3.0, -2.8, 2.8, "#d3ef59", null, true);
         // interior fittings
         b(10.4, 11.4, 0, 1, -4.6, 4.6, "#9aa2a8", "#7d848b");
         b(1, 3, 0, 1.9, -4.6, -2.2, "#dfe3e6", "#b9c0c6"); b(1, 3, 0, 1.9, 2.2, 4.6, "#dfe3e6", "#b9c0c6");
-        b(4.5, 8, 0, .95, 1.6, 3.2, "#3a3f45", "#2a2d31"); b(5, 7.5, .95, 1.05, 1.8, 3, "#777", null, true);
+        b(4.5, 8, 0, .95, 1.6, 3.2, "#3a3f45", "#2a2d31"); b(5, 7.5, .95, 1.05, 1.8, 3, SNACK, "#2a2d31", true);
         b(.3, 2, 1.5, 1.6, -.9, .9, "#7a5230", null, true);
         for (let i = 0; i < 3; i++) b(7.6 + i * 1.2, 8.6 + i * 1.2, 1.2, 1.5, 4.6, 4.8, i % 2 ? RED : "#e8b92c", null, true);
         // restroom wing on the outside: two rooms at z 5..11, doors on the outer (z=11) face
         [[0, 6, "#4a4f55", "M"], [6, 12, "#e8b92c", "W"]].forEach(([x0, x1, sc], i) => {
           const mid = (x0 + x1) / 2;
-          b(x0, x1, 0, .1, 5, 11, "#8a8e92", null, true);
-          b(x0, x0 + T, 0, H, 5, 11, CREAM, "#cfc7b0"); b(x1 - T, x1, 0, H, 5, 11, CREAM, "#cfc7b0");
-          b(x0, mid - .8, 0, H, 11 - T, 11, CREAM, "#cfc7b0"); b(mid + .8, x1, 0, H, 11 - T, 11, CREAM, "#cfc7b0"); b(mid - .8, mid + .8, 2.4, H, 11 - T, 11, RED, REDD);
+          b(x0, x1, 0, .1, 5, 11, CONC, null, true);
+          b(x0, x0 + T, 0, H, 5, 11, CREAM, BRICK); b(x1 - T, x1, 0, H, 5, 11, CREAM, BRICK);
+          b(x0, mid - .8, 0, H, 11 - T, 11, CREAM, BRICK); b(mid + .8, x1, 0, H, 11 - T, 11, CREAM, BRICK); b(mid - .8, mid + .8, 2.4, H, 11 - T, 11, RED, REDD);
           b(mid - .5, mid + .5, 2.7, 3.1, 11, 11.06, "#f3f2ec", null, true);
           b(mid - .4, mid + .4, 2.78, 3.02, 11.06, 11.1, sc, null, true);
           // tiled floor; the doorway and a clear lane to the sinks and stalls stay open
@@ -1414,7 +1414,7 @@
           // ceiling lights
           for (let k = 0; k < 2; k++) b(mid - .8, mid + .8, H - .08, H, 6.5 + k * 3, 7 + k * 3, "#ffffff", null, true);
         });
-        b(0, 12, H, H + .3, -5.6, 11.6, DARK, "#1c1e20", true);
+        b(0, 12, H, H + .3, -5.6, 11.6, RUST, RUST, true);
         b(0, 12, H + .3, H + .45, -5.6, -5.4, "#d3ef59", null, true);
         // sign over the window
         b(12.1, 12.4, 3.6, 4.7, -3, 3, RED, REDD, true); b(12.4, 12.46, 3.8, 4.5, -2.6, 2.6, "#f3f2ec", null, true);
@@ -1436,12 +1436,13 @@
         return ground;
       };
       let running = false, last = 0, gl, prog, loc, groundBuf, solidBuf, groundN, solidN;
-      const SKY = [.22, .06, .08];
+      const SKY = [.5, .87, 1];
       const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
       const LIGHT = [.35, .8, .5];
       const pack = (list, shade) => {
         const out = [];
         list.forEach((q) => {
+          if (q.color[0] === "@") return;
           let c = rgb(q.color);
           if (shade) {
             const [a, b, d] = q.pts, u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
@@ -1451,19 +1452,153 @@
           } for (let i = 1; i < q.pts.length - 1; i++) [q.pts[0], q.pts[i], q.pts[i + 1]].forEach((p) => out.push(...p, ...c)); });
         return new Float32Array(out);
       };
+      // Surfaces whose color is "@name" or "@name*#rrggbb" (tint) use a tiled texture from assets/tex
+      const TEXTURES = {
+        "red-fabric": { file: "red-fabric.jpg", scale: [2, 2], avg: "#a62027" },
+        "wood-boards": { file: "wood-boards.jpg", scale: [2.5, 2.5], avg: "#97642f" },
+        "wood-plank": { file: "wood-plank.jpg", scale: [1.2, .25], avg: "#97642f" },
+        "rusty-red-metal": { file: "rusty-red-metal.jpg", scale: [3, 3], avg: "#9a5a3a" },
+        "tan-brick": { file: "tan-brick.jpg", scale: [3, 3], avg: "#d9c196" },
+        "snack-bags": { file: "snack-bags.jpg", scale: [3, 3], avg: "#a02a2a" },
+        "concrete": { file: "concrete.jpg", scale: [4, 4], avg: "#bdbab4" },
+        "light-grey-metal": { file: "light-grey-metal.jpg", scale: [2, 2], avg: "#8c8c8a" },
+        "dark-grey-metal": { file: "dark-grey-metal.jpg", scale: [2, 2], avg: "#68707a" }
+      };
+      const texParts = (color) => { const [n, t] = color.slice(1).split("*"); return [n, t ? rgb(t) : [1, 1, 1]]; };
+      const packTex = (list, shade, ground) => {
+        const out = {};
+        list.forEach((q) => {
+          if (q.color[0] !== "@") return;
+          const [name, tint] = texParts(q.color), [su, sv] = TEXTURES[name].scale;
+          const [a, b, d] = q.pts, u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+          const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], m = Math.hypot(...n) || 1;
+          const f = shade ? .6 + .4 * Math.abs((n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]) / m) : 1;
+          const ax = Math.abs(n[0]), ay = Math.abs(n[1]), az = Math.abs(n[2]);
+          const uv = ay >= ax && ay >= az ? (p) => [p[0] / su, p[2] / sv] : ax >= az ? (p) => [p[2] / su, p[1] / sv] : (p) => [p[0] / su, p[1] / sv];
+          const o = out[name] || (out[name] = []);
+          for (let i = 1; i < q.pts.length - 1; i++) [q.pts[0], q.pts[i], q.pts[i + 1]].forEach((p) => o.push(...p, ...uv(p), f * tint[0], f * tint[1], f * tint[2]));
+        });
+        return Object.entries(out).map(([name, arr]) => ({ name, data: new Float32Array(arr) }));
+      };
+      let texProg, texGround = [], texSolid = [];
+      const texOf = {};
+      function initTextures() {
+        const mk = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return sh; };
+        texProg = gl.createProgram();
+        gl.attachShader(texProg, mk(gl.VERTEX_SHADER, `attribute vec3 p; attribute vec2 t; attribute vec3 s; uniform vec3 cam; uniform vec4 rot; uniform vec2 fs; varying vec2 vt; varying vec3 vs; varying float vd; varying vec3 vw;
+          void main(){ vec3 d=p-cam; vw=d; float x1=d.x*rot.x-d.z*rot.y; float z1=d.x*rot.y+d.z*rot.x; float y2=d.y*rot.z-z1*rot.w; float z2=d.y*rot.w+z1*rot.z;
+          float n=.1, f=1000.; gl_Position=vec4(x1*fs.x, y2*fs.y, (z2*(f+n)-2.*f*n)/(f-n), z2); vt=t; vs=s; vd=z2; }`));
+        gl.attachShader(texProg, mk(gl.FRAGMENT_SHADER, `precision mediump float; varying vec2 vt; varying vec3 vs; varying float vd; varying vec3 vw; uniform sampler2D tex; uniform vec3 sky;
+          uniform vec4 smc[3]; uniform vec3 smf;
+          vec3 fogIt(vec3 col, vec3 dd){ float L=length(dd); if(L<.001) return col; vec3 dir=dd/L; float acc=0.;
+            for(int i=0;i<3;i++){ vec3 oc=-smc[i].xyz; float b=dot(oc,dir); float h=b*b-dot(oc,oc)+smc[i].w*smc[i].w;
+              if(h>0.){ h=sqrt(h); acc+=max(min(-b+h,L)-max(-b-h,0.),0.)*smf[i]; } }
+            return mix(col, vec3(.72,.74,.76), 1.-exp(-acc*.75)); }
+          void main(){ gl_FragColor=vec4(fogIt(mix(texture2D(tex,vt).rgb*vs, sky, clamp(vd/320.,0.,.75)), vw), 1.); }`));
+        gl.bindAttribLocation(texProg, 0, "p"); gl.bindAttribLocation(texProg, 1, "t"); gl.bindAttribLocation(texProg, 2, "s");
+        gl.linkProgram(texProg);
+        const mkBufs = (list, shade) => packTex(list, shade).map(({ name, data }) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); return { name, buf: b, n: data.length / 8 }; });
+        texGround = mkBufs(flat, false); texSolid = mkBufs(solid, true);
+        Object.entries(TEXTURES).forEach(([name, def]) => {
+          const t = gl.createTexture(), c = rgb(def.avg).map((x) => Math.round(x * 255));
+          gl.bindTexture(gl.TEXTURE_2D, t);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([...c, 255]));
+          texOf[name] = t;
+          const img = new Image();
+          img.onload = () => {
+            gl.bindTexture(gl.TEXTURE_2D, t);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+          };
+          img.src = "assets/tex/" + def.file;
+        });
+      }
+      function drawTex(groups) {
+        if (!groups.length) return;
+        gl.useProgram(texProg);
+        const u = (n) => gl.getUniformLocation(texProg, n);
+        gl.uniform3f(u("cam"), cam.x, cam.y, cam.z);
+        gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
+        gl.uniform2f(u("fs"), 1.8 * gl.drawingBufferHeight / gl.drawingBufferWidth, 1.8);
+        gl.uniform3f(u("sky"), ...SKY);
+        setSmoke(texProg, true);
+        gl.uniform1i(u("tex"), 0);
+        gl.activeTexture(gl.TEXTURE0);
+        for (const g of groups) {
+          gl.bindTexture(gl.TEXTURE_2D, texOf[g.name]);
+          gl.bindBuffer(gl.ARRAY_BUFFER, g.buf);
+          gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 32, 0);
+          gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 32, 12);
+          gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 32, 20);
+          gl.drawArrays(gl.TRIANGLES, 0, g.n);
+        }
+        gl.disableVertexAttribArray(0); gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2);
+        gl.useProgram(prog);
+      }
+      let skyProg, skyBuf, skyTex, skyReady = false;
+      function initSky() {
+        const mk = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return sh; };
+        skyProg = gl.createProgram();
+        gl.attachShader(skyProg, mk(gl.VERTEX_SHADER, `attribute vec2 a; varying vec2 q; void main(){ q=a; gl_Position=vec4(a,1.,1.); }`));
+        // Rebuilds each pixel's world-space view direction (inverse of the camera rotation) and maps it onto the sky image
+        gl.attachShader(skyProg, mk(gl.FRAGMENT_SHADER, `precision highp float; varying vec2 q; uniform vec4 rot; uniform vec2 fs; uniform sampler2D tex;
+          void main(){ float x1=q.x/fs.x, y2=q.y/fs.y, z2=1.;
+            float z1=z2*rot.z-y2*rot.w, dy=y2*rot.z+z2*rot.w;
+            float dx=x1*rot.x+z1*rot.y, dz=-x1*rot.y+z1*rot.x;
+            float u=fract(atan(dz,dx)/6.2831853+.5);
+            float el=atan(dy,length(vec2(dx,dz)));
+            float v=1.-clamp(el/1.5707963,0.,1.);
+            gl_FragColor=vec4(texture2D(tex,vec2(u,v)).rgb,1.); }`));
+        gl.bindAttribLocation(skyProg, 0, "a");
+        gl.linkProgram(skyProg);
+        skyBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
+        skyTex = gl.createTexture();
+        const img = new Image();
+        img.onload = () => {
+          gl.bindTexture(gl.TEXTURE_2D, skyTex);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          skyReady = true;
+        };
+        img.src = "assets/Daytime_Skybox.png";
+      }
+      function drawSky() {
+        if (!skyReady) return;
+        gl.useProgram(skyProg);
+        const u = (n) => gl.getUniformLocation(skyProg, n);
+        gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
+        gl.uniform2f(u("fs"), 1.8 * gl.drawingBufferHeight / gl.drawingBufferWidth, 1.8);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, skyTex); gl.uniform1i(u("tex"), 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, skyBuf);
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.disableVertexAttribArray(0);
+        gl.useProgram(prog);
+      }
       function initGL() {
         gl = canvas.getContext("webgl", { antialias: true });
         const mk = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return sh; };
         prog = gl.createProgram();
-        gl.attachShader(prog, mk(gl.VERTEX_SHADER, `attribute vec3 p; attribute vec3 c; uniform vec3 cam; uniform vec4 rot; uniform vec2 fs; varying vec3 vc; varying float vd;
-          void main(){ vec3 d=p-cam; float x1=d.x*rot.x-d.z*rot.y; float z1=d.x*rot.y+d.z*rot.x; float y2=d.y*rot.z-z1*rot.w; float z2=d.y*rot.w+z1*rot.z;
+        gl.attachShader(prog, mk(gl.VERTEX_SHADER, `attribute vec3 p; attribute vec3 c; uniform vec3 cam; uniform vec4 rot; uniform vec2 fs; varying vec3 vc; varying float vd; varying vec3 vw;
+          void main(){ vec3 d=p-cam; vw=d; float x1=d.x*rot.x-d.z*rot.y; float z1=d.x*rot.y+d.z*rot.x; float y2=d.y*rot.z-z1*rot.w; float z2=d.y*rot.w+z1*rot.z;
           float n=.1, f=1000.; gl_Position=vec4(x1*fs.x, y2*fs.y, (z2*(f+n)-2.*f*n)/(f-n), z2); vc=c; vd=z2; }`));
-        gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, `precision mediump float; varying vec3 vc; varying float vd; uniform vec3 sky;
-          void main(){ gl_FragColor=vec4(mix(vc, sky, clamp(vd/320.,0.,.75)),1.); }`));
+        gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, `precision mediump float; varying vec3 vc; varying float vd; varying vec3 vw; uniform vec3 sky;
+          uniform vec4 smc[3]; uniform vec3 smf;
+          vec3 fogIt(vec3 col, vec3 dd){ float L=length(dd); if(L<.001) return col; vec3 dir=dd/L; float acc=0.;
+            for(int i=0;i<3;i++){ vec3 oc=-smc[i].xyz; float b=dot(oc,dir); float h=b*b-dot(oc,oc)+smc[i].w*smc[i].w;
+              if(h>0.){ h=sqrt(h); acc+=max(min(-b+h,L)-max(-b-h,0.),0.)*smf[i]; } }
+            return mix(col, vec3(.72,.74,.76), 1.-exp(-acc*.75)); }
+          void main(){ gl_FragColor=vec4(fogIt(mix(vc, sky, clamp(vd/320.,0.,.75)), vw),1.); }`));
         gl.linkProgram(prog);
         loc = { p: gl.getAttribLocation(prog, "p"), c: gl.getAttribLocation(prog, "c") };
         const buf = (list, shade) => { const b = gl.createBuffer(), d = pack(list, shade); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, d, gl.STATIC_DRAW); return [b, d.length / 6]; };
         [groundBuf, groundN] = buf(flat); [solidBuf, solidN] = buf(solid, true);
+        initSky();
+        initTextures();
         initLogo();
       }
       let logoProg, logoBuf, logoTex, logoReady = false;
@@ -1528,6 +1663,12 @@
         "REVOLVER": { rate: 1.8, auto: false, mag: 6, reload: 2.4, mult: 5 },
         "MELEE": { rate: 1.4, auto: false, mag: Infinity, reload: 0, mult: 6, melee: true }
       };
+      // Gadgets and equipment are held items: vs scales the armory model for the viewmodel, uses is the charges per life
+      const held = (vs, uses, at) => ({ rate: 1.6, auto: false, mag: Infinity, reload: 0, mult: 0, held: true, vs, uses, at: at || [.14, -.16, .4] });
+      Object.assign(kinds, {
+        DEFENSE: held(2.6, Infinity, [.0, -.12, .75]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, Infinity),
+        LETHAL: held(1.7, 3), TACTICAL: held(1.7, 3)
+      });
       const K = .06;
       const weapons = {};
       let curSlot = "primary";
@@ -1542,7 +1683,7 @@
         const all = polys.flatMap((poly) => poly.v), tip = Math.max(...all.map((q) => q[0])) - mid[0], rear = mid[0] - Math.min(...all.map((q) => q[0]));
         const mods = { dmg: 0, rng: 0, mob: 0 };
         Object.keys(attachmentOptions).forEach((kd) => { if (def.mounts[kd]) Object.entries(optionOf(kd, cfg[kd]).mod).forEach(([a, v]) => { mods[a] += v; }); });
-        const f = (b, m) => Math.max(1, Math.min(10, b + m));
+        const f = (b, m) => Math.max(1, Math.min(10, (b || 1) + m));
         const stats = { dmg: f(item.dmg, mods.dmg), rng: f(item.rng, mods.rng), mob: f(item.mob, mods.mob) };
         const old = weapons[item.id];
         const mag = kind.mag;
@@ -1551,7 +1692,7 @@
       }
       const wpn = () => weapons[loadout[curSlot]];
       function refreshWeapons() {
-        ["primary", "secondary"].forEach((id) => { const item = loadoutSlots.find((sl) => sl.id === id).items.find((it) => it.id === loadout[id]); weapons[item.id] = buildWeapon(item); });
+        ["primary", "secondary", "gadget", "equipment"].forEach((id) => { const item = loadoutSlots.find((sl) => sl.id === id).items.find((it) => it.id === loadout[id]); weapons[item.id] = buildWeapon(item); });
       }
 
       // ---- Target dummies ----
@@ -1592,6 +1733,120 @@
       let msgTimer, hitTimer;
       const say = (t) => { hudMsg.textContent = t; hudMsg.style.opacity = 1; clearTimeout(msgTimer); msgTimer = setTimeout(() => { hudMsg.style.opacity = 0; }, 900); };
       const mark = (kill) => { hitmark.style.opacity = 1; hitmark.style.color = kill ? "#df563c" : "#d3ef59"; clearTimeout(hitTimer); hitTimer = setTimeout(() => { hitmark.style.opacity = 0; }, 160); };
+      // ---- Barricades: crude wooden panels fitted into openings, built from small cells that bullets chip away ----
+      const BAR_TH = .12, CELL = .2, CELL_HP = 50, STEEL_HP = 150, MAX_BARS = 8;
+      const WOODS = ["#8b5e34", "#7a4f2a", "#9a6a3c", "#6e4624"];
+      let barricades = [], debris = [], barCount = 6;
+      const inCollider = (p) => colliders.some((c) => p[0] > c.x0 && p[0] < c.x1 && p[1] > c.y0 && p[1] < c.y1 && p[2] > c.z0 && p[2] < c.z1);
+      const clearance = (o, d, max) => { let t = max; for (const c of colliders) { const h = rayBox(o, d, c); if (h < t) t = h; } return t; };
+      const axisDir = (a, s) => { const d = [0, 0, 0]; d[a] = s; return d; };
+      // ax is the wall normal (0 = x, 2 = z); the opening is measured along the other horizontal axis and up
+      function fitOpening(p, ax) {
+        const ta = ax === 0 ? 2 : 0, MAXW = 3.2;
+        const lo = clearance(p, axisDir(ta, -1), MAXW), hi = clearance(p, axisDir(ta, 1), MAXW);
+        const wide = lo >= MAXW || hi >= MAXW;
+        let a0 = p[ta] - lo, a1 = p[ta] + hi;
+        if (wide) {
+          // long opening (press box, concession window, shaft): cover only a section around the aim point, snapped to a nearby edge
+          const PW = 1.6, l = Math.min(lo, PW / 2), h = Math.min(hi, PW / 2);
+          a0 = p[ta] - l - Math.min(PW / 2 - h, lo - l); a1 = p[ta] + h + Math.min(PW / 2 - l, hi - h);
+        }
+        const c = (a0 + a1) / 2, o = p.slice(); o[ta] = c;
+        const down = clearance(o, [0, -1, 0], 4), up = clearance(o, [0, 1, 0], 4);
+        if (up >= 4) return null;
+        let y0 = down >= o[1] ? 0 : o[1] - down, y1 = o[1] + up;
+        const m = o.slice(); m[1] = (y0 + y1) / 2;
+        const l2 = clearance(m, axisDir(ta, -1), MAXW), h2 = clearance(m, axisDir(ta, 1), MAXW);
+        if (!wide && l2 > 0 && h2 > 0 && l2 < MAXW && h2 < MAXW) { a0 = c - l2; a1 = c + h2; }
+        const PH = 2.4;
+        if (y1 - y0 > PH) { y0 = Math.min(Math.max(y0, p[1] - PH / 2), y1 - PH); y1 = y0 + PH; }
+        const width = a1 - a0, height = y1 - y0;
+        if (width < .5 || width > 3.4 || height < .5) return null;
+        return { ax, ta, n: p[ax], a0, a1, y0, y1 };
+      }
+      function barBox(b, c0, c1, r0, r1, pad = 0) {
+        const t0 = b.a0 + c0 * b.cw, t1 = b.a0 + c1 * b.cw, h = BAR_TH / 2 + pad, lo = [0, 0, 0], hi = [0, 0, 0];
+        lo[b.ax] = b.n - h; hi[b.ax] = b.n + h; lo[b.ta] = t0; hi[b.ta] = t1; lo[1] = b.y0 + r0 * b.ch; hi[1] = b.y0 + r1 * b.ch;
+        return { x0: lo[0], x1: hi[0], y0: lo[1], y1: hi[1], z0: lo[2], z1: hi[2] };
+      }
+      function rebuildBarricade(b) {
+        b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); });
+        b.solids = []; b.quads = []; b.dirty = false;
+        for (let r = 0; r < b.rows; r++) {
+          for (let c = 0; c < b.cols;) {
+            if (b.hp[r * b.cols + c] <= 0) { c++; continue; }
+            let e = c; while (e < b.cols && b.hp[r * b.cols + e] > 0) e++;
+            const s = barBox(b, c, e, r, r + 1); s.bar = b; b.solids.push(s); colliders.push(s);
+            const v = barBox(b, c, e, r, r + 1), shade = WOODS[(r * 2 + (c > 0 ? 1 : 0) + b.seed) % 4];
+            const bx = (box, color) => qb(b.quads, box.x0, box.x1, box.y0, box.y1, box.z0, box.z1, color);
+            v.y0 += .012; bx(v, shade);
+            [1, b.cols - 2].forEach((bc) => { if (bc >= c && bc < e) { const k = barBox(b, bc, bc + 1, r, r + 1, .02); k.y0 += .012; bx(k, "#4a3018"); } });
+            if (b.steel) for (let bc = c; bc < e; bc += 2) { const k = barBox(b, bc + .35, bc + .65, r, r + 1, .035); k.y0 += .012; bx(k, "#8a9096"); }
+            c = e;
+          }
+        }
+        if (!b.solids.length) barricades = barricades.filter((x) => x !== b);
+      }
+      function spawnDebris(x, y, z, n, big, colors, grav = 12, life = 1.2) {
+        for (let i = 0; i < n && debris.length < 160; i++) {
+          const a = Math.random() * 6.28, sp = (big ? 3 : 1.6) * Math.random() + .5;
+          debris.push({ x, y, z, vx: Math.cos(a) * sp, vy: Math.random() * 3 + 1, vz: Math.sin(a) * sp, life, g: grav, s: .03 + Math.random() * (big ? .07 : .04), c: (colors || WOODS)[i % (colors || WOODS).length] });
+        }
+      }
+      function hitBarricade(b, p, radius, power, chip, src) {
+        if (b.steel) {
+          // reinforced panels only give way to hammer strikes, longwatch rounds and frag blasts
+          power = src === "hammer" ? 55 : src === "longwatch" ? 75 : src === "frag" ? power * .6 : 0;
+          if (!power) { spawnDebris(p[0], p[1], p[2], 3, false, ["#ffd96b", "#c9ced3"], 8, .3); return; }
+        }
+        const tc = p[b.ta], yy = p[1], reach = radius + (chip ? .12 : 0);
+        const c0 = Math.max(0, Math.floor((tc - reach - b.a0) / b.cw)), c1 = Math.min(b.cols - 1, Math.floor((tc + reach - b.a0) / b.cw));
+        const r0 = Math.max(0, Math.floor((yy - reach - b.y0) / b.ch)), r1 = Math.min(b.rows - 1, Math.floor((yy + reach - b.y0) / b.ch));
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+          const i = r * b.cols + c; if (b.hp[i] <= 0) continue;
+          const dx = Math.max(b.a0 + c * b.cw - tc, 0, tc - (b.a0 + (c + 1) * b.cw)), dy = Math.max(b.y0 + r * b.ch - yy, 0, yy - (b.y0 + (r + 1) * b.ch)), d = Math.hypot(dx, dy);
+          if (d > reach) continue;
+          b.hp[i] -= d <= radius ? power : power * .5;
+          if (b.hp[i] <= 0) { b.hp[i] = 0; const q = [0, 0, 0]; q[b.ta] = b.a0 + (c + .5) * b.cw; q[b.ax] = b.n; spawnDebris(q[0], b.y0 + (r + .5) * b.ch, q[2], 1, radius > .1); }
+        }
+        spawnDebris(p[0], p[1], p[2], chip ? 2 : 4, !chip);
+        b.dirty = true;
+      }
+      function aimedBarricade(o, dr, maxT) {
+        let best = null, bt = maxT;
+        barricades.forEach((b) => {
+          const t = (b.n - o[b.ax]) / dr[b.ax];
+          if (!(t > .2 && t < bt)) return;
+          const a = o[b.ta] + dr[b.ta] * t, y = o[1] + dr[1] * t;
+          if (a >= b.a0 - .05 && a <= b.a1 + .05 && y >= b.y0 - .05 && y <= b.y1 + .05) { best = b; bt = t; }
+        });
+        return best;
+      }
+      function placeBarricade() {
+        if (barCount <= 0) return say("NO BARRICADES LEFT");
+        const ex = aimedBarricade([cam.x, cam.y, cam.z], aimDir(), 4.2);
+        if (ex) {
+          const cap = ex.steel ? STEEL_HP : CELL_HP;
+          if (ex.hp.every((v) => v >= cap)) return say("BARRICADE INTACT");
+          ex.hp.fill(cap); ex.dirty = true; barCount--; return say("BARRICADE REPAIRED");
+        }
+        const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+        const dr = [sy * cp, sp2, cy * cp], o = [cam.x, cam.y, cam.z];
+        const axes = Math.abs(dr[0]) > Math.abs(dr[2]) ? [0, 2] : [2, 0];
+        let fit = null;
+        for (let t = .4; t <= 4.2 && !fit; t += .04) {
+          const p = o.map((v, i) => v + dr[i] * t);
+          if (p[1] <= .02 || inCollider(p)) break;
+          for (const ax of axes) { fit = fitOpening(p, ax); if (fit) break; }
+        }
+        if (!fit) return say("NO OPENING TO BARRICADE");
+        const h = BAR_TH / 2 + R, pl = [cam.x, 0, cam.z];
+        if (Math.abs(pl[fit.ax] - fit.n) < h && pl[fit.ta] > fit.a0 - R && pl[fit.ta] < fit.a1 + R && cam.y - EYE < fit.y1 && cam.y > fit.y0) return say("STEP BACK");
+        const cols = Math.max(2, Math.round((fit.a1 - fit.a0) / CELL)), rows = Math.max(2, Math.round((fit.y1 - fit.y0) / CELL));
+        const b = Object.assign(fit, { cols, rows, cw: (fit.a1 - fit.a0) / cols, ch: (fit.y1 - fit.y0) / rows, hp: new Float32Array(cols * rows).fill(CELL_HP), solids: [], quads: [], dirty: true, seed: Math.floor(Math.random() * 4) });
+        barricades.push(b); rebuildBarricade(b); barCount--; say("BARRICADE PLACED");
+      }
+      function resetBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; debris = []; projectiles = []; smokes = []; barCount = 6; Object.keys(charges).forEach((k) => delete charges[k]); }
       function trace(w, reach, damageMul) {
         const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
         const fwd = [sy * cp, sp2, cy * cp], right = [cy, 0, -sy], up = [-sy * sp2, cp, -cy * sp2];
@@ -1601,7 +1856,8 @@
         const n = Math.hypot(...dr); dr = dr.map((v) => v / n);
         const o = [cam.x, cam.y, cam.z];
         let tw = dr[1] < 0 ? -o[1] / dr[1] : Infinity;
-        for (const c of colliders) { const t = rayBox(o, dr, c); if (t < tw) tw = t; }
+        let wall = null;
+        for (const c of colliders) { const t = rayBox(o, dr, c); if (t < tw) { tw = t; wall = c; } }
         let best = null, bt = Infinity, head = false;
         dummies.forEach((d) => {
           if (d.hp <= 0) return;
@@ -1610,17 +1866,112 @@
           const t = Math.min(bb, hb);
           if (t < bt) { bt = t; best = d; head = hb < bb; }
         });
+        if (wall && wall.bar && tw <= reach && tw < bt) {
+          const k = w.kind, p = o.map((v, i) => v + dr[i] * (tw + .01));
+          const power = w.stats.dmg * k.mult * damageMul;
+          if (k.melee) hitBarricade(wall.bar, p, .65, 1000, false, "hammer");
+          else if (k.pellets) hitBarricade(wall.bar, p, .3, power * 6, false, "shotgun");
+          else hitBarricade(wall.bar, p, .03, power, true, w.item.id === "longwatch" ? "longwatch" : "bullet");
+          recordHit(w.item.id); mark(false);
+          return;
+        }
         if (!best || bt > tw || bt > reach) return;
         const eff = reach / 2;
         const fall = bt <= eff || w.kind.melee ? 1 : Math.max(.35, 1 - (bt - eff) / eff * .65);
         const dmg = w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul;
-        best.hp -= dmg; best.hit = .12;
         recordHit(w.item.id);
-        if (best.hp <= 0) { best.died = tNow; kills++; say(head ? "HEADSHOT KILL" : "TARGET DOWN"); mark(true); setTimeout(() => { best.hp = 100; best.died = 0; }, 3500); }
+        hurtDummy(best, dmg, head);
+      }
+      function hurtDummy(d, dmg, head) {
+        d.hp -= dmg; d.hit = .12;
+        if (d.hp <= 0) { d.died = tNow; kills++; barCount = Math.min(MAX_BARS, barCount + 1); say(head ? "HEADSHOT KILL" : "TARGET DOWN"); mark(true); setTimeout(() => { d.hp = 100; d.died = 0; }, 3500); }
         else { if (head) say("HEADSHOT"); mark(false); }
+      }
+      // ---- Gadgets and equipment ----
+      let projectiles = [], smokes = [];
+      const SMOKE_R = 4.5, SMOKE_LIFE = 16;
+      const charges = {};
+      const flashEl = document.createElement("div");
+      flashEl.style.cssText = "position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity 1.6s ease-out";
+      el.appendChild(flashEl);
+      const aimDir = () => { const cp = Math.cos(cam.pitch); return [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp]; };
+      function useHeld(w) {
+        const id = w.item.id, left = charges[id] ?? w.kind.uses;
+        const o = [cam.x, cam.y, cam.z], dr = aimDir();
+        if (id === "steel-bars") {
+          if (left <= 0) return say("OUT OF STEEL BARS");
+          const bar = aimedBarricade(o, dr, 3.5);
+          if (!bar) return say("AIM AT A BARRICADE");
+          if (bar.steel) return say("ALREADY REINFORCED");
+          bar.steel = true; bar.hp.fill(STEEL_HP); bar.dirty = true;
+          charges[id] = left - 1; w.kick = 1; say("BARRICADE REINFORCED");
+          return;
+        }
+        if (w.kind.uses === Infinity) return say(id === "medkit" ? "NO INJURIES TO TREAT" : id === "shield" ? "SHIELD READY" : "NOT AVAILABLE YET");
+        if (left <= 0) return say("OUT OF " + w.item.name.toUpperCase());
+        charges[id] = left - 1; w.kick = 1;
+        if (id === "claymore") {
+          const g = dr[1] < -.05 ? Math.min(3.5, -o[1] / dr[1]) : 2;
+          projectiles.push({ type: id, x: o[0] + dr[0] * g, y: .08, z: o[2] + dr[2] * g, vx: 0, vy: 0, vz: 0, fuse: 99, arm: tNow + .6, mine: true });
+          return say("MINE PLACED");
+        }
+        projectiles.push({ type: id, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6 });
+      }
+      const smokeFade = (sm) => { const a = tNow - sm.t0; return Math.max(0, Math.min(1, a / 1.5, (SMOKE_LIFE - a) / 4)); };
+      function setSmoke(program, on) {
+        smokes = smokes.filter((sm) => tNow - sm.t0 < SMOKE_LIFE);
+        const c = new Float32Array(12), f = new Float32Array(3);
+        for (let i = 0; i < 3; i++) {
+          const sm = smokes[smokes.length - 1 - i];
+          if (!sm || !on) continue;
+          const g = smokeFade(sm);
+          c.set([sm.x - cam.x, sm.y - cam.y, sm.z - cam.z, SMOKE_R * (.4 + .6 * Math.min(1, (tNow - sm.t0) / 1.5))], i * 4); f[i] = g;
+        }
+        gl.uniform4fv(gl.getUniformLocation(program, "smc"), c); gl.uniform3fv(gl.getUniformLocation(program, "smf"), f);
+      }
+      function explode(p, radius, power) {
+        const bx = p.x, by = p.y + .2, bz = p.z;
+        dummies.forEach((d) => {
+          if (d.hp <= 0) return;
+          const dist = Math.hypot(d.x - bx, 1 - by, d.z - bz);
+          if (dist < radius) hurtDummy(d, 150 * (1 - dist / radius), false);
+        });
+        barricades.slice().forEach((b) => {
+          const pt = [0, 0, 0]; pt[b.ax] = b.n; pt[b.ta] = Math.max(b.a0, Math.min(b.a1, [bx, 0, bz][b.ta])); pt[1] = Math.max(b.y0, Math.min(b.y1, by));
+          const dist = Math.hypot(pt[0] - bx, pt[1] - by, pt[2] - bz);
+          if (dist < radius) hitBarricade(b, pt, 1.3, power * (1 - dist / radius), false, "frag");
+        });
+        spawnDebris(bx, by, bz, 40, true, ["#ff9a2e", "#ffd96b", "#4a4038"], 6, .8);
+      }
+      function stepProjectiles(dt, dq) {
+        projectiles = projectiles.filter((p) => {
+          if (p.mine) {
+            if (tNow > p.arm && dummies.some((d) => d.hp > 0 && Math.hypot(d.x - p.x, d.z - p.z) < 2.5)) { explode(p, 5, 260); return false; }
+          } else {
+            p.fuse -= dt;
+            p.vy -= 14 * dt;
+            const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt, nz = p.z + p.vz * dt;
+            if (inCollider([nx, p.y, p.z])) p.vx *= -.35; else p.x = nx;
+            if (inCollider([p.x, p.y, nz])) p.vz *= -.35; else p.z = nz;
+            if (inCollider([p.x, ny, p.z])) { p.vy *= -.3; p.vx *= .7; p.vz *= .7; } else p.y = ny;
+            if (p.y < .08) { p.y = .08; p.vy = Math.abs(p.vy) > 1.5 ? -p.vy * .35 : 0; p.vx *= .7; p.vz *= .7; }
+            if (p.fuse <= 0) {
+              if (p.type === "frag") explode(p, 6, 320);
+              else if (p.type === "flash") {
+                if (Math.hypot(cam.x - p.x, cam.z - p.z) < 14) { flashEl.style.transition = "none"; flashEl.style.opacity = 1; void flashEl.offsetWidth; flashEl.style.transition = "opacity 2.2s ease-out .4s"; flashEl.style.opacity = 0; }
+                spawnDebris(p.x, p.y + .2, p.z, 20, true, ["#ffffff", "#fff1b8"], 2, .35);
+              } else smokes.push({ x: p.x, y: Math.max(p.y, .1) + 1.4, z: p.z, t0: tNow });
+              return false;
+            }
+          }
+          const col = { frag: "#3d4a2a", flash: "#cfd3d6", smoke: "#8a9096", claymore: "#4a5a3a" }[p.type], r = p.mine ? .12 : .06;
+          qb(dq, p.x - r, p.x + r, p.y - r, p.y + r, p.z - r, p.z + r, col);
+          return true;
+        });
       }
       function fire(w) {
         const k = w.kind;
+        if (k.held) { w.next = tNow + 1 / k.rate; useHeld(w); return; }
         if (k.melee) { w.swingStart = tNow; w.swingHit = false; w.next = tNow + 1 / k.rate; return; }
         if (w.ammo <= 0) { startReload(w); return; }
         w.ammo--; w.next = tNow + 1 / k.rate; w.kick = 1; w.flash = .05;
@@ -1655,12 +2006,14 @@
           ang = .9; offX = .3; offY = -.12; offZ = .55;
           if (w.swingStart >= 0) { const t = Math.min(1, (tNow - w.swingStart) / .45); ang = .9 - 1.8 * Math.sin(Math.PI * Math.min(1, t)); offZ += .15 * Math.sin(Math.PI * t); }
         }
+        let vs = 1;
+        if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
         if (w.reloadEnd) { const t = (tNow - w.reloadStart) / w.kind.reload; ang -= .5 * Math.sin(Math.PI * t); offY -= .18 * Math.sin(Math.PI * t); }
         const ca = Math.cos(ang), sa = Math.sin(ang);
         const place = (q) => {
           const x = q[0] - w.mid[0], y = q[1] - w.mid[1], z = q[2] - w.mid[2];
           const xr = x * ca - y * sa, yr = x * sa + y * ca;
-          return [z * K + offX, yr * K + offY, xr * K + offZ];
+          return [z * K * vs + offX, yr * K * vs + offY, xr * K * vs + offZ];
         };
         const list = w.polys.map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv }));
         if (w.flash > 0 && !w.kind.melee) {
@@ -1730,8 +2083,8 @@
       const weaponHud = document.querySelector("#field-weapon");
       function updateHud() {
         const w = wpn(), k = w.kind;
-        const ammo = k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
-        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}</div><div style="opacity:.75">[1] ${weapons[loadout.primary].item.name} · [2] ${weapons[loadout.secondary].item.name} · KILLS ${kills}</div>`;
+        const ammo = k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
+        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">[1] ${weapons[loadout.primary].item.name} · [2] ${weapons[loadout.secondary].item.name} · [3] ${weapons[loadout.gadget].item.name} · [4] ${weapons[loadout.equipment].item.name} · KILLS ${kills}</div><div style="opacity:.75">[F] BARRICADES ${barCount}</div>`;
       }
 
       function frame(now) {
@@ -1773,19 +2126,33 @@
         gl.uniform4f(u("rot"), Math.cos(cam.yaw), Math.sin(cam.yaw), Math.cos(cam.pitch), Math.sin(cam.pitch));
         gl.uniform2f(u("fs"), 1.8 * h / w, 1.8);
         gl.uniform3f(u("sky"), ...SKY);
+        setSmoke(prog, true);
         gl.disable(gl.DEPTH_TEST);
+        drawSky();
         drawBuf(groundBuf, groundN);
+        drawTex(texGround);
         drawLogo();
         gl.enable(gl.DEPTH_TEST);
         drawBuf(solidBuf, solidN);
+        drawTex(texSolid);
         const dq = [];
         dummies.forEach((d) => dummyQuads(dq, d));
+        barricades.slice().forEach((b) => { if (b.dirty) rebuildBarricade(b); dq.push(...b.quads); });
+        const bdt = tNow - lastT;
+        debris = debris.filter((p) => (p.life -= bdt) > 0);
+        debris.forEach((p) => {
+          p.vy -= p.g * bdt; p.x += p.vx * bdt; p.y += p.vy * bdt; p.z += p.vz * bdt;
+          if (p.y < p.s) { p.y = p.s; p.vy = 0; p.vx *= .8; p.vz *= .8; }
+          qb(dq, p.x - p.s, p.x + p.s, p.y - p.s, p.y + p.s, p.z - p.s, p.z + p.s, p.c);
+        });
+        stepProjectiles(bdt, dq);
         drawDynamic(dq, true);
         updateWeapon(cw);
         lastT = tNow;
         gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.uniform3f(u("cam"), 0, 0, 0);
         gl.uniform4f(u("rot"), 1, 0, 1, 0);
+        setSmoke(prog, false);
         const vm = viewmodelQuads(cw, fwd !== 0 || str !== 0);
         drawDynamic(vm.filter((q) => !q.skin), true);
         drawSkinned(vm.filter((q) => q.skin));
@@ -1809,8 +2176,9 @@
         if (!running) return;
         const key = e.key.toLowerCase();
         if (key === "escape") return close();
-        if (key === "1" || key === "2") { const id = key === "1" ? "primary" : "secondary"; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
+        if (key >= "1" && key <= "4") { const id = ["primary", "secondary", "gadget", "equipment"][key - 1]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
         if (key === "r") startReload(wpn());
+        if (key === "f" && !e.repeat) placeBarricade();
         if (key === " " && grounded) cam.vy = 6.5;
         if (key.startsWith("arrow") || key === " ") e.preventDefault();
         keys.add(key);
@@ -1821,7 +2189,7 @@
       document.querySelector("#field-exit").addEventListener("click", close);
       return { open() {
         el.classList.add("open"); if (!gl) initGL();
-        refreshWeapons(); if (!dummies.length) resetDummies(); curSlot = "primary"; lastT = 0;
+        refreshWeapons(); resetBarricades(); if (!dummies.length) resetDummies(); curSlot = "primary"; lastT = 0;
         running = true; last = performance.now(); requestAnimationFrame(frame);
         canvas.requestPointerLock && canvas.requestPointerLock();
       } };
