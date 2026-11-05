@@ -19,7 +19,7 @@ const playlistMaps = {
 const quickMatchPlaylists = ["standard", "defuse", "rescue", "duel"];
 const queueSeconds = Number(process.env.QUEUE_SECONDS || 60);
 const fullLobbySeconds = 15;
-const prepSeconds = Number(process.env.PREP_SECONDS || 45);
+const prepSeconds = Number(process.env.PREP_SECONDS || 10);
 const roundEndSeconds = 6;
 const matchOverSeconds = 8;
 const roundsToWin = 2;
@@ -125,14 +125,16 @@ function broadcastLobby(lobby) {
     capacity: teamSize(lobby.mode) * 2,
     startsInMs,
     fastStart: Boolean(lobby.fullDeadline),
-    myVote: lobby.ballots.get(member.id) || null
+    myVote: lobby.ballots.get(member.id) || null,
+    ready: lobby.ready.size,
+    myReady: lobby.ready.has(member.id)
   }));
 }
 
 function enqueueUnit(unit) {
   let lobby = findLobby(unit.mode, unit.members.length);
   if (!lobby) {
-    lobby = { id: crypto.randomUUID(), mode: unit.mode, units: [], ballots: new Map(), options: playlistMaps[unit.mode], timer: null, deadline: null, baseDeadline: null, fullDeadline: null };
+    lobby = { id: crypto.randomUUID(), mode: unit.mode, units: [], ballots: new Map(), ready: new Set(), options: playlistMaps[unit.mode], timer: null, deadline: null, baseDeadline: null, fullDeadline: null };
     lobbies.set(lobby.id, lobby);
   }
   lobby.units.push(unit);
@@ -158,6 +160,7 @@ function removeFromQueue(player) {
   lobby.units = lobby.units.filter((entry) => entry !== unit);
   unit.members.forEach((id) => {
     lobby.ballots.delete(id);
+    lobby.ready.delete(id);
     const member = players.get(id);
     if (member) {
       member.queuedMode = null;
@@ -171,7 +174,14 @@ function removeFromQueue(player) {
     return;
   }
   scheduleLobby(lobby);
-  broadcastLobby(lobby);
+  if (!checkAllReady(lobby)) broadcastLobby(lobby);
+}
+
+function checkAllReady(lobby) {
+  const members = lobbyMembers(lobby);
+  if (lobby.units.length < 2 || !members.length || !members.every((member) => lobby.ready.has(member.id))) return false;
+  startLobby(lobby);
+  return !lobbies.has(lobby.id);
 }
 
 function detachParty(player) {
@@ -221,9 +231,30 @@ function dropLoot(match, victim) {
   });
 }
 
+function applyDamage(match, attacker, target, amount) {
+  if (match.phase !== "live" || target.health <= 0) return;
+  target.health = Math.max(0, target.health - amount);
+  if (target.health === 0) {
+    attacker.kills++;
+    target.deaths++;
+    dropLoot(match, target);
+  }
+  const event = { type: "player_damaged", playerId: target.id, health: target.health, killerId: target.health === 0 ? attacker.id : null, killerKills: attacker.kills, deaths: target.deaths };
+  for (const id of match.players) sendPlayer(players.get(id), event);
+  checkRound(match);
+}
+
+const blastRadius = { frag: 6, claymore: 5 };
+const finite = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
+
+function relayToMatch(match, sender, message) {
+  for (const id of match.players) if (id !== sender.id) sendPlayer(players.get(id), { ...message, from: sender.id });
+}
+
 function startRound(match, type) {
   match.round++;
   match.drops = new Map();
+  match.projectiles = new Map();
   match.phase = "prep";
   match.phaseEnd = Date.now() + prepSeconds * 1000;
   const slots = { 1: 0, 2: 0 };
@@ -431,6 +462,13 @@ function handleMessage(player, raw) {
     else broadcastLobby(lobby);
     return;
   }
+  if (message.type === "ready") {
+    const lobby = lobbies.get(player.lobbyId);
+    if (!lobby) return;
+    if (message.ready === false) lobby.ready.delete(player.id); else lobby.ready.add(player.id);
+    if (!checkAllReady(lobby)) broadcastLobby(lobby);
+    return;
+  }
   if (message.type === "leave_queue") return removeFromQueue(player);
   if (message.type === "leave_match") return leaveMatch(player);
   if (message.type === "shoot" && player.matchId) {
@@ -463,15 +501,47 @@ function handleMessage(player, raw) {
     const damage = Number(message.damage);
     if (!Number.isFinite(distance) || distance > 100 || !Number.isFinite(damage)) return;
     player.lastShotAt = now;
-    target.health = Math.max(0, target.health - Math.min(55, Math.max(1, damage)));
-    if (target.health === 0) {
-      player.kills++;
-      target.deaths++;
-      dropLoot(match, target);
+    applyDamage(match, player, target, Math.min(55, Math.max(1, damage)));
+    return;
+  }
+  if (message.type === "throw" && player.matchId) {
+    const match = matches.get(player.matchId);
+    if (!match || match.phase === "over" || player.health <= 0 || !["frag", "flash", "smoke", "claymore"].includes(message.kind)) return;
+    const id = String(message.id || "").slice(0, 48);
+    if (!id || match.projectiles.has(id) || [...match.projectiles.values()].filter((entry) => entry.owner === player.id).length >= 12) return;
+    match.projectiles.set(id, { owner: player.id, kind: message.kind });
+    relayToMatch(match, player, { type: "throw", id, kind: message.kind, x: finite(message.x, 150), y: finite(message.y, 40), z: finite(message.z, 150), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
+    return;
+  }
+  if (message.type === "explode" && player.matchId) {
+    const match = matches.get(player.matchId);
+    const projectile = match?.projectiles.get(String(message.id || ""));
+    if (!projectile || projectile.owner !== player.id || match.phase === "over") return;
+    match.projectiles.delete(String(message.id));
+    const x = finite(message.x, 150), y = finite(message.y, 40), z = finite(message.z, 150);
+    relayToMatch(match, player, { type: "explosion", id: String(message.id), kind: projectile.kind, x, y, z });
+    const radius = blastRadius[projectile.kind];
+    if (!radius || match.phase !== "live") return;
+    for (const targetId of [...match.players]) {
+      const target = players.get(targetId);
+      if (!target || target.team === player.team || target.health <= 0) continue;
+      const distance = Math.hypot(target.state.x - x, target.state.y - 1 - y, target.state.z - z);
+      if (distance < radius) applyDamage(match, player, target, Math.max(1, Math.round(130 * (1 - distance / radius))));
     }
-    const event = { type: "player_damaged", playerId: target.id, health: target.health, killerId: target.health === 0 ? player.id : null, killerKills: player.kills, deaths: target.deaths };
-    for (const id of match.players) sendPlayer(players.get(id), event);
-    checkRound(match);
+    return;
+  }
+  if (message.type === "bar" && player.matchId) {
+    const match = matches.get(player.matchId);
+    if (!match || match.phase === "over" || player.health <= 0 || typeof message.op !== "string") return;
+    const id = String(message.id || "").slice(0, 48);
+    if (message.op === "place") {
+      const fit = message.fit || {};
+      if (![0, 2].includes(fit.ax) || !["n", "a0", "a1", "y0", "y1"].every((key) => Number.isFinite(fit[key]))) return;
+      relayToMatch(match, player, { type: "bar", op: "place", id, fit: { ax: fit.ax, n: fit.n, a0: fit.a0, a1: fit.a1, y0: fit.y0, y1: fit.y1 } });
+    } else if (message.op === "hit") {
+      if (!Array.isArray(message.p) || message.p.length !== 3 || !message.p.every(Number.isFinite)) return;
+      relayToMatch(match, player, { type: "bar", op: "hit", id, p: message.p, radius: finite(message.radius, 5), power: finite(message.power, 5000), chip: message.chip === true, src: String(message.src || "").slice(0, 12) });
+    } else if (message.op === "repair" || message.op === "steel") relayToMatch(match, player, { type: "bar", op: message.op, id });
     return;
   }
   if (message.type === "pickup" && player.matchId) {

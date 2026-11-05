@@ -537,6 +537,7 @@
               <div class="vote-options" id="vote-options"></div>
               <div class="lobby-status" id="vote-status"></div>
             </div>
+            <button class="lobby-button" id="ready-action" hidden>READY</button>
             <button class="lobby-button primary" id="queue-action" disabled>FIND MATCH</button>
           </section>
         </div>
@@ -727,6 +728,10 @@
       document.querySelector("#party-code-input").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
       document.querySelector("#join-party").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
       lobby.queueAction.disabled = Boolean(multiplayer.vote) || !connected || (isDuel && partySize > 1) || (party && party.leader !== multiplayer.playerId) || Boolean(multiplayer.match);
+      const readyButton = document.querySelector("#ready-action");
+      readyButton.hidden = !multiplayer.vote;
+      readyButton.textContent = multiplayer.vote?.myReady ? "READY ✓ (CLICK TO UNREADY)" : `READY (${multiplayer.vote?.ready || 0} / ${multiplayer.vote?.total || 0})`;
+      readyButton.classList.toggle("chosen", Boolean(multiplayer.vote?.myReady));
       lobby.queueAction.textContent = multiplayer.queuedMode ? "CANCEL SEARCH" : "FIND MATCH";
       if (isDuel && partySize > 1) lobbyStatus("1v1 is solo only. Leave your party to queue.");
     }
@@ -760,7 +765,7 @@
         button.addEventListener("click", () => multiplayer.socket?.send(JSON.stringify({ type: "vote_map", map: id })));
         box.append(button);
       });
-      document.querySelector("#vote-status").textContent = `${vote.total} / ${vote.capacity} players in lobby · ${vote.voted} voted. ${vote.fastStart ? "Lobby full: starting shortly." : "The match starts when the timer ends or the lobby fills. Most votes wins; ties are random."}`;
+      document.querySelector("#vote-status").textContent = `${vote.total} / ${vote.capacity} players in lobby · ${vote.voted} voted. ${vote.fastStart ? "Lobby full: starting shortly." : "The match starts when the timer ends, the lobby fills, or everyone presses READY. Most votes wins; ties are random."}`;
       const tick = () => { document.querySelector("#vote-timer").textContent = vote.endsAt === null ? "WAITING FOR PLAYERS" : `${Math.max(0, Math.ceil((vote.endsAt - performance.now()) / 1000))}S`; };
       tick();
       multiplayer.voteTicker = setInterval(tick, 250);
@@ -799,6 +804,7 @@
           multiplayer.match = message;
           multiplayer.round = roundFrom(message);
           multiplayer.vote = null;
+          multiplayer.queuedMode = null;
           multiplayer.remotePlayers.clear();
           lobby.el.classList.remove("open");
           openField();
@@ -833,8 +839,13 @@
         if (message.type === "drop" && multiplayer.match) fieldView.addDrop(message);
         if (message.type === "drop_taken" && multiplayer.match) fieldView.dropTaken(message);
         if (message.type === "player_left") multiplayer.remotePlayers.delete(message.playerId);
+        if (message.type === "throw") fieldView.remoteThrow(message);
+        if (message.type === "explosion") fieldView.remoteExplosion(message);
+        if (message.type === "bar") fieldView.remoteBarricade(message);
         if (message.type === "match_ended") {
           multiplayer.match = null;
+          multiplayer.queuedMode = null;
+          multiplayer.vote = null;
           multiplayer.round = null;
           multiplayer.remotePlayers.clear();
           fieldView.close();
@@ -872,6 +883,7 @@
       multiplayer.socket?.send(JSON.stringify({ type: "join_party", code: input.value }));
       input.value = "";
     });
+    document.querySelector("#ready-action").addEventListener("click", () => multiplayer.socket?.send(JSON.stringify({ type: "ready", ready: !multiplayer.vote?.myReady })));
     lobby.queueAction.addEventListener("click", () => {
       if (multiplayer.queuedMode) multiplayer.socket?.send(JSON.stringify({ type: "leave_queue" }));
       else multiplayer.socket?.send(JSON.stringify({ type: "queue", mode: selection.PLAY.mode.id }));
@@ -2119,7 +2131,7 @@
       const ownEntry = () => multiplayer.match?.players.find((player) => player.id === multiplayer.playerId);
       const isDead = () => Boolean(multiplayer.match) && (ownEntry()?.health ?? 100) <= 0;
       const barrierOn = () => Boolean(multiplayer.match) && multiplayer.round?.phase === "prep";
-      const canFire = (w) => !isDead() && (!multiplayer.match || multiplayer.round?.phase === "live" || w.kind.held);
+      const canFire = (w) => !isDead() && true;
       const clampToSide = (z, margin) => multiplayer.match?.team === 1 ? Math.min(z, -margin) : Math.max(z, margin);
       const angleStep = (from, to, rate) => from + (((to - from + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * rate;
       function spectateTarget(step) {
@@ -2205,6 +2217,18 @@
           debris.push({ x, y, z, vx: Math.cos(a) * sp, vy: Math.random() * 3 + 1, vz: Math.sin(a) * sp, life, g: grav, s: .03 + Math.random() * (big ? .07 : .04), c: (colors || WOODS)[i % (colors || WOODS).length] });
         }
       }
+      const sendMatch = (message) => { if (multiplayer.match) multiplayer.socket?.send(JSON.stringify(message)); };
+      let barSeq = 0, projSeq = 0;
+      const barById = (id) => barricades.find((b) => b.id === id);
+      function remoteBarricade(m) {
+        if (!multiplayer.match) return;
+        if (m.op === "place") { if (!barById(m.id)) makeBarricade({ ...m.fit, id: m.id }); return; }
+        const b = barById(m.id);
+        if (!b) return;
+        if (m.op === "hit") hitBarricade(b, m.p, m.radius, m.power, m.chip, m.src);
+        else if (m.op === "repair") { b.hp.fill(b.steel ? STEEL_HP : CELL_HP); b.dirty = true; }
+        else if (m.op === "steel") { b.steel = true; b.hp.fill(STEEL_HP); b.dirty = true; }
+      }
       function hitBarricade(b, p, radius, power, chip, src) {
         if (b.steel) {
           // reinforced panels only give way to hammer strikes, longwatch rounds and frag blasts
@@ -2241,7 +2265,7 @@
         if (ex) {
           const cap = ex.steel ? STEEL_HP : CELL_HP;
           if (ex.hp.every((v) => v >= cap)) return say("BARRICADE INTACT");
-          ex.hp.fill(cap); ex.dirty = true; barCount--; return say("BARRICADE REPAIRED");
+          ex.hp.fill(cap); ex.dirty = true; barCount--; sendMatch({ type: "bar", op: "repair", id: ex.id }); return say("BARRICADE REPAIRED");
         }
         const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
         const dr = [sy * cp, sp2, cy * cp], o = [renderCam.x, renderCam.y, renderCam.z];
@@ -2255,7 +2279,8 @@
         if (!fit) return say("NO OPENING TO BARRICADE");
         const h = BAR_TH / 2 + R, pl = [cam.x, 0, cam.z];
         if (Math.abs(pl[fit.ax] - fit.n) < h && pl[fit.ta] > fit.a0 - R && pl[fit.ta] < fit.a1 + R && cam.y - eyeHeight < fit.y1 && cam.y > fit.y0) return say("STEP BACK");
-        makeBarricade(fit); barCount--; say("BARRICADE PLACED");
+        const placed = makeBarricade({ ...fit, id: `${multiplayer.playerId}:${++barSeq}` }); barCount--; say("BARRICADE PLACED");
+        sendMatch({ type: "bar", op: "place", id: placed.id, fit: { ax: fit.ax, n: fit.n, a0: fit.a0, a1: fit.a1, y0: fit.y0, y1: fit.y1 } });
       }
       function makeBarricade(fit) {
         const cols = Math.max(2, Math.round((fit.a1 - fit.a0) / CELL)), rows = Math.max(2, Math.round((fit.y1 - fit.y0) / CELL));
@@ -2267,7 +2292,8 @@
       // ---- Pre-built barricades and supply pickups ----
       // ax is the wall normal (0 = x, 2 = z), n the wall plane, a0..a1 the opening along the other axis
       function seedBarricades() {
-        const put = (ax, n, a0, a1, y0, y1) => makeBarricade({ ax, ta: ax === 0 ? 2 : 0, n, a0: Math.min(a0, a1), a1: Math.max(a0, a1), y0, y1 });
+        let seedId = 0;
+        const put = (ax, n, a0, a1, y0, y1) => makeBarricade({ id: `s${seedId++}`, ax, ta: ax === 0 ? 2 : 0, n, a0: Math.min(a0, a1), a1: Math.max(a0, a1), y0, y1 });
         // tent doorways
         const tentDoor = (x, z, side) => {
           const hw = 3.75, hd = 3.25, g = .9, dh = 2.15;
@@ -2390,7 +2416,7 @@
           if (t < bt) { bt = t; best = d; head = hb < bb; }
         });
         let playerTarget = null, playerDistance = Infinity;
-        multiplayer.remotePlayers.forEach((other) => {
+        if (multiplayer.round?.phase !== "prep") multiplayer.remotePlayers.forEach((other) => {
           const state = other.state;
           if (!state || other.team === multiplayer.match?.team || other.health <= 0) return;
           const base = state.y - (state.crouched ? CROUCH_EYE : EYE), leanX = Math.cos(state.yaw) * (state.lean || 0) * .7, leanZ = -Math.sin(state.yaw) * (state.lean || 0) * .7;
@@ -2408,9 +2434,9 @@
         if (wall && wall.bar && tw <= reach && tw < bt) {
           const k = w.kind, p = o.map((v, i) => v + dr[i] * (tw + .01));
           const power = w.stats.dmg * k.mult * damageMul;
-          if (k.melee) hitBarricade(wall.bar, p, .65, 1000, false, "hammer");
-          else if (k.pellets) hitBarricade(wall.bar, p, .3, power * 6, false, "shotgun");
-          else hitBarricade(wall.bar, p, .03, power, true, w.item.id === "longwatch" ? "longwatch" : "bullet");
+          const hit = k.melee ? [.65, 1000, false, "hammer"] : k.pellets ? [.3, power * 6, false, "shotgun"] : [.03, power, true, w.item.id === "longwatch" ? "longwatch" : "bullet"];
+          hitBarricade(wall.bar, p, ...hit);
+          sendMatch({ type: "bar", op: "hit", id: wall.bar.id, p, radius: hit[0], power: hit[1], chip: hit[2], src: hit[3] });
           recordHit(w.item.id); mark(false);
           return;
         }
@@ -2530,7 +2556,7 @@
           const bar = aimedBarricade(o, dr, 3.5);
           if (!bar) return say("AIM AT A BARRICADE");
           if (bar.steel) return say("ALREADY REINFORCED");
-          bar.steel = true; bar.hp.fill(STEEL_HP); bar.dirty = true;
+          bar.steel = true; bar.hp.fill(STEEL_HP); bar.dirty = true; sendMatch({ type: "bar", op: "steel", id: bar.id });
           charges[id] = left - 1; w.kick = 1; say("BARRICADE REINFORCED");
           return;
         }
@@ -2547,10 +2573,13 @@
         charges[id] = left - 1; w.kick = 1;
         if (id === "claymore") {
           const g = dr[1] < -.05 ? Math.min(3.5, -o[1] / dr[1]) : 2;
-          projectiles.push({ type: id, x: o[0] + dr[0] * g, y: .08, z: o[2] + dr[2] * g, vx: 0, vy: 0, vz: 0, fuse: 99, arm: tNow + .6, mine: true });
+          const mine = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, x: o[0] + dr[0] * g, y: .08, z: o[2] + dr[2] * g, vx: 0, vy: 0, vz: 0, fuse: 99, arm: tNow + .6, mine: true, own: true };
+          projectiles.push(mine); sendMatch({ type: "throw", id: mine.pid, kind: id, x: mine.x, y: mine.y, z: mine.z, vx: 0, vy: 0, vz: 0, fuse: 99, mine: true });
           return say("MINE PLACED");
         }
-        projectiles.push({ type: id, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6 });
+        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6, own: true };
+        projectiles.push(thrown);
+        sendMatch({ type: "throw", id: thrown.pid, kind: id, x: thrown.x, y: thrown.y, z: thrown.z, vx: thrown.vx, vy: thrown.vy, vz: thrown.vz, fuse: thrown.fuse });
       }
       const smokeFade = (sm) => { const a = tNow - sm.t0; return Math.max(0, Math.min(1, a / 1.5, (SMOKE_LIFE - a) / 4)); };
       function setSmoke(program, on) {
@@ -2564,6 +2593,25 @@
         }
         gl.uniform4fv(gl.getUniformLocation(program, "smc"), c); gl.uniform3fv(gl.getUniformLocation(program, "smf"), f);
       }
+      function remoteThrow(m) {
+        if (!multiplayer.match || projectiles.some((p) => p.pid === m.id)) return;
+        projectiles.push({ pid: m.id, type: m.kind, x: m.x, y: m.y, z: m.z, vx: m.vx, vy: m.vy, vz: m.vz, fuse: m.fuse, mine: m.mine, arm: Infinity, own: false });
+      }
+      function applyEffect(p) {
+        if (p.type === "frag") explode(p, 6, 320);
+        else if (p.type === "claymore") explode(p, 5, 260);
+        else if (p.type === "flash") {
+          if (Math.hypot(cam.x - p.x, cam.z - p.z) < 14) { flashEl.style.transition = "none"; flashEl.style.opacity = 1; void flashEl.offsetWidth; flashEl.style.transition = "opacity 2.2s ease-out .4s"; flashEl.style.opacity = 0; }
+          spawnDebris(p.x, p.y + .2, p.z, 20, true, ["#ffffff", "#fff1b8"], 2, .35);
+        } else smokes.push({ x: p.x, y: Math.max(p.y, .1) + 1.4, z: p.z, t0: tNow });
+      }
+      function remoteExplosion(m) {
+        if (!multiplayer.match) return;
+        const i = projectiles.findIndex((p) => p.pid === m.id);
+        if (i >= 0) projectiles.splice(i, 1);
+        applyEffect({ type: m.kind, x: m.x, y: m.y, z: m.z });
+      }
+      const detonate = (p) => { sendMatch({ type: "explode", id: p.pid, x: p.x, y: p.y, z: p.z }); applyEffect(p); };
       function explode(p, radius, power) {
         const bx = p.x, by = p.y + .2, bz = p.z;
         dummies.forEach((d) => {
@@ -2581,7 +2629,8 @@
       function stepProjectiles(dt, dq) {
         projectiles = projectiles.filter((p) => {
           if (p.mine) {
-            if (tNow > p.arm && dummies.some((d) => d.hp > 0 && Math.hypot(d.x - p.x, d.z - p.z) < 2.5)) { explode(p, 5, 260); return false; }
+            const enemyNear = p.own && multiplayer.round?.phase === "live" && [...multiplayer.remotePlayers.values()].some((o) => o.team !== multiplayer.match?.team && o.health > 0 && o.state && Math.hypot(o.state.x - p.x, o.state.z - p.z) < 2.5);
+            if (p.own && tNow > p.arm && (enemyNear || dummies.some((d) => d.hp > 0 && Math.hypot(d.x - p.x, d.z - p.z) < 2.5))) { detonate(p); return false; }
           } else {
             p.fuse -= dt;
             p.vy -= 14 * dt;
@@ -2591,11 +2640,9 @@
             if (inCollider([p.x, ny, p.z])) { p.vy *= -.3; p.vx *= .7; p.vz *= .7; } else p.y = ny;
             if (p.y < .08) { p.y = .08; p.vy = Math.abs(p.vy) > 1.5 ? -p.vy * .35 : 0; p.vx *= .7; p.vz *= .7; }
             if (p.fuse <= 0) {
-              if (p.type === "frag") explode(p, 6, 320);
-              else if (p.type === "flash") {
-                if (Math.hypot(cam.x - p.x, cam.z - p.z) < 14) { flashEl.style.transition = "none"; flashEl.style.opacity = 1; void flashEl.offsetWidth; flashEl.style.transition = "opacity 2.2s ease-out .4s"; flashEl.style.opacity = 0; }
-                spawnDebris(p.x, p.y + .2, p.z, 20, true, ["#ffffff", "#fff1b8"], 2, .35);
-              } else smokes.push({ x: p.x, y: Math.max(p.y, .1) + 1.4, z: p.z, t0: tNow });
+              // remote copies wait for the owner's explosion message so everyone sees the same blast
+              if (!p.own && multiplayer.match) { p.vx = p.vz = 0; return p.fuse > -5; }
+              detonate(p);
               return false;
             }
           }
@@ -3047,7 +3094,7 @@
         if (locked()) document.exitPointerLock();
       }
       document.querySelector("#field-exit").addEventListener("click", close);
-      return { close, beginRound, say, addDrop, dropTaken, open({ practice = false } = {}) {
+      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, remoteBarricade, open({ practice = false } = {}) {
         if (drone.active) recallDrone();
         crouched = false; eyeHeight = EYE; lean = 0;
         el.classList.add("open"); if (!gl) initGL();
