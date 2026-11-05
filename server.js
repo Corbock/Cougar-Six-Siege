@@ -8,7 +8,7 @@ const root = __dirname;
 const port = Number(process.env.PORT || 8000);
 const players = new Map();
 const parties = new Map();
-const queues = { standard: [], ranked: [], defuse: [], rescue: [], duel: [] };
+const lobbies = new Map();
 const playlistMaps = {
   standard: ["field", "harbor", "foundry"],
   ranked: ["field", "harbor"],
@@ -17,8 +17,15 @@ const playlistMaps = {
   duel: ["field"]
 };
 const quickMatchPlaylists = ["standard", "defuse", "rescue", "duel"];
-const voteSeconds = 15;
-const votes = new Map();
+const queueSeconds = Number(process.env.QUEUE_SECONDS || 60);
+const fullLobbySeconds = 15;
+const prepSeconds = Number(process.env.PREP_SECONDS || 45);
+const roundEndSeconds = 6;
+const matchOverSeconds = 8;
+const roundsToWin = 2;
+const spawnXs = [-17.6, -5.9, 5.9, 17.6, 29.3];
+const spawnZ = 50.5;
+const barrierClampZ = 0.7;
 const matches = new Map();
 const mimeTypes = {
   ".avif": "image/avif",
@@ -55,40 +62,116 @@ function notifyQueue(unit, status, extra = {}) {
   unit.members.forEach((id) => sendPlayer(players.get(id), { type: "queue_status", mode: unit.mode, status, ...extra }));
 }
 
-function cancelVote(vote) {
-  clearTimeout(vote.timer);
-  votes.delete(vote.id);
-  for (const unit of vote.units) {
-    unit.members.forEach((id) => { const member = players.get(id); if (member) member.voteId = null; });
-    queues[vote.mode].unshift(unit);
-    notifyQueue(unit, "searching", { partySize: unit.members.length });
+function teamSize(mode) {
+  return mode === "duel" ? 1 : 5;
+}
+
+function assignTeams(units, target) {
+  const teams = [[], []];
+  const sizes = [0, 0];
+  for (const unit of [...units].sort((a, b) => b.members.length - a.members.length)) {
+    const side = sizes[0] <= sizes[1] ? 0 : 1;
+    if (sizes[side] + unit.members.length > target) return null;
+    teams[side].push(unit);
+    sizes[side] += unit.members.length;
   }
-  startMatch(vote.mode);
+  return teams;
+}
+
+function lobbySize(lobby) {
+  return lobby.units.reduce((total, unit) => total + unit.members.length, 0);
+}
+
+function lobbyMembers(lobby) {
+  return lobby.units.flatMap((unit) => unit.members).map((id) => players.get(id)).filter(Boolean);
+}
+
+function findLobby(mode, size) {
+  const candidate = { members: new Array(size) };
+  let best = null;
+  for (const lobby of lobbies.values()) {
+    if (lobby.mode !== mode || !assignTeams([...lobby.units, candidate], teamSize(mode))) continue;
+    if (!best || lobbySize(lobby) > lobbySize(best)) best = lobby;
+  }
+  return best;
+}
+
+function scheduleLobby(lobby) {
+  clearTimeout(lobby.timer);
+  lobby.timer = null;
+  if (lobby.units.length < 2) {
+    lobby.deadline = lobby.baseDeadline = lobby.fullDeadline = null;
+    return;
+  }
+  const now = Date.now();
+  lobby.baseDeadline ??= now + queueSeconds * 1000;
+  if (!lobby.fullDeadline && lobbySize(lobby) >= teamSize(lobby.mode) * 2) lobby.fullDeadline = now + fullLobbySeconds * 1000;
+  lobby.deadline = Math.min(lobby.baseDeadline, lobby.fullDeadline ?? Infinity);
+  lobby.timer = setTimeout(() => startLobby(lobby), Math.max(0, lobby.deadline - now));
+}
+
+function broadcastLobby(lobby) {
+  const tally = Object.fromEntries(lobby.options.map((map) => [map, 0]));
+  lobby.ballots.forEach((map) => { tally[map]++; });
+  const members = lobbyMembers(lobby);
+  const startsInMs = lobby.deadline ? Math.max(0, lobby.deadline - Date.now()) : null;
+  members.forEach((member) => sendPlayer(member, {
+    type: "lobby_update",
+    mode: lobby.mode,
+    options: lobby.options,
+    tally,
+    voted: lobby.ballots.size,
+    total: members.length,
+    capacity: teamSize(lobby.mode) * 2,
+    startsInMs,
+    fastStart: Boolean(lobby.fullDeadline),
+    myVote: lobby.ballots.get(member.id) || null
+  }));
+}
+
+function enqueueUnit(unit) {
+  let lobby = findLobby(unit.mode, unit.members.length);
+  if (!lobby) {
+    lobby = { id: crypto.randomUUID(), mode: unit.mode, units: [], ballots: new Map(), options: playlistMaps[unit.mode], timer: null, deadline: null, baseDeadline: null, fullDeadline: null };
+    lobbies.set(lobby.id, lobby);
+  }
+  lobby.units.push(unit);
+  unit.members.forEach((id) => {
+    const member = players.get(id);
+    member.queuedMode = unit.mode;
+    member.lobbyId = lobby.id;
+  });
+  notifyQueue(unit, "searching", { partySize: unit.members.length });
+  scheduleLobby(lobby);
+  broadcastLobby(lobby);
 }
 
 function removeFromQueue(player) {
-  const vote = votes.get(player.voteId);
-  if (vote) {
-    const unit = vote.units.find((entry) => entry.members.includes(player.id));
-    unit.members.forEach((id) => {
-      const member = players.get(id);
-      if (member) { member.queuedMode = null; member.voteId = null; }
-    });
-    notifyQueue(unit, "cancelled");
-    vote.units = vote.units.filter((entry) => entry !== unit);
-    cancelVote(vote);
+  const lobby = lobbies.get(player.lobbyId);
+  player.lobbyId = null;
+  if (!lobby) {
+    player.queuedMode = null;
     return;
   }
-  for (const mode of Object.keys(queues)) {
-    const index = queues[mode].findIndex((unit) => unit.members.includes(player.id));
-    if (index < 0) continue;
-    const [unit] = queues[mode].splice(index, 1);
-    unit.members.forEach((id) => {
-      const member = players.get(id);
-      if (member) member.queuedMode = null;
-    });
-    notifyQueue(unit, "cancelled");
+  const unit = lobby.units.find((entry) => entry.members.includes(player.id));
+  if (!unit) return;
+  lobby.units = lobby.units.filter((entry) => entry !== unit);
+  unit.members.forEach((id) => {
+    lobby.ballots.delete(id);
+    const member = players.get(id);
+    if (member) {
+      member.queuedMode = null;
+      member.lobbyId = null;
+    }
+  });
+  notifyQueue(unit, "cancelled");
+  if (!lobby.units.length) {
+    clearTimeout(lobby.timer);
+    lobbies.delete(lobby.id);
+    return;
   }
+  scheduleLobby(lobby);
+  broadcastLobby(lobby);
 }
 
 function detachParty(player) {
@@ -105,147 +188,172 @@ function detachParty(player) {
   broadcastParty(party);
 }
 
+function spawnPoint(team, index) {
+  return { x: spawnXs[index % spawnXs.length], y: 1.8, z: team === 1 ? -spawnZ : spawnZ, yaw: team === 1 ? 0 : Math.PI };
+}
+
+function matchInfo(match) {
+  return {
+    matchId: match.id,
+    mode: match.mode,
+    map: match.map,
+    round: match.round,
+    phase: match.phase,
+    phaseMs: Math.max(0, match.phaseEnd - Date.now()),
+    wins: match.wins,
+    roundsToWin
+  };
+}
+
+let dropCounter = 0;
+const extraDrops = ["grenade", "medkit", "wood", "metal"];
+
+function dropLoot(match, victim) {
+  const state = victim.state || victim.spawn;
+  if (!state) return;
+  const floor = Math.max(0, state.y - (state.crouched ? 1.05 : 1.8));
+  const kinds = ["ammo"];
+  if (Math.random() < .3) kinds.push(extraDrops[Math.floor(Math.random() * extraDrops.length)]);
+  kinds.forEach((kind, index) => {
+    const drop = { id: `d${++dropCounter}`, kind, x: state.x + (index ? .7 : 0), y: floor, z: state.z + (index ? .4 : 0) };
+    match.drops.set(drop.id, drop);
+    for (const id of match.players) sendPlayer(players.get(id), { type: "drop", ...drop });
+  });
+}
+
+function startRound(match, type) {
+  match.round++;
+  match.drops = new Map();
+  match.phase = "prep";
+  match.phaseEnd = Date.now() + prepSeconds * 1000;
+  const slots = { 1: 0, 2: 0 };
+  const members = [...match.players].map((id) => players.get(id)).filter(Boolean);
+  for (const player of members) {
+    player.health = 100;
+    player.medkits = 2;
+    player.lastHealAt = 0;
+    player.lastShotAt = 0;
+    player.spawn = spawnPoint(player.team, slots[player.team]++);
+    player.state = { ...player.spawn, pitch: 0, crouched: false, lean: 0, droneState: null };
+  }
+  const roster = members.map(({ id, name, team }) => ({ id, name, team }));
+  for (const player of members) {
+    sendPlayer(player, { type, ...matchInfo(match), team: player.team, spawn: player.spawn, players: roster });
+  }
+}
+
+function teamAlive(match, team) {
+  return [...match.players].filter((id) => {
+    const player = players.get(id);
+    return player && player.team === team && player.health > 0;
+  }).length;
+}
+
+function checkRound(match) {
+  if (match.phase !== "live") return;
+  const first = teamAlive(match, 1), second = teamAlive(match, 2);
+  if (first && second) return;
+  const winner = first ? 1 : second ? 2 : 0;
+  if (!winner) return;
+  match.wins[winner]++;
+  const decided = match.wins[winner] >= roundsToWin;
+  match.phase = decided ? "over" : "roundEnd";
+  match.phaseEnd = Date.now() + (decided ? matchOverSeconds : roundEndSeconds) * 1000;
+  for (const id of match.players) sendPlayer(players.get(id), { type: "round_end", winner, wins: match.wins, matchWinner: decided ? winner : null, phaseMs: match.phaseEnd - Date.now() });
+}
+
+function finishMatch(match, reason) {
+  matches.delete(match.id);
+  for (const id of match.players) {
+    const player = players.get(id);
+    if (!player) continue;
+    player.matchId = null;
+    player.team = null;
+    sendPlayer(player, { type: "match_ended", reason, final: true });
+  }
+}
+
+function advanceMatch(match, now) {
+  if (now < match.phaseEnd) return;
+  if (match.phase === "prep") match.phase = "live", match.phaseEnd = Infinity;
+  else if (match.phase === "roundEnd") startRound(match, "round_start");
+  else if (match.phase === "over") finishMatch(match, `Team ${match.wins[1] > match.wins[2] ? 1 : 2} won the match ${Math.max(match.wins[1], match.wins[2])}-${Math.min(match.wins[1], match.wins[2])}.`);
+}
+
 function leaveMatch(player) {
   if (!player.matchId) return;
   const match = matches.get(player.matchId);
-  if (match) {
-    match.players.delete(player.id);
-    for (const id of match.players) sendPlayer(players.get(id), { type: "player_left", playerId: player.id });
-    const minimumPlayers = 2;
-    if (match.players.size < minimumPlayers) {
-      for (const id of match.players) {
-        const remaining = players.get(id);
-        if (remaining) {
-          remaining.matchId = null;
-          remaining.team = null;
-          sendPlayer(remaining, { type: "match_ended", reason: "The match ended because there were not enough players." });
-        }
-      }
-      matches.delete(match.id);
-    }
-  }
   player.matchId = null;
   player.team = null;
-}
-
-function findBalancedUnits(mode) {
-  const target = mode === "duel" ? 1 : 5;
-  const units = queues[mode];
-
-  function search(index, first, second, teamOne, teamTwo) {
-    if (first > 0 && second > 0) return [teamOne, teamTwo];
-    if (index >= units.length) return null;
-    const size = units[index].members.length;
-    const assignToSmaller = first <= second;
-    const assignments = assignToSmaller ? [1, 2] : [2, 1];
-    for (const team of assignments) {
-      if (team === 1 && first + size <= target) {
-        const result = search(index + 1, first + size, second, [...teamOne, units[index]], teamTwo);
-        if (result) return result;
-      }
-      if (team === 2 && second + size <= target) {
-        const result = search(index + 1, first, second + size, teamOne, [...teamTwo, units[index]]);
-        if (result) return result;
-      }
-    }
-    return search(index + 1, first, second, teamOne, teamTwo);
+  if (!match) return;
+  match.players.delete(player.id);
+  for (const id of match.players) sendPlayer(players.get(id), { type: "player_left", playerId: player.id });
+  const remaining = [...match.players].map((id) => players.get(id)).filter(Boolean);
+  if (!remaining.some((member) => member.team === 1) || !remaining.some((member) => member.team === 2)) {
+    finishMatch(match, "The match ended because your opponents left.");
+    return;
   }
-
-  return search(0, 0, 0, [], []);
+  checkRound(match);
 }
 
-function startMatch(mode) {
-  const teams = findBalancedUnits(mode);
-  if (!teams) return;
-  const selected = [...teams[0], ...teams[1]];
-  const selectedSet = new Set(selected);
-  queues[mode] = queues[mode].filter((unit) => !selectedSet.has(unit));
-  const vote = { id: crypto.randomUUID(), mode, teams, units: selected, options: playlistMaps[mode], ballots: new Map(), deadline: Date.now() + voteSeconds * 1000, timer: null };
-  votes.set(vote.id, vote);
-  vote.timer = setTimeout(() => resolveVote(vote), voteSeconds * 1000);
-  vote.units.forEach((unit) => unit.members.forEach((id) => { players.get(id).voteId = vote.id; }));
-  sendVoteUpdate(vote, "map_vote");
+function chooseQuickMatch(size) {
+  let best = null;
+  let bestCount = -1;
+  for (const mode of quickMatchPlaylists) {
+    if (mode === "duel" && size > 1) continue;
+    const count = findLobby(mode, size) ? lobbySize(findLobby(mode, size)) : 0;
+    if (count > bestCount) { best = mode; bestCount = count; }
+  }
+  return best;
 }
 
-function voteVoters(vote) {
-  return vote.units.flatMap((unit) => unit.members).map((id) => players.get(id)).filter(Boolean);
-}
-
-function sendVoteUpdate(vote, type) {
-  const tally = Object.fromEntries(vote.options.map((map) => [map, 0]));
-  vote.ballots.forEach((map) => { tally[map]++; });
-  const voters = voteVoters(vote);
-  voters.forEach((voter) => sendPlayer(voter, { type, voteId: vote.id, mode: vote.mode, options: vote.options, tally, voted: vote.ballots.size, total: voters.length, myVote: vote.ballots.get(voter.id) || null, deadline: vote.deadline }));
-}
-
-function resolveVote(vote) {
-  if (!votes.delete(vote.id)) return;
-  clearTimeout(vote.timer);
-  const counts = new Map(vote.options.map((map) => [map, 0]));
-  vote.ballots.forEach((map) => counts.set(map, counts.get(map) + 1));
+function startLobby(lobby) {
+  const teams = lobby.units.length >= 2 && assignTeams(lobby.units, teamSize(lobby.mode));
+  if (!teams) return scheduleLobby(lobby);
+  clearTimeout(lobby.timer);
+  lobbies.delete(lobby.id);
+  const counts = new Map(lobby.options.map((map) => [map, 0]));
+  lobby.ballots.forEach((map) => counts.set(map, counts.get(map) + 1));
   const top = Math.max(...counts.values());
-  const winners = vote.options.filter((map) => counts.get(map) === top);
-  createMatch(vote.mode, vote.teams, winners[Math.floor(Math.random() * winners.length)]);
+  const winners = lobby.options.filter((map) => counts.get(map) === top);
+  createMatch(lobby.mode, teams, winners[Math.floor(Math.random() * winners.length)]);
 }
 
 function createMatch(mode, teams, map) {
-  const match = { id: crypto.randomUUID(), mode, map, players: new Set(), createdAt: Date.now() };
+  const match = { id: crypto.randomUUID(), mode, map, players: new Set(), wins: { 1: 0, 2: 0 }, round: 0, phase: "prep", phaseEnd: 0 };
   teams.forEach((teamUnits, teamIndex) => {
-    const team = teamIndex + 1;
     for (const unit of teamUnits) {
       unit.members.forEach((id) => {
         const player = players.get(id);
         if (!player) return;
         player.matchId = match.id;
-        player.voteId = null;
+        player.lobbyId = null;
         player.queuedMode = null;
-        player.team = team;
+        player.team = teamIndex + 1;
         player.kills = 0;
         player.deaths = 0;
-        player.health = 100;
-        player.deadUntil = 0;
-        player.lastShotAt = 0;
-        player.state = { x: team === 1 ? -30 : 30, y: 1.8, z: 0, yaw: team === 1 ? Math.PI / 2 : -Math.PI / 2, pitch: 0, crouched: false, lean: 0, droneState: null };
         match.players.add(id);
       });
     }
   });
   matches.set(match.id, match);
-  const roster = [...match.players].map((id) => {
-    const player = players.get(id);
-    return { id: player.id, name: player.name, team: player.team };
-  });
-  for (const id of match.players) {
-    const player = players.get(id);
-    sendPlayer(player, { type: "match_found", matchId: match.id, mode, map, team: player.team, players: roster });
-  }
-}
-
-function chooseQuickMatch(members) {
-  const waiting = (mode) => queues[mode].reduce((total, unit) => total + unit.members.length, 0);
-  const fits = (mode) => mode === "duel" ? members.length === 1 : members.length <= 5;
-  return quickMatchPlaylists.filter(fits).reduce((best, mode) => (waiting(mode) > waiting(best) ? mode : best), "standard");
+  startRound(match, "match_found");
 }
 
 function joinQueue(player, mode) {
-  if (mode === "quick") mode = chooseQuickMatch(player.partyCode && parties.get(player.partyCode) ? [...parties.get(player.partyCode).members] : [player.id]);
-  if (!(mode in queues)) return sendPlayer(player, { type: "error", message: "Choose a supported playlist." });
-  if (player.matchId) return sendPlayer(player, { type: "error", message: "You are already in a match." });
-  if (player.queuedMode) return sendPlayer(player, { type: "error", message: "Leave your current queue first." });
   const party = player.partyCode && parties.get(player.partyCode);
   const members = party ? [...party.members] : [player.id];
+  if (mode === "quick") mode = chooseQuickMatch(members.length);
+  if (!(mode in playlistMaps)) return sendPlayer(player, { type: "error", message: "Choose a supported playlist." });
+  if (player.matchId) return sendPlayer(player, { type: "error", message: "You are already in a match." });
+  if (player.queuedMode) return sendPlayer(player, { type: "error", message: "Leave your current queue first." });
   if (mode === "duel" && members.length > 1) return sendPlayer(player, { type: "error", message: "1v1 is solo only. Leave your party to queue." });
   if (mode !== "duel" && members.length > 5) return sendPlayer(player, { type: "error", message: "A squad party can have up to five players." });
   if (party && party.leader !== player.id) return sendPlayer(player, { type: "error", message: "Only the party leader can start the queue." });
   if (members.some((id) => !players.has(id) || players.get(id).matchId || players.get(id).queuedMode)) {
     return sendPlayer(player, { type: "error", message: "Every party member must be online and available." });
   }
-
-  const unit = { id: crypto.randomUUID(), members, mode };
-  queues[mode].push(unit);
-  members.forEach((id) => { players.get(id).queuedMode = mode; });
-  notifyQueue(unit, "searching", { partySize: members.length });
-  startMatch(mode);
+  enqueueUnit({ id: crypto.randomUUID(), members, mode });
 }
 
 function rayBox(origin, direction, box) {
@@ -314,18 +422,21 @@ function handleMessage(player, raw) {
   }
   if (message.type === "queue") return joinQueue(player, message.mode);
   if (message.type === "vote_map") {
-    const vote = votes.get(player.voteId);
+    const lobby = lobbies.get(player.lobbyId);
     const map = String(message.map || "");
-    if (!vote || !vote.options.includes(map)) return;
-    vote.ballots.set(player.id, map);
-    if (vote.ballots.size >= voteVoters(vote).length) resolveVote(vote);
-    else sendVoteUpdate(vote, "vote_update");
+    if (!lobby || !lobby.options.includes(map)) return;
+    lobby.ballots.set(player.id, map);
+    const everyoneVoted = lobby.ballots.size >= lobbyMembers(lobby).length;
+    if (everyoneVoted && lobbySize(lobby) >= teamSize(lobby.mode) * 2) startLobby(lobby);
+    else broadcastLobby(lobby);
     return;
   }
   if (message.type === "leave_queue") return removeFromQueue(player);
   if (message.type === "leave_match") return leaveMatch(player);
   if (message.type === "shoot" && player.matchId) {
     const now = Date.now();
+    const match = matches.get(player.matchId);
+    if (!match || match.phase !== "live" || player.health <= 0) return;
     if (now - player.lastShotAt < 70) return;
     const target = players.get(String(message.targetId || ""));
     if (!target || target.matchId !== player.matchId || target.team === player.team || target.health <= 0) return;
@@ -356,21 +467,44 @@ function handleMessage(player, raw) {
     if (target.health === 0) {
       player.kills++;
       target.deaths++;
-      target.deadUntil = now + 2500;
+      dropLoot(match, target);
     }
     const event = { type: "player_damaged", playerId: target.id, health: target.health, killerId: target.health === 0 ? player.id : null, killerKills: player.kills, deaths: target.deaths };
-    for (const id of matches.get(player.matchId)?.players || []) sendPlayer(players.get(id), event);
+    for (const id of match.players) sendPlayer(players.get(id), event);
+    checkRound(match);
+    return;
+  }
+  if (message.type === "pickup" && player.matchId) {
+    const match = matches.get(player.matchId);
+    const drop = match?.drops?.get(String(message.dropId || ""));
+    if (!drop || player.health <= 0 || match.phase === "over") return;
+    if (Math.hypot(player.state.x - drop.x, player.state.z - drop.z) > 3) return;
+    match.drops.delete(drop.id);
+    if (drop.kind === "medkit") player.medkits = Math.min(3, player.medkits + 1);
+    for (const id of match.players) sendPlayer(players.get(id), { type: "drop_taken", id: drop.id, kind: drop.kind, by: player.id });
+    return;
+  }
+  if (message.type === "heal" && player.matchId) {
+    const match = matches.get(player.matchId);
+    const now = Date.now();
+    if (!match || match.phase === "over" || player.health <= 0 || player.health >= 100 || player.medkits <= 0 || now - player.lastHealAt < 1000) return;
+    player.lastHealAt = now;
+    player.medkits--;
+    player.health = Math.min(100, player.health + 50);
+    for (const id of match.players) sendPlayer(players.get(id), { type: "player_healed", playerId: player.id, health: player.health });
     return;
   }
   if (message.type === "state" && player.matchId) {
     const now = Date.now();
-    if (now - player.lastStateAt < 40) return;
+    if (now - player.lastStateAt < 40 || player.health <= 0) return;
     const state = message.state || {};
     const number = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
+    const locked = matches.get(player.matchId)?.phase === "prep";
+    const side = (z) => locked ? (player.team === 1 ? Math.min(z, -barrierClampZ) : Math.max(z, barrierClampZ)) : z;
     player.state = {
       x: number(state.x, 120),
       y: number(state.y, 30),
-      z: number(state.z, 120),
+      z: side(number(state.z, 120)),
       yaw: number(state.yaw, Math.PI * 4),
       pitch: number(state.pitch, Math.PI / 2),
       crouched: state.crouched === true,
@@ -418,13 +552,13 @@ webSockets.on("connection", (socket) => {
     socket,
     partyCode: null,
     queuedMode: null,
-    voteId: null,
+    lobbyId: null,
     matchId: null,
     team: null,
     kills: 0,
     deaths: 0,
     health: 100,
-    deadUntil: 0,
+    spawn: null,
     lastShotAt: 0,
     state: { x: -30, y: 1.8, z: 0, yaw: Math.PI / 2, pitch: 0, crouched: false, lean: 0, droneState: null },
     lastStateAt: 0
@@ -438,15 +572,10 @@ webSockets.on("connection", (socket) => {
 });
 
 setInterval(() => {
-  for (const match of matches.values()) {
-    const now = Date.now();
-    for (const id of match.players) {
-      const player = players.get(id);
-      if (!player || player.health > 0 || !player.deadUntil || now < player.deadUntil) continue;
-      player.health = 100;
-      player.deadUntil = 0;
-      player.state = { x: player.team === 1 ? -30 : 30, y: 1.8, z: (Math.random() - .5) * 4, yaw: player.team === 1 ? Math.PI / 2 : -Math.PI / 2, pitch: 0, crouched: false, lean: 0, droneState: null };
-    }
+  const now = Date.now();
+  for (const match of [...matches.values()]) {
+    advanceMatch(match, now);
+    if (!matches.has(match.id)) continue;
     const roster = [...match.players].map((id) => players.get(id)).filter(Boolean).map((player) => ({
       id: player.id,
       name: player.name,
@@ -456,7 +585,7 @@ setInterval(() => {
       health: player.health,
       state: player.state
     }));
-    const snapshot = JSON.stringify({ type: "snapshot", matchId: match.id, players: roster });
+    const snapshot = JSON.stringify({ type: "snapshot", ...matchInfo(match), phaseMs: Number.isFinite(match.phaseEnd) ? Math.max(0, match.phaseEnd - now) : 0, players: roster });
     for (const id of match.players) {
       const player = players.get(id);
       if (player?.socket.readyState === WebSocket.OPEN) player.socket.send(snapshot);
