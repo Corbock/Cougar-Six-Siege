@@ -263,6 +263,10 @@
     .lobby-button.primary { border-color: var(--acid); background: var(--acid); color: #151812; }
     .lobby-button.primary:hover:not(:disabled) { background: #e1fa76; color: #151812; }
     .lobby-button:disabled { cursor: not-allowed; opacity: .4; }
+    .vote-panel[hidden] { display: none; }
+    .vote-options { display: grid; gap: 8px; }
+    .vote-options .lobby-button { display: flex; justify-content: space-between; }
+    .vote-options .lobby-button.chosen { border-color: var(--acid); color: var(--acid); }
     .join-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 10px; }
     .join-form input { min-width: 0; padding: 0 12px; border: 1px solid rgba(230,235,220,.2); background: #0c0f0c; color: var(--ink); font: 700 13px/1 "DM Sans", sans-serif; letter-spacing: 2px; text-transform: uppercase; }
     .lobby-playlist { min-height: 60px; display: flex; flex-direction: column; justify-content: center; gap: 5px; margin-bottom: 16px; padding: 10px 13px; border-left: 2px solid var(--acid); background: rgba(255,255,255,.04); color: #e7e8e1; font: 700 17px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; }
@@ -521,6 +525,11 @@
             <div class="lobby-heading"><span id="queue-heading">QUEUE</span><small id="queue-size">UP TO 10 PLAYERS</small></div>
             <div class="lobby-playlist" id="queue-playlist"></div>
             <div class="lobby-status" id="queue-status" role="status" aria-live="polite">Connect to matchmaking to find a game.</div>
+            <div class="vote-panel" id="vote-panel" hidden>
+              <div class="lobby-heading"><span>VOTE FOR MAP</span><small id="vote-timer"></small></div>
+              <div class="vote-options" id="vote-options"></div>
+              <div class="lobby-status" id="vote-status"></div>
+            </div>
             <button class="lobby-button primary" id="queue-action" disabled>FIND MATCH</button>
           </section>
         </div>
@@ -547,7 +556,7 @@
 
     <footer class="bottom-bar">
       <div class="event"><span class="event-mark">//</span><span>BLACKOUT EVENT</span><span>·</span><span>ENDS IN 06D 14H</span></div>
-      <div class="bottom-right"><span>PATCH 4.2.1</span><span>·</span><span class="social">3 FRIENDS ONLINE</span></div>
+      <div class="bottom-right"><span>PATCH 4.2.1</span><span>·</span><span class="social" id="online-count">OFFLINE</span></div>
     </footer>
     <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-mark">:3</span><span id="toast-message"></span></div>
   </div>
@@ -631,7 +640,8 @@
     const selection = {};
     Object.entries(catalogs).forEach(([key, catalog]) => { selection[key] = { mode: catalog.modes[0], map: catalog.maps[0] }; });
     const isSelectable = (section) => Boolean(catalogs[section]);
-    const multiplayer = { socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, remotePlayers: new Map(), lastStateAt: 0 };
+    const ONLINE_SERVER_URL = "wss://c6-siege-online.onrender.com/ws";
+    const multiplayer = { vote: null, voteTicker: null, reconnectTimer: null, socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, remotePlayers: new Map(), lastStateAt: 0 };
     const lobby = {
       el: document.querySelector("#match-lobby"),
       status: document.querySelector("#queue-status"),
@@ -651,7 +661,6 @@
       const party = multiplayer.party;
       const partySize = party?.members.length || 1;
       const isDuel = selection.PLAY.mode.id === "duel";
-      const mapPlayable = selection.PLAY.map.id === "field";
       lobby.connection.textContent = connected ? "MATCHMAKING ONLINE" : "CONNECTING TO MATCHMAKING";
       lobby.connection.classList.toggle("connected", connected);
       document.querySelector("#party-count").textContent = party ? `${partySize} / 5` : "SOLO";
@@ -684,27 +693,64 @@
         lobby.members.append(row);
       });
       const playlist = selection.PLAY.mode;
-      document.querySelector("#queue-playlist").innerHTML = `<span>${playlist.name.toUpperCase()}</span><small>${isDuel ? "SOLO QUEUE · FIRST TO A MATCH" : "PARTIES STAY TOGETHER · SOLO PLAYERS ARE FILLED IN"}</small>`;
+      const note = playlist.id === "quick" ? "JOINS THE FULLEST UNRANKED LOBBY" : isDuel ? "SOLO QUEUE · FIRST TO A MATCH" : "PARTIES STAY TOGETHER · SOLO PLAYERS ARE FILLED IN";
+      document.querySelector("#queue-playlist").innerHTML = `<span>${playlist.name.toUpperCase()}</span><small>${note} · MAP DECIDED BY VOTE</small>`;
+      renderVote();
       document.querySelector("#queue-size").textContent = isDuel ? "1V1 · 2 PLAYERS" : "5V5 · 10 PLAYERS";
       document.querySelector("#create-party").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
       document.querySelector("#leave-party").disabled = !connected || !party || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
       document.querySelector("#party-code-input").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
       document.querySelector("#join-party").disabled = !connected || Boolean(party) || Boolean(multiplayer.queuedMode) || Boolean(multiplayer.match);
-      lobby.queueAction.disabled = !connected || !mapPlayable || (isDuel && partySize > 1) || (party && party.leader !== multiplayer.playerId) || Boolean(multiplayer.match);
+      lobby.queueAction.disabled = Boolean(multiplayer.vote) || !connected || (isDuel && partySize > 1) || (party && party.leader !== multiplayer.playerId) || Boolean(multiplayer.match);
       lobby.queueAction.textContent = multiplayer.queuedMode ? "CANCEL SEARCH" : "FIND MATCH";
       if (isDuel && partySize > 1) lobbyStatus("1v1 is solo only. Leave your party to queue.");
-      else if (!mapPlayable) lobbyStatus("Online matches are currently available on The Field.");
+    }
+
+    function renderOnline(count) {
+      document.querySelector("#online-count").textContent = count === null ? "OFFLINE" : `${count} ${count === 1 ? "PLAYER" : "PLAYERS"} ONLINE`;
+    }
+
+    function renderVote() {
+      const vote = multiplayer.vote;
+      const panel = document.querySelector("#vote-panel");
+      panel.hidden = !vote;
+      clearInterval(multiplayer.voteTicker);
+      if (!vote) return;
+      const box = document.querySelector("#vote-options");
+      box.replaceChildren();
+      vote.options.forEach((id) => {
+        const map = catalogs.PLAY.maps.find((entry) => entry.id === id);
+        const button = document.createElement("button");
+        button.className = "lobby-button" + (vote.myVote === id ? " chosen" : "");
+        button.type = "button";
+        const name = document.createElement("span");
+        name.textContent = (map?.name || id).toUpperCase();
+        const count = document.createElement("span");
+        count.textContent = vote.tally[id] || 0;
+        button.append(name, count);
+        button.addEventListener("click", () => multiplayer.socket?.send(JSON.stringify({ type: "vote_map", map: id })));
+        box.append(button);
+      });
+      document.querySelector("#vote-status").textContent = `${vote.voted} of ${vote.total} players voted. Most votes wins; ties are random.`;
+      const tick = () => { document.querySelector("#vote-timer").textContent = `${Math.max(0, Math.ceil((vote.deadline - Date.now()) / 1000))}S`; };
+      tick();
+      multiplayer.voteTicker = setInterval(tick, 250);
     }
 
     function connectMultiplayer() {
       if (multiplayer.socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(multiplayer.socket.readyState)) return;
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      const socket = multiplayer.socket = new WebSocket(`${protocol}//${location.host}/ws`);
+      const serverUrl = location.hostname.endsWith("github.io") ? ONLINE_SERVER_URL : `${protocol}//${location.host}/ws`;
+      const socket = multiplayer.socket = new WebSocket(serverUrl);
+      const wakeTimer = setTimeout(() => { if (socket.readyState === WebSocket.CONNECTING) lobbyStatus("Waking the game server. This can take up to a minute..."); }, 4000);
+      socket.addEventListener("open", () => clearTimeout(wakeTimer));
+      socket.addEventListener("close", () => clearTimeout(wakeTimer));
       socket.addEventListener("open", () => {
         multiplayer.connected = true;
         let name = sessionStorage.getItem("cougarPlayerName");
         if (!name) { name = `CADET_${Math.random().toString(36).slice(2, 6).toUpperCase()}`; sessionStorage.setItem("cougarPlayerName", name); }
         socket.send(JSON.stringify({ type: "set_name", name }));
+        clearTimeout(multiplayer.reconnectTimer);
         lobbyStatus("Matchmaking online. Create a party or find a match.");
         updateLobby();
       });
@@ -712,15 +758,22 @@
         let message;
         try { message = JSON.parse(event.data); } catch { return; }
         if (message.type === "welcome") multiplayer.playerId = message.playerId;
+        if (message.type === "online") renderOnline(message.count);
+        if (message.type === "map_vote" || message.type === "vote_update") {
+          multiplayer.vote = message;
+          if (message.type === "map_vote") { lobby.el.classList.add("open"); lobbyStatus("Match found. Vote for a map."); }
+        }
         if (message.type === "party_update") multiplayer.party = message.code ? message : null;
         if (message.type === "queue_status") {
           multiplayer.queuedMode = message.status === "searching" ? message.mode : null;
+          multiplayer.vote = null;
           if (message.status === "searching") lobbyStatus(`Searching for ${message.mode === "duel" ? "a 1v1 opponent" : "players to complete the match"}...`);
           if (message.status === "cancelled") lobbyStatus("Queue cancelled.");
         }
         if (message.type === "error") lobbyStatus(message.message, true);
         if (message.type === "match_found") {
           multiplayer.match = message;
+          multiplayer.vote = null;
           multiplayer.remotePlayers.clear();
           lobby.el.classList.remove("open");
           openField();
@@ -749,10 +802,14 @@
       socket.addEventListener("close", () => {
         multiplayer.connected = false;
         multiplayer.queuedMode = null;
+        multiplayer.vote = null;
+        renderOnline(null);
+        clearTimeout(multiplayer.reconnectTimer);
+        multiplayer.reconnectTimer = setTimeout(connectMultiplayer, 5000);
         updateLobby();
         if (lobby.el.classList.contains("open")) lobbyStatus("Disconnected from matchmaking. Reopen the queue to reconnect.", true);
       });
-      socket.addEventListener("error", () => lobbyStatus("Could not reach the multiplayer server. Start the game with npm start.", true));
+      socket.addEventListener("error", () => lobbyStatus("Could not reach the multiplayer server. When running locally, start it with npm start.", true));
     }
 
     function openMatchLobby() {
@@ -773,7 +830,7 @@
     });
     lobby.queueAction.addEventListener("click", () => {
       if (multiplayer.queuedMode) multiplayer.socket?.send(JSON.stringify({ type: "leave_queue" }));
-      else multiplayer.socket?.send(JSON.stringify({ type: "queue", mode: selection.PLAY.mode.id === "duel" ? "duel" : "squad" }));
+      else multiplayer.socket?.send(JSON.stringify({ type: "queue", mode: selection.PLAY.mode.id }));
     });
     document.querySelector("#party-code-input").addEventListener("input", (event) => { event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
 

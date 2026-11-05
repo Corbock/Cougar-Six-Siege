@@ -8,7 +8,17 @@ const root = __dirname;
 const port = Number(process.env.PORT || 8000);
 const players = new Map();
 const parties = new Map();
-const queues = { squad: [], duel: [] };
+const queues = { standard: [], ranked: [], defuse: [], rescue: [], duel: [] };
+const playlistMaps = {
+  standard: ["field", "harbor", "foundry"],
+  ranked: ["field", "harbor"],
+  defuse: ["field", "foundry"],
+  rescue: ["harbor", "foundry"],
+  duel: ["field"]
+};
+const quickMatchPlaylists = ["standard", "defuse", "rescue", "duel"];
+const voteSeconds = 15;
+const votes = new Map();
 const matches = new Map();
 const mimeTypes = {
   ".avif": "image/avif",
@@ -36,11 +46,39 @@ function broadcastParty(party) {
   members.forEach((member) => sendPlayer(member, message));
 }
 
+function broadcastOnline() {
+  const message = { type: "online", count: players.size };
+  players.forEach((player) => sendPlayer(player, message));
+}
+
 function notifyQueue(unit, status, extra = {}) {
   unit.members.forEach((id) => sendPlayer(players.get(id), { type: "queue_status", mode: unit.mode, status, ...extra }));
 }
 
+function cancelVote(vote) {
+  clearTimeout(vote.timer);
+  votes.delete(vote.id);
+  for (const unit of vote.units) {
+    unit.members.forEach((id) => { const member = players.get(id); if (member) member.voteId = null; });
+    queues[vote.mode].unshift(unit);
+    notifyQueue(unit, "searching", { partySize: unit.members.length });
+  }
+  startMatch(vote.mode);
+}
+
 function removeFromQueue(player) {
+  const vote = votes.get(player.voteId);
+  if (vote) {
+    const unit = vote.units.find((entry) => entry.members.includes(player.id));
+    unit.members.forEach((id) => {
+      const member = players.get(id);
+      if (member) { member.queuedMode = null; member.voteId = null; }
+    });
+    notifyQueue(unit, "cancelled");
+    vote.units = vote.units.filter((entry) => entry !== unit);
+    cancelVote(vote);
+    return;
+  }
   for (const mode of Object.keys(queues)) {
     const index = queues[mode].findIndex((unit) => unit.members.includes(player.id));
     if (index < 0) continue;
@@ -122,7 +160,36 @@ function startMatch(mode) {
   const selected = [...teams[0], ...teams[1]];
   const selectedSet = new Set(selected);
   queues[mode] = queues[mode].filter((unit) => !selectedSet.has(unit));
-  const match = { id: crypto.randomUUID(), mode, players: new Set(), createdAt: Date.now() };
+  const vote = { id: crypto.randomUUID(), mode, teams, units: selected, options: playlistMaps[mode], ballots: new Map(), deadline: Date.now() + voteSeconds * 1000, timer: null };
+  votes.set(vote.id, vote);
+  vote.timer = setTimeout(() => resolveVote(vote), voteSeconds * 1000);
+  vote.units.forEach((unit) => unit.members.forEach((id) => { players.get(id).voteId = vote.id; }));
+  sendVoteUpdate(vote, "map_vote");
+}
+
+function voteVoters(vote) {
+  return vote.units.flatMap((unit) => unit.members).map((id) => players.get(id)).filter(Boolean);
+}
+
+function sendVoteUpdate(vote, type) {
+  const tally = Object.fromEntries(vote.options.map((map) => [map, 0]));
+  vote.ballots.forEach((map) => { tally[map]++; });
+  const voters = voteVoters(vote);
+  voters.forEach((voter) => sendPlayer(voter, { type, voteId: vote.id, mode: vote.mode, options: vote.options, tally, voted: vote.ballots.size, total: voters.length, myVote: vote.ballots.get(voter.id) || null, deadline: vote.deadline }));
+}
+
+function resolveVote(vote) {
+  if (!votes.delete(vote.id)) return;
+  clearTimeout(vote.timer);
+  const counts = new Map(vote.options.map((map) => [map, 0]));
+  vote.ballots.forEach((map) => counts.set(map, counts.get(map) + 1));
+  const top = Math.max(...counts.values());
+  const winners = vote.options.filter((map) => counts.get(map) === top);
+  createMatch(vote.mode, vote.teams, winners[Math.floor(Math.random() * winners.length)]);
+}
+
+function createMatch(mode, teams, map) {
+  const match = { id: crypto.randomUUID(), mode, map, players: new Set(), createdAt: Date.now() };
   teams.forEach((teamUnits, teamIndex) => {
     const team = teamIndex + 1;
     for (const unit of teamUnits) {
@@ -130,6 +197,7 @@ function startMatch(mode) {
         const player = players.get(id);
         if (!player) return;
         player.matchId = match.id;
+        player.voteId = null;
         player.queuedMode = null;
         player.team = team;
         player.kills = 0;
@@ -149,18 +217,25 @@ function startMatch(mode) {
   });
   for (const id of match.players) {
     const player = players.get(id);
-    sendPlayer(player, { type: "match_found", matchId: match.id, mode, team: player.team, players: roster });
+    sendPlayer(player, { type: "match_found", matchId: match.id, mode, map, team: player.team, players: roster });
   }
 }
 
+function chooseQuickMatch(members) {
+  const waiting = (mode) => queues[mode].reduce((total, unit) => total + unit.members.length, 0);
+  const fits = (mode) => mode === "duel" ? members.length === 1 : members.length <= 5;
+  return quickMatchPlaylists.filter(fits).reduce((best, mode) => (waiting(mode) > waiting(best) ? mode : best), "standard");
+}
+
 function joinQueue(player, mode) {
+  if (mode === "quick") mode = chooseQuickMatch(player.partyCode && parties.get(player.partyCode) ? [...parties.get(player.partyCode).members] : [player.id]);
   if (!(mode in queues)) return sendPlayer(player, { type: "error", message: "Choose a supported playlist." });
   if (player.matchId) return sendPlayer(player, { type: "error", message: "You are already in a match." });
   if (player.queuedMode) return sendPlayer(player, { type: "error", message: "Leave your current queue first." });
   const party = player.partyCode && parties.get(player.partyCode);
   const members = party ? [...party.members] : [player.id];
   if (mode === "duel" && members.length > 1) return sendPlayer(player, { type: "error", message: "1v1 is solo only. Leave your party to queue." });
-  if (mode === "squad" && members.length > 5) return sendPlayer(player, { type: "error", message: "A squad party can have up to five players." });
+  if (mode !== "duel" && members.length > 5) return sendPlayer(player, { type: "error", message: "A squad party can have up to five players." });
   if (party && party.leader !== player.id) return sendPlayer(player, { type: "error", message: "Only the party leader can start the queue." });
   if (members.some((id) => !players.has(id) || players.get(id).matchId || players.get(id).queuedMode)) {
     return sendPlayer(player, { type: "error", message: "Every party member must be online and available." });
@@ -196,6 +271,7 @@ function removePlayer(player) {
   detachParty(player);
   leaveMatch(player);
   players.delete(player.id);
+  broadcastOnline();
 }
 
 function handleMessage(player, raw) {
@@ -237,6 +313,15 @@ function handleMessage(player, raw) {
     return;
   }
   if (message.type === "queue") return joinQueue(player, message.mode);
+  if (message.type === "vote_map") {
+    const vote = votes.get(player.voteId);
+    const map = String(message.map || "");
+    if (!vote || !vote.options.includes(map)) return;
+    vote.ballots.set(player.id, map);
+    if (vote.ballots.size >= voteVoters(vote).length) resolveVote(vote);
+    else sendVoteUpdate(vote, "vote_update");
+    return;
+  }
   if (message.type === "leave_queue") return removeFromQueue(player);
   if (message.type === "leave_match") return leaveMatch(player);
   if (message.type === "shoot" && player.matchId) {
@@ -304,6 +389,7 @@ function handleMessage(player, raw) {
 
 const server = http.createServer((request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+  if (url.pathname === "/healthz") { response.writeHead(200, { "Content-Type": "text/plain" }).end("ok"); return; }
   const relativePath = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
   const filePath = path.resolve(root, `.${relativePath}`);
   if (filePath !== root && !filePath.startsWith(root + path.sep)) {
@@ -324,12 +410,15 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 webSockets.on("connection", (socket) => {
+  socket.isAlive = true;
+  socket.on("pong", () => { socket.isAlive = true; });
   const player = {
     id: crypto.randomUUID(),
     name: `OPERATOR_${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
     socket,
     partyCode: null,
     queuedMode: null,
+    voteId: null,
     matchId: null,
     team: null,
     kills: 0,
@@ -342,6 +431,7 @@ webSockets.on("connection", (socket) => {
   };
   players.set(player.id, player);
   sendPlayer(player, { type: "welcome", playerId: player.id, name: player.name });
+  broadcastOnline();
   socket.on("message", (data) => handleMessage(player, data.toString()));
   socket.on("close", () => removePlayer(player));
   socket.on("error", () => removePlayer(player));
@@ -375,3 +465,10 @@ setInterval(() => {
 }, 50).unref();
 
 server.listen(port, "0.0.0.0", () => console.log(`Cougar Six server listening on http://0.0.0.0:${port}`));
+setInterval(() => {
+  for (const player of players.values()) {
+    if (!player.socket.isAlive) { player.socket.terminate(); continue; }
+    player.socket.isAlive = false;
+    player.socket.ping();
+  }
+}, 25000).unref();
