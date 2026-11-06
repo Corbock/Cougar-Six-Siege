@@ -227,6 +227,15 @@
     .field { position: fixed; z-index: 11; inset: 0; display: none; background: #000; }
     .field.open { display: block; }
     .field canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; transform-origin: center; will-change: transform; }
+    .field-optic { position: absolute; left: 50%; top: 50%; display: none; width: min(62vmin, 560px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; }
+    .field[data-optic="dot"] .field-optic, .field[data-optic="scope"] .field-optic { display: block; }
+    .field[data-optic="dot"] .field-optic { border: 9px solid #252825; box-shadow: 0 0 0 3px #62685e, inset 0 0 0 2px #62685e; }
+    .field[data-optic="scope"] .field-optic { border: 10px solid #252825; box-shadow: 0 0 0 150vmax rgba(0,0,0,.94), inset 0 0 0 2px #62685e; overflow: hidden; }
+    .field-optic::before, .field-optic::after { position: absolute; content: ""; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+    .field[data-optic="dot"] .field-optic::before { width: 5px; height: 5px; border-radius: 50%; background: #ff3535; box-shadow: 0 0 5px #ff3535; }
+    .field[data-optic="scope"] .field-optic::before { width: 100%; height: 1px; background: #111; }
+    .field[data-optic="scope"] .field-optic::after { height: 100%; width: 1px; background: #111; }
+    .field[data-optic] #field-cross i { visibility: hidden; }
     .field-hud { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; pointer-events: none; font: 600 16px/1.4 "Barlow Condensed", sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: #f3f2ec; text-shadow: 0 1px 4px #000; }
     .field-hud button { pointer-events: auto; padding: 8px 14px; border: 1px solid var(--line); background: rgba(11,13,11,.8); color: inherit; font: inherit; cursor: pointer; }
     .field-hud button:hover { border-color: var(--acid); color: var(--acid); }
@@ -244,6 +253,19 @@
     .range-result p { margin: 0; color: #c1c3ba; font-size: 14px; }
     .match-lobby { position: fixed; z-index: 20; inset: 0; display: none; place-items: center; padding: 20px; background: rgba(5,7,6,.86); backdrop-filter: blur(8px); }
     .match-lobby.open { display: grid; }
+    .settings-panel { display: none; width: min(600px, 100%); max-height: 70vh; overflow: auto; border: 1px solid rgba(230,235,220,.2); border-top: 2px solid var(--acid); background: rgba(17,20,17,.94); padding: 21px; }
+    .show-settings .settings-panel { display: block; }
+    .show-settings .intel-card, .show-settings .operator-strip, .main.settings-active .actions { display: none; }
+    .settings-panel h2 { color: var(--acid); font: 700 22px/1 "Barlow Condensed", sans-serif; letter-spacing: .8px; margin: 0 0 12px; }
+    .settings-note { color: #b7bab1; font-size: 11px; line-height: 1.6; }
+    .keybind-list { display: grid; gap: 12px; margin-bottom: 20px; }
+    .keybind-item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 12px; background: rgba(0,0,0,.3); border: 1px solid rgba(230,235,220,.1); }
+    .keybind-label { color: #e7e8e1; font: 600 13px/1 "DM Sans", sans-serif; letter-spacing: .5px; }
+    .keybind-input { padding: 8px 10px; border: 1px solid rgba(230,235,220,.2); background: rgba(0,0,0,.5); color: var(--acid); font: 700 12px/1 "DM Sans", sans-serif; letter-spacing: 1px; min-width: 120px; text-align: center; cursor: pointer; }
+    .keybind-input:hover { border-color: var(--acid); }
+    .keybind-input.recording { background: rgba(211,239,89,.1); border-color: var(--acid); }
+    .reset-button { padding: 10px 16px; border: 1px solid rgba(230,235,220,.2); background: transparent; color: #e7e8e1; cursor: pointer; font: 700 11px/1 "DM Sans", sans-serif; letter-spacing: 1px; text-transform: uppercase; transition: all .2s; }
+    .reset-button:hover { border-color: var(--acid); color: var(--acid); }
     .lobby-panel { width: min(760px, 100%); max-height: min(720px, 92vh); overflow: auto; border: 1px solid rgba(230,235,220,.2); border-top: 2px solid var(--acid); background: #111411; box-shadow: 0 24px 80px #000b; animation: rise .2s ease-out both; }
     .lobby-header, .lobby-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 21px; }
     .lobby-header { border-bottom: 1px solid var(--line); color: var(--acid); font: 700 13px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.8px; }
@@ -392,6 +414,7 @@
       .mission-line { margin-top: 16px; }
       .actions { margin-top: 23px; }
       .right-column { display: grid; grid-template-columns: 1fr; gap: 21px; padding: 0; }
+      .settings-panel { max-height: none; }
       .intel-card { margin: 0; padding: 15px 17px; }
       .intel-card h2 { font-size: 23px; }
       .operator { min-height: 58px; padding: 8px; }
@@ -437,7 +460,7 @@
       </div>
     </header>
 
-    <main class="main">
+    <main class="main" id="main-content">
       <section class="briefing" aria-labelledby="page-title">
         <div class="eyebrow" id="eyebrow">SEASON 01</div>
         <h1 id="page-title">NIGHT<br>FALL</h1>
@@ -451,6 +474,13 @@
       </section>
 
       <aside class="right-column" id="right-column" aria-label="Mission and operator selection">
+        <section class="settings-panel" id="settings-panel" aria-labelledby="keybind-heading">
+          <h2 id="keybind-heading">KEYBINDS</h2>
+          <p class="settings-note">Choose an action, then press a key. For ADS, you can also press the right or middle mouse button here. Escape cancels. Look, fire, arrow keys and Escape to exit are fixed.</p>
+          <p class="settings-note" id="keybind-status" role="status" aria-live="polite"></p>
+          <div class="keybind-list" id="keybind-list"></div>
+          <button id="reset-keybinds" class="reset-button">RESET TO DEFAULT</button>
+        </section>
         <section class="intel-card" aria-labelledby="intel-title">
           <div class="intel-top"><span id="intel-code">FIELD INTEL / 01</span><strong id="intel-threat">THREAT: ELEVATED</strong></div>
           <h2 id="intel-title">THE FIELD</h2>
@@ -495,6 +525,7 @@
     <div class="field" id="field" role="dialog" aria-label="The Field" aria-modal="true">
       <canvas id="field-canvas"></canvas>
       <div id="field-hint" style="position:absolute;inset:0;display:none;place-items:center;pointer-events:none;color:#fff;font:700 28px 'Barlow Condensed',sans-serif;letter-spacing:2px;text-shadow:0 2px 8px #000;align-content:center;text-align:center">CLICK TO LOOK AROUND</div>
+      <div class="field-optic" aria-hidden="true"></div>
       <div id="field-cross" style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none"><i style="position:absolute;left:-1px;top:-9px;width:2px;height:6px;background:#f3f2ec"></i><i style="position:absolute;left:-1px;top:3px;width:2px;height:6px;background:#f3f2ec"></i><i style="position:absolute;left:-9px;top:-1px;width:6px;height:2px;background:#f3f2ec"></i><i style="position:absolute;left:3px;top:-1px;width:6px;height:2px;background:#f3f2ec"></i><b id="field-hitmark" style="position:absolute;left:-12px;top:-14px;font:700 28px/1 sans-serif;color:#d3ef59;opacity:0;transition:opacity .25s">✕</b></div>
       <div id="field-weapon" style="position:absolute;right:22px;bottom:20px;text-align:right;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 4px #000;font:600 16px/1.4 'Barlow Condensed',sans-serif;letter-spacing:1.2px;text-transform:uppercase"></div>
       <div id="field-msg" style="position:absolute;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;color:#d3ef59;font:700 24px 'Barlow Condensed',sans-serif;letter-spacing:2px;text-shadow:0 1px 6px #000;opacity:0;transition:opacity .3s"></div>
@@ -504,7 +535,7 @@
       <div id="field-spectate" style="position:absolute;left:50%;bottom:64px;transform:translateX(-50%);text-align:center;display:none;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 6px #000;font:700 20px/1.3 'Barlow Condensed',sans-serif;letter-spacing:2px;text-transform:uppercase"></div>
       <div id="field-tags" class="field-tags" aria-hidden="true"></div>
       <div class="field-hud">
-        <span>THE FIELD<small>WASD move · MOUSE look · CLICK fire/deploy · RMB ADS · Q/E lean · C crouch · R reload · F barricade · 1/2 weapon · SHIFT sprint · SPACE scan (drone) · G recall drone · ESC exit</small></span>
+        <span>THE FIELD<small id="field-controls"></small></span>
         <span id="field-pos"></span>
         <button id="field-exit">EXIT (ESC)</button>
       </div>
@@ -604,7 +635,7 @@
         eyebrow: "PREFERENCES",
         title: "OPTIONS",
         season: "GAME SETTINGS",
-        copy: "Adjust controls, video, audio, and account options to match how you play.",
+        copy: "Customize your keyboard controls for The Field.",
         mission: "CHANGES SAVE AUTOMATICALLY",
         action: "APPLY",
         mode: "CONTROLS",
@@ -1459,6 +1490,14 @@
       document.querySelector("#mode-button").innerHTML = `${content.mode}<span>${content.detail}</span>`;
       document.querySelector("#right-column").classList.toggle("show-play", isSelectable(section));
       document.querySelector("#right-column").classList.toggle("show-loadout", section === "LOADOUT");
+      document.querySelector("#right-column").classList.toggle("show-settings", section === "SETTINGS");
+      document.querySelector("#main-content").classList.toggle("settings-active", section === "SETTINGS");
+      if (recordingKeybind) {
+        recordingKeybind = null;
+        document.querySelector("#keybind-status").textContent = "Rebinding cancelled.";
+        renderKeybinds();
+      }
+      if (section === "SETTINGS") renderKeybinds();
       if (section === "LOADOUT") renderLoadout();
       if (isSelectable(section)) {
         renderSelect();
@@ -1486,6 +1525,161 @@
       });
     });
 
+    const defaultKeybinds = {
+      moveForward: "w",
+      moveBackward: "s",
+      moveLeft: "a",
+      moveRight: "d",
+      ads: "mouse2",
+      leanLeft: "q",
+      leanRight: "e",
+      crouch: "c",
+      reload: "r",
+      barricade: "f",
+      switchWeapon1: "1",
+      switchWeapon2: "2",
+      switchWeapon3: "3",
+      switchWeapon4: "4",
+      sprint: "shift",
+      scan: " ",
+      recallDrone: "g"
+    };
+
+    const keybindLabels = {
+      moveForward: "Move Forward",
+      moveBackward: "Move Backward",
+      moveLeft: "Move Left",
+      moveRight: "Move Right",
+      ads: "Aim Down Sights",
+      leanLeft: "Lean Left",
+      leanRight: "Lean Right",
+      crouch: "Crouch",
+      reload: "Reload",
+      barricade: "Place Barricade",
+      switchWeapon1: "Switch to Weapon 1",
+      switchWeapon2: "Switch to Weapon 2",
+      switchWeapon3: "Switch to Gadget",
+      switchWeapon4: "Switch to Equipment",
+      sprint: "Sprint",
+      scan: "Jump / Scan (Drone)",
+      recallDrone: "Recall Drone"
+    };
+
+    const validBind = (key) => key === " " || key === "shift" || /^[a-z0-9]$/.test(key);
+    const validActionBind = (action, key) => validBind(key) || (action === "ads" && (key === "mouse1" || key === "mouse2"));
+    const bindLabel = (key) => key === " " ? "SPACE" : key === "mouse1" ? "MIDDLE MOUSE" : key === "mouse2" ? "RIGHT MOUSE" : key.toUpperCase();
+    const inputKey = (event) => {
+      if (/^Key[A-Z]$/.test(event.code)) return event.code.slice(3).toLowerCase();
+      if (/^Digit[0-9]$/.test(event.code)) return event.code.slice(5);
+      return event.key.toLowerCase();
+    };
+    let currentKeybinds = { ...defaultKeybinds };
+    let recordingKeybind = null;
+    try {
+      const saved = JSON.parse(localStorage.getItem("cougarKeybinds") || "{}");
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)) throw new Error("Invalid keybind settings");
+      const restored = { ...defaultKeybinds };
+      for (const action of Object.keys(restored)) {
+        if (!(action in saved)) continue;
+        const key = saved[action] === "space" ? " " : saved[action];
+        if (typeof key !== "string" || !validActionBind(action, key)) throw new Error("Invalid key binding");
+        restored[action] = key;
+      }
+      if (new Set(Object.values(restored)).size !== Object.keys(restored).length) throw new Error("Conflicting key bindings");
+      currentKeybinds = restored;
+    } catch (error) {
+      console.warn("Could not load keybinds:", error);
+      showToast("Could not load saved keybinds; defaults are in use.");
+    }
+
+    function saveKeybinds() {
+      try {
+        localStorage.setItem("cougarKeybinds", JSON.stringify(currentKeybinds));
+      } catch (error) {
+        console.warn("Could not save keybinds:", error);
+        showToast("Could not save keybinds. Changes may not persist.");
+      }
+    }
+
+    function renderKeybinds() {
+      const keybindList = document.querySelector("#keybind-list");
+      keybindList.innerHTML = "";
+      Object.entries(currentKeybinds).forEach(([action, key]) => {
+        const item = document.createElement("div");
+        item.className = "keybind-item";
+        const label = document.createElement("span");
+        label.className = "keybind-label";
+        label.textContent = keybindLabels[action];
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "keybind-input";
+        button.dataset.action = action;
+        button.textContent = recordingKeybind === action ? (action === "ads" ? "PRESS KEY / MOUSE" : "PRESS A KEY") : bindLabel(key);
+        button.classList.toggle("recording", recordingKeybind === action);
+        button.setAttribute("aria-label", `${keybindLabels[action]}: ${button.textContent}`);
+        button.addEventListener("click", () => {
+          recordingKeybind = action;
+          document.querySelector("#keybind-status").textContent = action === "ads"
+            ? "Press a key or the right or middle mouse button in this panel, or Escape to cancel."
+            : `Press a key for ${keybindLabels[action]}, or Escape to cancel.`;
+          renderKeybinds();
+          keybindList.querySelector(`[data-action="${action}"]`).focus();
+        });
+        item.append(label, button);
+        keybindList.appendChild(item);
+      });
+    }
+
+    function finishKeybind(action, key) {
+      const status = document.querySelector("#keybind-status");
+      const conflict = Object.keys(currentKeybinds).find((other) => other !== action && currentKeybinds[other] === key);
+      if (conflict) {
+        status.textContent = `${bindLabel(key)} is already used by ${keybindLabels[conflict]}.`;
+        return;
+      }
+      currentKeybinds[action] = key;
+      saveKeybinds();
+      status.textContent = `${keybindLabels[action]} set to ${bindLabel(key)}.`;
+      recordingKeybind = null;
+      renderKeybinds();
+      document.querySelector(`[data-action="${action}"]`).focus();
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (!recordingKeybind) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const action = recordingKeybind, key = inputKey(event);
+      if (key === "escape") {
+        document.querySelector("#keybind-status").textContent = "Rebinding cancelled.";
+        recordingKeybind = null;
+        renderKeybinds();
+        document.querySelector(`[data-action="${action}"]`).focus();
+      } else if (event.ctrlKey || event.altKey || event.metaKey || !validBind(key)) {
+        document.querySelector("#keybind-status").textContent = "Use a letter, number, Space or Shift.";
+      } else {
+        finishKeybind(action, key);
+      }
+    }, true);
+
+    const settingsPanel = document.querySelector("#settings-panel");
+    settingsPanel.addEventListener("contextmenu", (event) => event.preventDefault());
+    settingsPanel.addEventListener("mousedown", (event) => {
+      if (recordingKeybind !== "ads" || (event.button !== 1 && event.button !== 2)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      finishKeybind("ads", `mouse${event.button}`);
+    }, true);
+
+    document.querySelector("#reset-keybinds").addEventListener("click", () => {
+      if (confirm("Reset all keybinds to default?")) {
+        recordingKeybind = null;
+        currentKeybinds = { ...defaultKeybinds };
+        saveKeybinds();
+        document.querySelector("#keybind-status").textContent = "Keybinds reset to defaults.";
+        renderKeybinds();
+      }
+    });
 
     const fieldView = (() => {
       const el = document.querySelector("#field"), canvas = document.querySelector("#field-canvas");
@@ -1764,7 +1958,8 @@
       const cam = { x: -30, y: 1.8, z: HW + 4, yaw: Math.atan2(30, -(HW + 4)), pitch: -.05, vy: 0 };
       let renderCam = cam, viewScale = 1.8, ads = 0, lean = 0, crouched = false, eyeHeight = 1.8;
       const keys = new Set();
-      const isSprinting = () => keys.has("shift") && (keys.has("w") || keys.has("arrowup") || keys.has("s") || keys.has("arrowdown") || keys.has("a") || keys.has("d"));
+      const heldCodes = new Map();
+      const isSprinting = () => keys.has(currentKeybinds.sprint) && (keys.has(currentKeybinds.moveForward) || keys.has("arrowup") || keys.has(currentKeybinds.moveBackward) || keys.has("arrowdown") || keys.has(currentKeybinds.moveLeft) || keys.has(currentKeybinds.moveRight));
       const R = .35, STEP = .7, EYE = 1.8, CROUCH_EYE = 1.05;
       let grounded = true;
       const probe = (x, z, feet) => {
@@ -2222,7 +2417,14 @@
       const barById = (id) => barricades.find((b) => b.id === id);
       function remoteBarricade(m) {
         if (!multiplayer.match) return;
-        if (m.op === "place") { if (!barById(m.id)) makeBarricade({ ...m.fit, id: m.id }); return; }
+        if (m.op === "place") {
+          if (!barById(m.id)) {
+            const fit = { ...m.fit };
+            fit.ta = m.fit.ax === 0 ? 2 : 0;
+            makeBarricade({ ...fit, id: m.id });
+          }
+          return;
+        }
         const b = barById(m.id);
         if (!b) return;
         if (m.op === "hit") hitBarricade(b, m.p, m.radius, m.power, m.chip, m.src);
@@ -2399,7 +2601,7 @@
       function trace(w, reach, damageMul) {
         const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
         const fwd = [sy * cp, sp2, cy * cp], right = [cy, 0, -sy], up = [-sy * sp2, cp, -cy * sp2];
-        const spread = (w.kind.spread || 0) + (keys.has("shift") ? .012 : 0) + (w.kind.melee ? 0 : .004);
+        const spread = (w.kind.spread || 0) + (keys.has(currentKeybinds.sprint) ? .012 : 0) + (w.kind.melee ? 0 : .004);
         const rx = (Math.random() * 2 - 1) * spread, ry = (Math.random() * 2 - 1) * spread;
         let dr = fwd.map((v, i) => v + right[i] * rx + up[i] * ry);
         const n = Math.hypot(...dr); dr = dr.map((v) => v / n);
@@ -2883,7 +3085,7 @@
       function updateHud() {
         const w = wpn(), k = w.kind;
         const ammo = k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
-        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">[1] ${weapons[loadout.primary].item.name} · [2] ${weapons[loadout.secondary].item.name} · [3] ${weapons[loadout.gadget].item.name} · [4] ${weapons[loadout.equipment].item.name} · KILLS ${kills}</div><div style="opacity:.75">[F] BARRICADES ${barCount}</div>`;
+        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · KILLS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount}</div>`;
         if (multiplayer.match) {
           const players = multiplayer.match.players || [];
           const first = players.filter((player) => player.team === 1), second = players.filter((player) => player.team === 2);
@@ -2935,9 +3137,9 @@
         const k = (n) => keys.has(n);
         cam.yaw += (k("arrowright") - k("arrowleft")) * 1.8 * dt;
         const sprinting = !drone.active && !crouched && isSprinting();
-        ads += ((mouseAim && !sprinting ? 1 : 0) - ads) * Math.min(1, dt * 12);
+        ads += (((mouseAim || k(currentKeybinds.ads)) && !sprinting ? 1 : 0) - ads) * Math.min(1, dt * 12);
         sprintPose += ((sprinting ? 1 : 0) - sprintPose) * Math.min(1, dt * 8);
-        lean += (((!drone.active && k("e") ? 1 : 0) - (!drone.active && k("q") ? 1 : 0)) - lean) * Math.min(1, dt * 10);
+        lean += (((!drone.active && k(currentKeybinds.leanRight) ? 1 : 0) - (!drone.active && k(currentKeybinds.leanLeft) ? 1 : 0)) - lean) * Math.min(1, dt * 10);
         viewScale = 1.8 * (1 + ads * .2);
         tNow = now / 1000;
         if (!lastT) lastT = tNow;
@@ -2947,7 +3149,7 @@
         collectPickups();
         const cw = wpn();
         const sp = (drone.active ? 3.5 : sprinting ? 8.5 : 5.5) * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
-        const fwd = (k("w") || k("arrowup")) - (k("s") || k("arrowdown")), str = k("d") - k("a");
+        const fwd = (k(currentKeybinds.moveForward) || k("arrowup")) - (k(currentKeybinds.moveBackward) || k("arrowdown")), str = k(currentKeybinds.moveRight) - k(currentKeybinds.moveLeft);
         const mx = dead ? 0 : (Math.sin(cam.yaw) * fwd + Math.cos(cam.yaw) * str) * sp, mz = dead ? 0 : (Math.cos(cam.yaw) * fwd - Math.sin(cam.yaw) * str) * sp;
         let feet = drone.active ? .1 : cam.y - eyeHeight;
         if (drone.active) { cam.y = .42; cam.vy = 0; }
@@ -3035,7 +3237,12 @@
         gl.uniform3f(u("cam"), 0, 0, 0);
         gl.uniform4f(u("rot"), 1, 0, 1, 0);
         setSmoke(prog, false);
-        const vm = dead ? [] : drone.active ? droneViewmodelQuads() : viewmodelQuads(cw, fwd !== 0 || str !== 0);
+        const optic = !dead && !drone.active && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
+          (mouseAim || k(currentKeybinds.ads)) && ads > .5 && modelDefs[cw.item.id].mounts.optic &&
+          (cw.cfg.optic === "dot" || cw.cfg.optic === "scope") ? cw.cfg.optic : null;
+        if (optic) el.dataset.optic = optic;
+        else delete el.dataset.optic;
+        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : viewmodelQuads(cw, fwd !== 0 || str !== 0);
         drawDynamic(vm.filter((q) => !q.skin), true);
         drawSkinned(vm.filter((q) => q.skin));
         updateTeamTags();
@@ -3053,8 +3260,8 @@
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
       document.addEventListener("mousedown", (e) => { if (running && locked() && isDead() && (e.button === 0 || e.button === 2)) { spectateTarget(e.button === 0 ? 1 : -1); return; } });
       document.addEventListener("mousedown", (e) => { if (running && locked() && e.button === 0) { mouseDown = true; pressedAt = tNow; if (wpn().item.id === "drone") getDroneAudioContext(); } });
-      document.addEventListener("mousedown", (e) => { if (running && locked() && e.button === 2) mouseAim = true; });
-      document.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; if (e.button === 2) mouseAim = false; });
+      document.addEventListener("mousedown", (e) => { if (running && locked() && `mouse${e.button}` === currentKeybinds.ads) { e.preventDefault(); mouseAim = true; } });
+      document.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; if (`mouse${e.button}` === currentKeybinds.ads) mouseAim = false; });
       document.addEventListener("pointerlockchange", () => {
         hint.style.display = running && !locked() ? "grid" : "none";
         if (!locked()) { mouseDown = false; mouseAim = false; }
@@ -3066,28 +3273,35 @@
       });
       document.addEventListener("keydown", (e) => {
         if (!running) return;
-        const key = e.key.toLowerCase();
+        const key = inputKey(e);
         if (key === "escape") return close();
-        if (key === "g" && drone.active) { recallDrone(); return; }
-        if (key === " " && drone.active) { e.preventDefault(); if (!e.repeat) scanDrone(); return; }
+        if (key === currentKeybinds.recallDrone && drone.active) { recallDrone(); return; }
+        if (key === currentKeybinds.scan && drone.active) { e.preventDefault(); if (!e.repeat) scanDrone(); return; }
         if (isDead()) { if (key === "tab") { e.preventDefault(); if (!e.repeat) spectateTarget(1); } keys.add(key); return; }
         if (!drone.active) {
-          if (key === "c" && !e.repeat) {
+          if (key === currentKeybinds.crouch && !e.repeat) {
             const feet = cam.y - eyeHeight;
             crouched = !crouched; eyeHeight = crouched ? CROUCH_EYE : EYE; cam.y = feet + eyeHeight;
           }
-          if (key >= "1" && key <= "4") { const id = ["primary", "secondary", "gadget", "equipment"][key - 1]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
-          if (key === "r") startReload(wpn());
-          if (key === "f" && !e.repeat) placeBarricade();
-          if (key === " " && grounded) cam.vy = 6.5;
+          const slotIndex = [currentKeybinds.switchWeapon1, currentKeybinds.switchWeapon2, currentKeybinds.switchWeapon3, currentKeybinds.switchWeapon4].indexOf(key);
+          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
+          if (key === currentKeybinds.reload) startReload(wpn());
+          if (key === currentKeybinds.barricade && !e.repeat) placeBarricade();
+          if (key === currentKeybinds.scan && grounded) cam.vy = 6.5;
         }
         if (key.startsWith("arrow") || key === " ") e.preventDefault();
-        keys.add(key);
+        heldCodes.set(e.code, key); keys.add(key);
       });
-      document.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+      document.addEventListener("keyup", (e) => {
+        const key = heldCodes.get(e.code) || inputKey(e);
+        heldCodes.delete(e.code);
+        if (![...heldCodes.values()].includes(key)) keys.delete(key);
+      });
+      window.addEventListener("blur", () => { keys.clear(); heldCodes.clear(); mouseAim = false; });
       const hint = document.querySelector("#field-hint");
       function close() {
-        running = false; mouseDown = false; mouseAim = false; el.classList.remove("open"); keys.clear();
+        running = false; mouseDown = false; mouseAim = false; el.classList.remove("open"); keys.clear(); heldCodes.clear();
+        delete el.dataset.optic;
         if (drone.active) recallDrone();
         if (multiplayer.match && multiplayer.connected) multiplayer.socket.send(JSON.stringify({ type: "leave_match" }));
         multiplayer.match = null; multiplayer.remotePlayers.clear();
@@ -3095,6 +3309,8 @@
       }
       document.querySelector("#field-exit").addEventListener("click", close);
       return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, remoteBarricade, open({ practice = false } = {}) {
+        const b = (action) => bindLabel(currentKeybinds[action]);
+        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scan · ${b("recallDrone")} recall drone · ESC exit`;
         if (drone.active) recallDrone();
         crouched = false; eyeHeight = EYE; lean = 0;
         el.classList.add("open"); if (!gl) initGL();
