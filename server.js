@@ -23,6 +23,21 @@ const prepSeconds = Number(process.env.PREP_SECONDS || 10);
 const roundEndSeconds = 6;
 const matchOverSeconds = 8;
 const roundsToWin = 2;
+const operatorIds = new Set(["mr-m", "mr-l", "ms-c", "ms-a", "hallway-monitor", "skanska", "custom"]);
+const operatorKits = {
+  "mr-m": { primary: "vector", secondary: "p45", gadget: "drone", equipment: "flash" },
+  "mr-l": { primary: "hammer", secondary: "rattler", gadget: "medkit", equipment: "smoke" },
+  "ms-c": { primary: "mk18", secondary: "p45", gadget: "shield", equipment: "frag" },
+  "ms-a": { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" },
+  "hallway-monitor": { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" },
+  "skanska": { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" }
+};
+const customItems = {
+  primary: ["mk18", "vector", "hammer", "longwatch"],
+  secondary: ["p45", "rattler", "magnum", "sledgehammer"],
+  gadget: ["shield", "drone", "camera-drone", "steel-bars", "medkit"],
+  equipment: ["frag", "flash", "smoke", "claymore"]
+};
 const spawnXs = [-17.6, -5.9, 5.9, 17.6, 29.3];
 const spawnZ = 50.5;
 const barrierClampZ = 0.7;
@@ -255,6 +270,7 @@ function startRound(match, type) {
   match.round++;
   match.drops = new Map();
   match.projectiles = new Map();
+  match.tornadoes = new Map();
   match.phase = "prep";
   match.phaseEnd = Date.now() + prepSeconds * 1000;
   const slots = { 1: 0, 2: 0 };
@@ -264,10 +280,14 @@ function startRound(match, type) {
     player.medkits = 2;
     player.lastHealAt = 0;
     player.lastShotAt = 0;
+    player.droneLock = null;
+    player.lastDroneShotAt = 0;
+    player.destroyedDrones = new Set();
+    player.cameraDroneDestroyed = false;
     player.spawn = spawnPoint(player.team, slots[player.team]++);
     player.state = { ...player.spawn, pitch: 0, crouched: false, lean: 0, droneState: null };
   }
-  const roster = members.map(({ id, name, team }) => ({ id, name, team }));
+  const roster = members.map(({ id, name, team, operatorId }) => ({ id, name, team, operatorId }));
   for (const player of members) {
     sendPlayer(player, { type, ...matchInfo(match), team: player.team, spawn: player.spawn, players: roster });
   }
@@ -405,6 +425,57 @@ function rayBox(origin, direction, box) {
   return far >= 0 ? near : Infinity;
 }
 
+function shieldHitDistance(state, origin, direction) {
+  if (!state?.shieldActive) return Infinity;
+  const c = Math.cos(state.yaw), s = Math.sin(state.yaw), lean = state.lean || 0;
+  const forward = direction.x * s + direction.z * c;
+  if (forward >= -1e-8) return Infinity;
+  const dx = origin.x - (state.x + c * lean * .7), dz = origin.z - (state.z - s * lean * .7);
+  const t = (.58 - (dx * s + dz * c)) / forward;
+  if (t < 0) return Infinity;
+  const side = (dx + direction.x * t) * c - (dz + direction.z * t) * s;
+  const base = state.y - (state.crouched ? 1.05 : 1.8);
+  const height = origin.y + direction.y * t - base;
+  return Math.abs(side) <= .68 && height >= (state.crouched ? .05 : .15) && height <= (state.crouched ? 1.7 : 2.02) ? t : Infinity;
+}
+
+function shieldBlocks(match, attacker, origin, direction, distance) {
+  for (const id of match.players) {
+    const holder = players.get(id);
+    if (holder && holder.id !== attacker.id && holder.health > 0 && shieldHitDistance(holder.state, origin, direction) <= distance) return true;
+  }
+  return false;
+}
+
+function nearestShieldHit(match, attacker, origin, direction, maxDistance) {
+  let distance = maxDistance;
+  let hit = false;
+  for (const id of match.players) {
+    const holder = players.get(id);
+    if (!holder || holder.id === attacker.id || holder.health <= 0) continue;
+    const candidate = shieldHitDistance(holder.state, origin, direction);
+    if (Number.isFinite(candidate) && candidate <= distance) { distance = candidate; hit = true; }
+  }
+  return hit ? distance : Infinity;
+}
+
+function relayShieldImpact(match, player, origin, direction, distance, includeSender = false) {
+  const message = { type: "shield_impact", origin: [origin.x, origin.y, origin.z],
+    point: [origin.x + direction.x * distance, origin.y + direction.y * distance, origin.z + direction.z * distance] };
+  relayToMatch(match, player, message);
+  if (includeSender) sendPlayer(player, message);
+}
+
+function hasActiveShield(player, state) {
+  return !state.droneState && state.activeSlot === "gadget" &&
+    (player.operatorId === "ms-c" || (player.operatorId === "custom" && player.customGadget === "shield"));
+}
+
+function hasActiveSniper(player) {
+  return player.state.activeSlot === "primary" &&
+    (player.operatorId === "hallway-monitor" || (player.operatorId === "custom" && player.customPrimary === "longwatch"));
+}
+
 function removePlayer(player) {
   removeFromQueue(player);
   detachParty(player);
@@ -422,6 +493,19 @@ function handleMessage(player, raw) {
     player.name = String(message.name || "OPERATOR").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 16) || "OPERATOR";
     sendPlayer(player, { type: "welcome", playerId: player.id, name: player.name });
     if (player.partyCode) broadcastParty(parties.get(player.partyCode));
+    return;
+  }
+  if (message.type === "select_operator") {
+    if (!player.matchId && operatorIds.has(message.operatorId)) {
+      player.operatorId = message.operatorId;
+      if (message.operatorId === "custom" && message.loadout && typeof message.loadout === "object") {
+        for (const [slot, allowed] of Object.entries(customItems)) {
+          if (allowed.includes(message.loadout[slot])) player.customLoadout[slot] = message.loadout[slot];
+        }
+        player.customPrimary = player.customLoadout.primary;
+        player.customGadget = player.customLoadout.gadget;
+      }
+    }
     return;
   }
   if (message.type === "create_party") {
@@ -501,7 +585,84 @@ function handleMessage(player, raw) {
     const damage = Number(message.damage);
     if (!Number.isFinite(distance) || distance > 100 || !Number.isFinite(damage)) return;
     player.lastShotAt = now;
+    const shieldDistance = hasActiveSniper(player) ? Infinity : nearestShieldHit(match, player, origin, direction, distance);
+    if (Number.isFinite(shieldDistance)) {
+      relayShieldImpact(match, player, origin, direction, shieldDistance, true);
+      return;
+    }
     applyDamage(match, player, target, Math.min(55, Math.max(1, damage)));
+    return;
+  }
+  if (message.type === "shield_impact" && player.matchId) {
+    const match = matches.get(player.matchId), now = Date.now(), aim = message.direction || {};
+    if (!match || match.phase !== "live" || player.health <= 0 || hasActiveSniper(player) || now - player.lastShieldImpactAt < 70) return;
+    const length = Math.hypot(aim.x, aim.y, aim.z);
+    if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
+    const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
+    const state = player.state, cp = Math.cos(state.pitch);
+    if (direction.x * Math.sin(state.yaw) * cp + direction.y * Math.sin(state.pitch) +
+        direction.z * Math.cos(state.yaw) * cp < Math.cos(.3)) return;
+    const lean = state.lean || 0;
+    const origin = { x: state.x + Math.cos(state.yaw) * lean * .7, y: state.y - Math.abs(lean) * .12,
+      z: state.z - Math.sin(state.yaw) * lean * .7 };
+    const distance = nearestShieldHit(match, player, origin, direction, 100);
+    if (!Number.isFinite(distance)) return;
+    player.lastShieldImpactAt = now;
+    relayShieldImpact(match, player, origin, direction, distance);
+    return;
+  }
+  if (message.type === "drone_hit" && player.matchId) {
+    const match = matches.get(player.matchId), now = Date.now();
+    const owner = players.get(String(message.ownerId || "")), slot = message.slot;
+    if (!match || match.phase !== "live" || player.health <= 0 || !owner || owner.matchId !== player.matchId ||
+        owner.team === player.team || owner.health <= 0 || now - player.lastShotAt < 70) return;
+    const drone = slot === "camera" ? owner.state.droneState :
+      Number.isInteger(slot) ? owner.state.companions?.find((entry) => entry.slot === slot) : null;
+    if (!drone) return;
+    const aim = message.direction || {}, length = Math.hypot(aim.x, aim.y, aim.z);
+    if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
+    const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
+    const state = player.state, cp = Math.cos(state.pitch), lean = state.lean || 0;
+    if (direction.x * Math.sin(state.yaw) * cp + direction.y * Math.sin(state.pitch) +
+        direction.z * Math.cos(state.yaw) * cp < Math.cos(.3)) return;
+    const origin = { x: state.x + Math.cos(state.yaw) * lean * .7, y: state.y - Math.abs(lean) * .12,
+      z: state.z - Math.sin(state.yaw) * lean * .7 };
+    const distance = rayBox(origin, direction, { x0: drone.x - .58, x1: drone.x + .58,
+      y0: drone.y - .15, y1: drone.y + .3, z0: drone.z - .58, z1: drone.z + .58 });
+    if (!Number.isFinite(distance) || distance > 100 || (!hasActiveSniper(player) && shieldBlocks(match, player, origin, direction, distance))) return;
+    player.lastShotAt = now;
+    if (slot === "camera") { owner.cameraDroneDestroyed = true; owner.state.droneState = null; }
+    else {
+      owner.destroyedDrones.add(slot);
+      owner.state.companions = owner.state.companions.filter((entry) => entry.slot !== slot);
+      if (slot === 1) owner.droneLock = null;
+    }
+    const event = { type: "drone_destroyed", ownerId: owner.id, slot, x: drone.x, y: drone.y, z: drone.z };
+    for (const id of match.players) sendPlayer(players.get(id), event);
+    return;
+  }
+  if (message.type === "drone_attack" && player.matchId) {
+    const match = matches.get(player.matchId);
+    const now = Date.now();
+    const target = players.get(String(message.targetId || ""));
+    const lock = player.droneLock, drone = player.state?.companions?.find((entry) => entry.slot === 1);
+    if (!match || match.phase !== "live" || player.health <= 0 || player.operatorId !== "mr-m" || !drone || !target ||
+        target.matchId !== player.matchId || target.team === player.team || target.health <= 0 ||
+        !lock || lock.targetId !== target.id || drone.targetId !== target.id || now - lock.since < 2000 ||
+        now - lock.lastSeen > 300 || now - player.lastDroneShotAt < 200 ||
+        Math.hypot(target.state.x - drone.x, target.state.y - drone.y, target.state.z - drone.z) > 24) return;
+    player.lastDroneShotAt = now;
+    const aim = { x: target.state.x - drone.x, y: target.state.y - .5 - drone.y, z: target.state.z - drone.z };
+    const distance = Math.hypot(aim.x, aim.y, aim.z);
+    if (distance <= 0) return;
+    const direction = { x: aim.x / distance, y: aim.y / distance, z: aim.z / distance };
+    const hit = nearestShieldHit(match, player, drone, direction, distance);
+    const end = Number.isFinite(hit) ? hit : distance;
+    const shot = { type: "drone_shot", origin: [drone.x, drone.y, drone.z],
+      point: [drone.x + direction.x * end, drone.y + direction.y * end, drone.z + direction.z * end], blocked: Number.isFinite(hit) };
+    for (const id of match.players) sendPlayer(players.get(id), shot);
+    if (Number.isFinite(hit)) return;
+    applyDamage(match, player, target, 4);
     return;
   }
   if (message.type === "throw" && player.matchId) {
@@ -509,8 +670,9 @@ function handleMessage(player, raw) {
     if (!match || match.phase === "over" || player.health <= 0 || !["frag", "flash", "smoke", "claymore"].includes(message.kind)) return;
     const id = String(message.id || "").slice(0, 48);
     if (!id || match.projectiles.has(id) || [...match.projectiles.values()].filter((entry) => entry.owner === player.id).length >= 12) return;
-    match.projectiles.set(id, { owner: player.id, kind: message.kind });
-    relayToMatch(match, player, { type: "throw", id, kind: message.kind, x: finite(message.x, 150), y: finite(message.y, 40), z: finite(message.z, 150), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
+    const tornado = message.kind === "smoke" && player.operatorId === "mr-l";
+    match.projectiles.set(id, { owner: player.id, kind: message.kind, tornado });
+    relayToMatch(match, player, { type: "throw", id, kind: message.kind, tornado, x: finite(message.x, 150), y: finite(message.y, 40), z: finite(message.z, 150), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
     return;
   }
   if (message.type === "explode" && player.matchId) {
@@ -519,7 +681,8 @@ function handleMessage(player, raw) {
     if (!projectile || projectile.owner !== player.id || match.phase === "over") return;
     match.projectiles.delete(String(message.id));
     const x = finite(message.x, 150), y = finite(message.y, 40), z = finite(message.z, 150);
-    relayToMatch(match, player, { type: "explosion", id: String(message.id), kind: projectile.kind, x, y, z });
+    if (projectile.tornado) match.tornadoes.set(String(message.id), { id: String(message.id), x, y, z, startedAt: Date.now() });
+    relayToMatch(match, player, { type: "explosion", id: String(message.id), kind: projectile.kind, tornado: projectile.tornado, x, y, z });
     const radius = blastRadius[projectile.kind];
     if (!radius || match.phase !== "live") return;
     for (const targetId of [...match.players]) {
@@ -571,21 +734,53 @@ function handleMessage(player, raw) {
     const number = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
     const locked = matches.get(player.matchId)?.phase === "prep";
     const side = (z) => locked ? (player.team === 1 ? Math.min(z, -barrierClampZ) : Math.max(z, barrierClampZ)) : z;
-    player.state = {
+    const body = {
       x: number(state.x, 120),
       y: number(state.y, 30),
       z: side(number(state.z, 120)),
       yaw: number(state.yaw, Math.PI * 4),
       pitch: number(state.pitch, Math.PI / 2),
       crouched: state.crouched === true,
-      lean: number(state.lean, 1),
-      droneState: state.droneState && typeof state.droneState === "object" ? {
+      lean: number(state.lean, 1)
+    };
+    const companions = [];
+    if (player.operatorId === "mr-m" && Array.isArray(state.companions)) {
+      const modes = ["scanner", "attacker", "scanner"];
+      const seen = new Set();
+      for (let i = 0; i < Math.min(state.companions.length, modes.length); i++) {
+        const entry = state.companions[i];
+        const slot = entry?.slot === undefined ? i : entry.slot;
+        if (!entry || !Number.isInteger(slot) || slot < 0 || slot >= modes.length || seen.has(slot) ||
+            player.destroyedDrones.has(slot) || entry.mode !== modes[slot] || ![entry.x, entry.y, entry.z, entry.yaw].every(Number.isFinite) ||
+            Math.hypot(entry.x - body.x, entry.y - body.y, entry.z - body.z) > 4) continue;
+        seen.add(slot);
+        const target = slot === 1 ? players.get(String(entry.targetId || "")) : null;
+        const targetId = target && target.matchId === player.matchId && target.team !== player.team && target.health > 0 &&
+          Math.hypot(entry.x - target.state.x, entry.y - target.state.y, entry.z - target.state.z) <= 24 ? target.id : null;
+        companions.push({ x: number(entry.x, 120), y: number(entry.y, 30), z: side(number(entry.z, 120)),
+          yaw: number(entry.yaw, Math.PI * 4), mode: modes[slot], slot, targetId });
+      }
+    }
+    const targetId = matches.get(player.matchId)?.phase === "live" ? companions.find((entry) => entry.slot === 1)?.targetId : null;
+    if (!targetId) player.droneLock = null;
+    else if (!player.droneLock || player.droneLock.targetId !== targetId || now - player.droneLock.lastSeen > 300)
+      player.droneLock = { targetId, since: now, lastSeen: now };
+    else player.droneLock.lastSeen = now;
+    const activeSlot = ["primary", "secondary", "gadget", "equipment"].includes(state.activeSlot) ? state.activeSlot : null;
+    player.state = {
+      ...body,
+      companions,
+      droneState: !player.cameraDroneDestroyed && state.droneState && typeof state.droneState === "object" ? {
         x: number(state.droneState.x, 120),
         y: number(state.droneState.y, 30),
         z: number(state.droneState.z, 120),
         yaw: number(state.droneState.yaw, Math.PI * 4),
-        pitch: number(state.droneState.pitch, Math.PI / 2)
-      } : null
+        pitch: number(state.droneState.pitch, Math.PI / 2),
+        mode: ["scanner", "attacker", "camera"].includes(state.droneState.mode) ? state.droneState.mode : null
+      } : null,
+      activeSlot,
+      equippedItem: activeSlot ? (player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId])[activeSlot] : null,
+      shieldActive: hasActiveShield(player, state)
     };
     player.lastStateAt = now;
   }
@@ -619,6 +814,10 @@ webSockets.on("connection", (socket) => {
   const player = {
     id: crypto.randomUUID(),
     name: `OPERATOR_${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
+    operatorId: "mr-m",
+    customPrimary: "mk18",
+    customGadget: "drone",
+    customLoadout: { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" },
     socket,
     partyCode: null,
     queuedMode: null,
@@ -630,6 +829,7 @@ webSockets.on("connection", (socket) => {
     health: 100,
     spawn: null,
     lastShotAt: 0,
+    lastShieldImpactAt: 0,
     state: { x: -30, y: 1.8, z: 0, yaw: Math.PI / 2, pitch: 0, crouched: false, lean: 0, droneState: null },
     lastStateAt: 0
   };
@@ -650,12 +850,15 @@ setInterval(() => {
       id: player.id,
       name: player.name,
       team: player.team,
+      operatorId: player.operatorId,
       kills: player.kills,
       deaths: player.deaths,
       health: player.health,
       state: player.state
     }));
-    const snapshot = JSON.stringify({ type: "snapshot", ...matchInfo(match), phaseMs: Number.isFinite(match.phaseEnd) ? Math.max(0, match.phaseEnd - now) : 0, players: roster });
+    for (const [id, tornado] of match.tornadoes) if (now - tornado.startedAt >= 16000) match.tornadoes.delete(id);
+    const tornadoes = [...match.tornadoes.values()].map(({ id, x, y, z, startedAt }) => ({ id, x, y, z, age: (now - startedAt) / 1000 }));
+    const snapshot = JSON.stringify({ type: "snapshot", ...matchInfo(match), phaseMs: Number.isFinite(match.phaseEnd) ? Math.max(0, match.phaseEnd - now) : 0, players: roster, tornadoes });
     for (const id of match.players) {
       const player = players.get(id);
       if (player?.socket.readyState === WebSocket.OPEN) player.socket.send(snapshot);

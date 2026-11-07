@@ -15,7 +15,13 @@ Open `http://localhost:8000` or share the server's reachable address with other 
 
 Choose a squad playlist (up to five players per team) or **1v1 Duel**, then select **Deploy**. Matches start as soon as players can be placed on both teams; squad matches do not wait for full teams. Create a party to get a six-character code, or join a friend's party with their code. Party members queue together and stay on the same team; 1v1 is solo-only. Online matches currently use **The Field** map.
 
-In The Field, press **C** to crouch. Deploy the recon drone from the gadget slot, use **WASD** to drive, **Space** to scan, and **G** to recall it. The match scoreboard shows team kills and each player's kills, deaths, and health.
+In The Field, press **C** to crouch. Hallway Monitor and Custom can deploy a controllable drone from the gadget slot: use **WASD** to drive, **Space** to scan, and **G** to recall it. The match scoreboard shows team kills and each player's kills, deaths, and health.
+
+Choose an operator from the roster before deploying. Preset operators use their listed kits; the loadout panel shows their bonuses and models of all four equipped items. **Custom** lets you configure all four loadout slots and inspect and customize individual items. Mr M can deploy up to three autonomous drones at once, in scanner, attacker, scanner order. Each scanner marks visible enemies within 22 units every 45 seconds; the attacker tracks a visible enemy within 24 units with a red laser, then fires 4-damage shots every 0.2 seconds after two continuous seconds of tracking. Cover and smoke break line of sight. Enemy drones, including controllable drones, can be destroyed with a single shot; a destroyed drone is unavailable for the rest of the round. Drones reset each round and stop when Mr M is eliminated. Hallway Monitor's controllable camera drone scans automatically. Operator selection and Custom's kit are saved in the browser.
+
+Other players see a third-person model of the item currently equipped. Ballistic shields block shots that strike their front, including through the window, with a visible impact at the shield. Shots from behind or around the shield, Longwatch sniper rounds, and grenade blasts bypass it. Ms C also holds and fires her P45 while the shield is equipped. Mr L's smoke grenades create rotating tornado funnels that pull nearby players inward; he recharges one tornado grenade every 15 seconds, up to the normal three-grenade capacity, just as Ms C recharges frags.
+
+Multiplayer effects require the current server and client versions. If hosting the game remotely, redeploy the Node server as well as the page after updating.
 
 Weapons equipped with a red dot or 4x scope display a 2D sight while aiming; iron sights retain the weapon view.
 

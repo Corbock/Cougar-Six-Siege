@@ -203,6 +203,7 @@
     .operator.selected::after { background: var(--acid); }
     .operator-code { color: var(--acid); font: 600 10px/1 "Barlow Condensed", sans-serif; letter-spacing: 1px; }
     .operator-name { overflow: hidden; color: #e7e8e1; font: 600 15px/1 "Barlow Condensed", sans-serif; text-overflow: ellipsis; }
+    .operator-ability { margin: 9px 0 0; color: #a9ada2; font-size: 10px; line-height: 1.5; }
 
     .play-select { display: none; width: min(390px, 100%); }
     .show-play .play-select { display: block; }
@@ -315,6 +316,7 @@
     .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 9px 11px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); color: #e7e8e1; cursor: pointer; text-align: left; transition: border-color .2s ease, background .2s ease; }
     .item:hover { border-color: #b0b6a3; }
     .item.selected { border-color: var(--acid); background: rgba(47,53,34,.78); }
+    .item:disabled { cursor: default; opacity: .78; }
     .item-name { font: 600 16px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; }
     .item-type { color: var(--acid); font-size: 9px; font-weight: 600; letter-spacing: 1px; }
     .item-desc { grid-column: 1 / -1; color: #9c9f98; font-size: 10px; line-height: 1.4; }
@@ -324,6 +326,7 @@
     .stat i b { display: block; height: 100%; background: var(--acid); }
     .inspect { display: none; position: absolute; top: 3vh; right: calc(min(390px, 100%) + 22px); width: 340px; padding: 14px 16px; border-right: 2px solid var(--acid); background: linear-gradient(260deg, rgba(16,18,16,.88), rgba(16,18,16,.5)); backdrop-filter: blur(7px); }
     .show-loadout .inspect { display: block; }
+    .show-loadout .inspect[hidden] { display: none; }
     .inspect-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; color: var(--acid); font-size: 9px; font-weight: 700; letter-spacing: 1.4px; }
     .inspect-view { position: relative; margin-bottom: 10px; border: 1px solid rgba(230,235,220,.16); background: radial-gradient(ellipse at 50% 60%, rgba(60,68,52,.55), rgba(12,14,12,.7)); }
     .inspect-view canvas { display: block; width: 100%; height: 210px; cursor: grab; touch-action: none; }
@@ -331,6 +334,11 @@
     .inspect-hint { position: absolute; right: 8px; bottom: 6px; color: #858980; font-size: 8px; letter-spacing: 1px; pointer-events: none; }
     .inspect-name { font: 700 26px/1 "Barlow Condensed", sans-serif; letter-spacing: .5px; text-transform: uppercase; }
     .inspect-desc { margin: 5px 0 10px; color: #9c9f98; font-size: 11px; line-height: 1.4; }
+    .operator-kit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .operator-kit-item { min-width: 0; padding: 6px 8px 8px; border: 1px solid rgba(230,235,220,.16); background: rgba(17,19,17,.72); }
+    .operator-kit-item canvas { display: block; width: 100%; height: 72px; background: radial-gradient(ellipse at 50% 60%, rgba(60,68,52,.55), rgba(12,14,12,.7)); }
+    .operator-kit-slot { display: block; color: var(--acid); font-size: 8px; font-weight: 700; letter-spacing: 1px; }
+    .operator-kit-name { display: block; margin-top: 4px; font: 600 15px/1.1 "Barlow Condensed", sans-serif; }
     .inspect .item-stats { margin-bottom: 12px; }
     .stat em { float: right; font-style: normal; }
     .stat em.up { color: var(--acid); }
@@ -500,6 +508,12 @@
           <div id="inspect-stats"></div>
           <div id="inspect-custom"></div>
         </aside>
+        <aside class="inspect" id="operator-inspect" aria-label="Operator details" hidden>
+          <div class="inspect-head"><span>OPERATOR</span><span>EQUIPPED</span></div>
+          <div class="inspect-name" id="operator-inspect-name"></div>
+          <p class="inspect-desc" id="operator-inspect-bonuses"></p>
+          <div class="operator-kit" id="operator-kit" aria-label="Operator loadout"></div>
+        </aside>
         <section class="play-select" aria-label="Game mode and map select">
           <div class="select-group">
             <div class="strip-heading"><span id="mode-heading">GAME MODE</span><span id="mode-count"></span></div>
@@ -511,13 +525,17 @@
           </div>
         </section>
         <section class="operator-strip" aria-label="Choose an operator">
-          <div class="strip-heading"><span>YOUR OPERATORS</span><span id="operator-count">01 / 04</span></div>
+          <div class="strip-heading"><span>YOUR OPERATORS</span><span id="operator-count">01 / 07</span></div>
           <div class="operators">
-            <button class="operator selected" data-name="Viper" data-code="ENTRY / 01" aria-pressed="true"><span class="operator-code">01 / ENTRY</span><span class="operator-name">Viper</span></button>
-            <button class="operator" data-name="Mako" data-code="BREACH / 02" aria-pressed="false"><span class="operator-code">02 / BREACH</span><span class="operator-name">Mako</span></button>
-            <button class="operator" data-name="Cipher" data-code="INTEL / 03" aria-pressed="false"><span class="operator-code">03 / INTEL</span><span class="operator-name">Cipher</span></button>
-            <button class="operator" data-name="Atlas" data-code="SUPPORT / 04" aria-pressed="false"><span class="operator-code">04 / SUPPORT</span><span class="operator-name">Atlas</span></button>
+            <button class="operator selected" data-id="mr-m" data-name="Mr M" data-code="INTEL / 01" aria-pressed="true"><span class="operator-code">01 / ALL-SEEING</span><span class="operator-name">Mr M</span></button>
+            <button class="operator" data-id="mr-l" data-name="Mr L" data-code="AREA / 02" aria-pressed="false"><span class="operator-code">02 / RA</span><span class="operator-name">Mr L</span></button>
+            <button class="operator" data-id="ms-c" data-name="Ms C" data-code="DEFENSE / 03" aria-pressed="false"><span class="operator-code">03 / COVER FIRE</span><span class="operator-name">Ms C</span></button>
+            <button class="operator" data-id="ms-a" data-name="Ms A" data-code="ASSAULT / 04" aria-pressed="false"><span class="operator-code">04 / RAPID FIRE</span><span class="operator-name">Ms A</span></button>
+            <button class="operator" data-id="hallway-monitor" data-name="Hallway Monitor" data-code="SCOUT / 05" aria-pressed="false"><span class="operator-code">05 / SCOUT</span><span class="operator-name">Hallway Monitor</span></button>
+            <button class="operator" data-id="skanska" data-name="Skanska" data-code="BREACH / 06" aria-pressed="false"><span class="operator-code">06 / CONSTRUCTION</span><span class="operator-name">Skanska</span></button>
+            <button class="operator" data-id="custom" data-name="Custom" data-code="CUSTOM / 07" aria-pressed="false"><span class="operator-code">07 / CUSTOM</span><span class="operator-name">Custom</span></button>
           </div>
+          <p class="operator-ability" id="operator-ability"></p>
         </section>
       </aside>
     </main>
@@ -625,11 +643,11 @@
         eyebrow: "ROSTER · LOADOUT READY",
         title: "PREPARE",
         season: "OPERATORS & ARMORY",
-        copy: "Choose an operator and fine-tune their weapons and equipment before deployment.",
-        mission: "CURRENT PICK: VIPER",
+        copy: "Choose an operator and review their kit, or select Custom to configure your weapons and equipment.",
+        mission: "CURRENT PICK: MR M",
         action: "SAVE LOADOUT",
         mode: "ACTIVE KIT",
-        detail: "Viper · Mk. 18"
+        detail: "Mr M · V-9 Vector"
       },
       SETTINGS: {
         eyebrow: "PREFERENCES",
@@ -813,6 +831,7 @@
       socket.addEventListener("open", () => {
         multiplayer.connected = true;
         socket.send(JSON.stringify({ type: "set_name", name: playerName() }));
+        socket.send(JSON.stringify({ type: "select_operator", operatorId: selectedOperatorId, loadout }));
         clearTimeout(multiplayer.reconnectTimer);
         lobbyStatus("Matchmaking online. Create a party or find a match.");
         updateLobby();
@@ -855,6 +874,7 @@
           multiplayer.round = { ...roundFrom(message), winner: multiplayer.round?.winner ?? null };
           multiplayer.match.players = message.players;
           multiplayer.remotePlayers = new Map(message.players.filter((player) => player.id !== multiplayer.playerId).map((player) => [player.id, player]));
+          if (Array.isArray(message.tornadoes)) fieldView.syncTornadoes(message.tornadoes);
         }
         if (message.type === "player_damaged" && multiplayer.match) {
           const victim = multiplayer.match.players.find((player) => player.id === message.playerId);
@@ -873,6 +893,9 @@
         if (message.type === "throw") fieldView.remoteThrow(message);
         if (message.type === "explosion") fieldView.remoteExplosion(message);
         if (message.type === "bar") fieldView.remoteBarricade(message);
+        if (message.type === "shield_impact") fieldView.remoteShieldImpact(message);
+        if (message.type === "drone_destroyed") fieldView.droneDestroyed(message);
+        if (message.type === "drone_shot") fieldView.remoteDroneShot(message);
         if (message.type === "match_ended") {
           multiplayer.match = null;
           multiplayer.queuedMode = null;
@@ -1112,6 +1135,7 @@
       { id: "gadget", label: "GADGET", items: [
         { id: "shield", name: "Ballistic Shield", type: "DEFENSE", desc: "Deployable cover that absorbs incoming fire." },
         { id: "drone", name: "Recon Drone", type: "INTEL", desc: "Scout rooms and tag hostile units." },
+        { id: "camera-drone", name: "Camera Drone", type: "INTEL", desc: "Pilot a camera drone and watch the field from its viewpoint." },
         { id: "steel-bars", name: "Galvanized Steel Bars", type: "FORTIFICATION", desc: "Reinforce player barricades with galvanized steel bars." },
         { id: "medkit", name: "Field Medkit", type: "SUPPORT", desc: "Restore 50 health. Two charges per round." }
       ] },
@@ -1122,9 +1146,27 @@
         { id: "claymore", name: "Proximity Mine", type: "LETHAL", desc: "Detonates when an enemy crosses its sensor." }
       ] }
     ];
-    const loadout = { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" };
-    try { Object.assign(loadout, JSON.parse(localStorage.getItem("c6-loadout") || "{}")); } catch (error) {}
-    loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === loadout[slot.id])) loadout[slot.id] = slot.items[0].id; });
+    const operatorRoster = [
+      { id: "mr-m", name: "Mr M", ability: "THE ALL-SEEING · Deploy three autonomous drones: scanner, attacker, scanner. Scanners mark enemies every 45 seconds; the attacker fires after 2 seconds of laser tracking. Flash grenades mark enemies.", loadout: { primary: "vector", secondary: "p45", gadget: "drone", equipment: "flash" } },
+      { id: "mr-l", name: "Mr L", ability: "RA · Shotguns have wider spread. Smoke grenades become pulling tornadoes and recharge every 15 seconds.", loadout: { primary: "hammer", secondary: "rattler", gadget: "medkit", equipment: "smoke" } },
+      { id: "ms-c", name: "Ms C", ability: "COVER FIRE · Ballistic Shield includes a P45 sidearm. Frag grenades recharge every 15 seconds.", loadout: { primary: "mk18", secondary: "p45", gadget: "shield", equipment: "frag" } },
+      { id: "ms-a", name: "Ms A", ability: "RAPID FIRE · Reloads faster and carries larger magazines with more reserve ammunition.", loadout: { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" } },
+      { id: "hallway-monitor", name: "Hallway Monitor", ability: "Moves faster and deploys a camera drone. Longwatch comes with a scope.", loadout: { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" } },
+      { id: "skanska", name: "Skanska", ability: "CONSTRUCTION · Can place unlimited barricades. Hammer weapons deal bonus damage to full-health enemies.", loadout: { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" } },
+      { id: "custom", name: "Custom", ability: "Base stats and weapons. Choose any primary, secondary, gadget, and equipment.", loadout: { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" } }
+    ];
+    const defaultOperatorId = "mr-m";
+    let selectedOperatorId = defaultOperatorId;
+    try {
+      const savedOperatorId = localStorage.getItem("c6-operator");
+      if (operatorRoster.some((operator) => operator.id === savedOperatorId)) selectedOperatorId = savedOperatorId;
+    } catch (error) {}
+    const operatorInfo = () => operatorRoster.find((operator) => operator.id === selectedOperatorId) || operatorRoster[0];
+    const customLoadout = { ...operatorRoster.find((operator) => operator.id === "custom").loadout };
+    try { Object.assign(customLoadout, JSON.parse(localStorage.getItem("c6-loadout") || "{}")); } catch (error) {}
+    loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === customLoadout[slot.id])) customLoadout[slot.id] = operatorRoster.find((operator) => operator.id === "custom").loadout[slot.id]; });
+    const loadout = { ...operatorRoster.find((operator) => operator.id === selectedOperatorId).loadout };
+    loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === loadout[slot.id])) loadout[slot.id] = operatorRoster[0].loadout[slot.id]; });
     let activeSlot = loadoutSlots[0];
     const chosen = (slot) => slot.items.find((item) => item.id === loadout[slot.id]);
 
@@ -1146,21 +1188,29 @@
         const button = document.createElement("button");
         const selected = loadout[activeSlot.id] === item.id;
         button.className = "item" + (selected ? " selected" : "");
+        button.disabled = selectedOperatorId !== "custom";
         button.setAttribute("aria-pressed", String(selected));
         const stat = (label, value) => `<span class="stat">${label}<i><b style="width:${value * 10}%"></b></i></span>`;
         button.innerHTML = `<span class="item-name">${item.name}</span><span class="item-type">${item.type}</span><span class="item-desc">${item.desc}</span>` +
           (activeSlot.stats ? `<span class="item-stats">${stat("DAMAGE", item.dmg)}${stat("RANGE", item.rng)}${stat("MOBILITY", item.mob)}</span>` : "");
         button.addEventListener("click", () => {
+          if (selectedOperatorId !== "custom") return;
           loadout[activeSlot.id] = item.id;
+          customLoadout[activeSlot.id] = item.id;
           inspector.item = item;
           try { localStorage.setItem("c6-loadout", JSON.stringify(loadout)); } catch (error) {}
+          if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "select_operator", operatorId: selectedOperatorId, loadout }));
           renderLoadout();
         });
         list.appendChild(button);
       });
       document.querySelector("#loadout-count").textContent = `0${loadoutSlots.indexOf(activeSlot) + 1} / 0${loadoutSlots.length}`;
-      document.querySelector("#mode-button").innerHTML = `ACTIVE KIT<span>${chosen(loadoutSlots[0]).name} · ${chosen(loadoutSlots[1]).name}</span>`;
-      renderInspect();
+      document.querySelector("#mode-button").innerHTML = `ACTIVE KIT<span>${operatorInfo().name} · ${chosen(loadoutSlots[0]).name}</span>`;
+      const customSelected = selectedOperatorId === "custom";
+      document.querySelector("#inspect").hidden = !customSelected;
+      document.querySelector("#operator-inspect").hidden = customSelected;
+      if (customSelected) renderInspect();
+      else renderOperatorInspect();
     }
 
     /* ---- Procedural 3D item models (software-rendered, no external assets) ---- */
@@ -1196,7 +1246,9 @@
         cyl("x", 0, 0, 0, 6, .18, "dark"), cyl("x", -2, 0, 0, 2, .23, "accent"), box(3.2, 0, 0, 1.6, 1.3, 1.1, "body"),
         box(3.2, 0, 0, 1.7, .6, 1.2, "metal"), box(-3.1, 0, 0, .25, .5, .5, "dark") ] },
       shield: { mounts: {}, parts: [
-        box(0, 0, 0, .4, 5, 3.2, "body"), box(.25, 1.2, 0, .1, .9, 1.8, "glass"), box(-.3, 0, 0, .4, .3, 1, "dark"),
+        box(0, -.875, 0, .4, 3.25, 3.2, "body"), box(0, 2.075, 0, .4, .85, 3.2, "body"),
+        box(0, 1.2, -1.25, .4, .9, .7, "body"), box(0, 1.2, 1.25, .4, .9, .7, "body"),
+        box(0, 1.2, 0, .02, .9, 1.8, "glass"), box(-.3, 0, 0, .4, .3, 1, "dark"),
         box(.05, 2.55, 0, .5, .15, 3.3, "metal"), box(.05, -2.55, 0, .5, .15, 3.3, "metal"), box(.05, 0, 1.65, .5, 5.1, .15, "metal"), box(.05, 0, -1.65, .5, 5.1, .15, "metal") ] },
       drone: { mounts: {}, parts: [
         box(0, 0, 0, 1.6, .45, 1.6, "body"), box(0, 0, 0, 4.2, .12, .22, "dark"), box(0, 0, 0, .22, .12, 4.2, "dark"),
@@ -1222,6 +1274,7 @@
         box(0, 0, 0, .6, 1.8, 3, "body"), box(.32, 0, 0, .05, .3, 2.6, "accent"), box(0, 1.05, 0, .5, .3, .5, "dark"),
         box(0, -1.15, 1, .12, .5, .12, "metal"), box(0, -1.15, -1, .12, .5, .12, "metal"), box(-.35, 0, 0, .15, 1.2, 2.4, "dark") ] }
     };
+    modelDefs["camera-drone"] = modelDefs.drone;
 
     const finishes = [
       { name: "Blackout", c: "#4b504a" }, { name: "Desert", c: "#b49c68" }, { name: "Olive", c: "#69783f" },
@@ -1233,7 +1286,7 @@
       { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg", need: 60 },
       { id: "ember", name: "Ember", src: "assets/skin-ember.jpg", need: 100 }
     ];
-    skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); }; skin.img.src = skin.src; });
+    skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); if (activeSection === "LOADOUT" && selectedOperatorId !== "custom") drawOperatorKit(); }; skin.img.src = skin.src; });
     const usage = {};
     try { Object.assign(usage, JSON.parse(localStorage.getItem("c6-usage") || "{}")); } catch (error) {}
     const hitsWith = (id) => usage[id] || 0;
@@ -1333,14 +1386,21 @@
     const inspectCanvas = document.querySelector("#inspect-canvas");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    function rebuildModel() {
-      const item = inspector.item, def = modelDefs[item.id], cfg = customOf(item);
-      const base = buildPolys(def.parts), pts = base.flatMap((poly) => poly.v);
+    function buildInspectModel(item, includeMagazine = false) {
+      const def = modelDefs[item.id], cfg = customOf(item);
+      const parts = [...def.parts, ...(includeMagazine ? (def.mag || []) : []), ...attachmentParts(item, cfg)];
+      const base = buildPolys(includeMagazine ? parts : def.parts), pts = base.flatMap((poly) => poly.v);
       const lo = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
       const mid = lo.map((v, i) => (v + hi[i]) / 2);
       const shift = (q) => [q[0] - mid[0], q[1] - mid[1], q[2] - mid[2]];
-      inspector.polys = buildPolys([...def.parts, ...attachmentParts(item, cfg)]).map((poly) => ({ ...poly, v: poly.v.map(shift), c: shift(poly.c) }));
-      inspector.radius = Math.max(...pts.map((q) => Math.hypot(...shift(q)))) + .3;
+      return {
+        polys: buildPolys(parts).map((poly) => ({ ...poly, v: poly.v.map(shift), c: shift(poly.c) })),
+        radius: Math.max(...pts.map((q) => Math.hypot(...shift(q)))) + .3
+      };
+    }
+
+    function rebuildModel() {
+      Object.assign(inspector, buildInspectModel(inspector.item));
     }
 
     function affineFromUv(uv, pts) {
@@ -1355,24 +1415,24 @@
       return [a, b, c, d, e, f];
     }
 
-    function drawInspector() {
-      const dpr = window.devicePixelRatio || 1, w = inspectCanvas.clientWidth, h = inspectCanvas.clientHeight;
+    function drawItemModel(canvas, model, item, yaw, pitch) {
+      const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
       if (!w || !h) return;
-      if (inspectCanvas.width !== Math.round(w * dpr) || inspectCanvas.height !== Math.round(h * dpr)) { inspectCanvas.width = Math.round(w * dpr); inspectCanvas.height = Math.round(h * dpr); }
-      const ctx = inspectCanvas.getContext("2d");
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      const ctx = canvas.getContext("2d");
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
-      const s = Math.min(w, h * 1.25) * .42 / inspector.radius;
-      const cfg = customOf(inspector.item), finish = finishes[cfg.finish] || finishes[0];
-      const skin = inspector.item.dmg ? skins.find((k) => k.id === cfg.skin && skinUnlocked(k, inspector.item.id) && k.img.complete && k.img.naturalWidth) : null;
+      const s = Math.min(w, h * 1.25) * .42 / model.radius;
+      const cfg = customOf(item), finish = finishes[cfg.finish] || finishes[0];
+      const skin = item.dmg ? skins.find((k) => k.id === cfg.skin && skinUnlocked(k, item.id) && k.img.complete && k.img.naturalWidth) : null;
       const color = (m) => skin ? (m === "metal" ? finish.c : materials[m]) : (m === "body" ? finish.c : materials[m]);
-      const cy = Math.cos(inspector.yaw), sy = Math.sin(inspector.yaw), cp = Math.cos(inspector.pitch), sp = Math.sin(inspector.pitch);
+      const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = ([x, y, z]) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cp - z1 * sp, y * sp + z1 * cp]; };
       ctx.fillStyle = "rgba(0,0,0,.35)";
-      ctx.beginPath(); ctx.ellipse(w / 2, h * .86, Math.min(w * .32, inspector.radius * s * .9), h * .05, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(w / 2, h * .86, Math.min(w * .32, model.radius * s * .9), h * .05, 0, 0, Math.PI * 2); ctx.fill();
       const light = [-.4, .7, .6], ll = Math.hypot(...light);
       const draw = [];
-      inspector.polys.forEach((poly) => {
+      model.polys.forEach((poly) => {
         const v = poly.v.map(rot), c = rot(poly.c);
         const a = [v[1][0] - v[0][0], v[1][1] - v[0][1], v[1][2] - v[0][2]], b = [v[2][0] - v[0][0], v[2][1] - v[0][1], v[2][2] - v[0][2]];
         let n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -1409,8 +1469,47 @@
       });
     }
 
+    function drawInspector() {
+      drawItemModel(inspectCanvas, inspector, inspector.item, inspector.yaw, inspector.pitch);
+    }
+
+    let operatorKitModels = [];
+    function drawOperatorKit() {
+      operatorKitModels.forEach(({ canvas, model, item }) => drawItemModel(canvas, model, item, -.55, .22));
+    }
+
+    function renderOperatorInspect() {
+      const operator = operatorInfo();
+      document.querySelector("#operator-inspect-name").textContent = operator.name;
+      document.querySelector("#operator-inspect-bonuses").textContent = operator.ability;
+      const kit = document.querySelector("#operator-kit");
+      kit.replaceChildren();
+      operatorKitModels = loadoutSlots.map((slot) => {
+        const item = chosen(slot);
+        const card = document.createElement("div");
+        card.className = "operator-kit-item";
+        const label = document.createElement("span");
+        label.className = "operator-kit-slot";
+        label.textContent = slot.label;
+        const canvas = document.createElement("canvas");
+        canvas.setAttribute("role", "img");
+        canvas.setAttribute("aria-label", `3D model of ${item.name}`);
+        const name = document.createElement("span");
+        name.className = "operator-kit-name";
+        name.textContent = item.name;
+        card.append(label, canvas, name);
+        kit.appendChild(card);
+        return { canvas, model: buildInspectModel(item, true), item };
+      });
+      drawOperatorKit();
+    }
+
+    window.addEventListener("resize", () => {
+      if (activeSection === "LOADOUT" && selectedOperatorId !== "custom") drawOperatorKit();
+    });
+
     function inspectLoop() {
-      if (activeSection !== "LOADOUT") { inspector.running = false; return; }
+      if (activeSection !== "LOADOUT" || selectedOperatorId !== "custom") { inspector.running = false; return; }
       if (!inspector.dragging && !reducedMotion) inspector.yaw += .008;
       drawInspector();
       requestAnimationFrame(inspectLoop);
@@ -1472,6 +1571,33 @@
       toastTimer = setTimeout(() => toast.classList.remove("visible"), 2800);
     }
 
+    function selectOperator(id) {
+      const operator = operatorRoster.find((entry) => entry.id === id);
+      if (!operator) return;
+      selectedOperatorId = operator.id;
+      Object.assign(loadout, operator.id === "custom" ? customLoadout : operator.loadout);
+      inspector.item = chosen(activeSlot);
+      operators.forEach((button, index) => {
+        const selected = button.dataset.id === operator.id;
+        button.classList.toggle("selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+        if (selected) document.querySelector("#operator-count").textContent = `0${index + 1} / 0${operators.length}`;
+      });
+      document.querySelector("#operator-ability").textContent = operator.ability;
+      try { localStorage.setItem("c6-operator", operator.id); } catch (error) {}
+      if (operator.id === "hallway-monitor") {
+        const optic = customOf(loadoutSlots[0].items.find((item) => item.id === "longwatch"));
+        optic.optic = "scope";
+        saveCustom();
+      }
+      if (activeSection === "LOADOUT") document.querySelector("#mission-label").textContent = `CURRENT PICK: ${operator.name.toUpperCase()}`;
+      if (activeSection === "PLAY") {
+        document.querySelector("#mission-label").textContent = `OPERATOR: ${operator.name.toUpperCase()}`;
+      }
+      if (activeSection === "LOADOUT") renderLoadout();
+      if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "select_operator", operatorId: operator.id, loadout }));
+    }
+
     function setSection(section) {
       const content = sectionContent[section];
       if (!content) return;
@@ -1511,19 +1637,8 @@
     }
 
     navButtons.forEach((button) => button.addEventListener("click", () => setSection(button.dataset.section)));
-    operators.forEach((button, index) => {
-      button.addEventListener("click", () => {
-        operators.forEach((operator) => {
-          const selected = operator === button;
-          operator.classList.toggle("selected", selected);
-          operator.setAttribute("aria-pressed", String(selected));
-        });
-        document.querySelector("#operator-count").textContent = `0${index + 1} / 04`;
-        if (activeSection === "LOADOUT") {
-          document.querySelector("#mission-label").textContent = `CURRENT PICK: ${button.dataset.name.toUpperCase()}`;
-        }
-      });
-    });
+    operators.forEach((button) => button.addEventListener("click", () => selectOperator(button.dataset.id)));
+    selectOperator(selectedOperatorId);
 
     const defaultKeybinds = {
       moveForward: "w",
@@ -1971,6 +2086,13 @@
         }
         return ground;
       };
+      function moveWithCollision(position, mx, mz, feet) {
+        const steps = Math.max(1, Math.ceil(Math.max(Math.abs(mx), Math.abs(mz)) / .2));
+        for (let i = 0; i < steps; i++) {
+          if (probe(position.x + mx / steps, position.z, feet) >= 0) position.x += mx / steps;
+          if (probe(position.x, position.z + mz / steps, feet) >= 0) position.z += mz / steps;
+        }
+      }
       let running = false, last = 0, lastRender = 0, lastHudAt = 0, gl, prog, loc, groundBuf, solidBuf, groundN, solidN;
       const lowPowerDevice = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
       const frameInterval = 16.67;
@@ -2204,7 +2326,7 @@
       // Gadgets and equipment are held items: vs scales the armory model for the viewmodel, uses is the charges per life
       const held = (vs, uses, at) => ({ rate: 1.6, auto: false, mag: Infinity, reload: 0, mult: 0, held: true, vs, uses, at: at || [.14, -.16, .4] });
       Object.assign(kinds, {
-        DEFENSE: held(2.6, Infinity, [.0, -.12, .75]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, 2),
+        DEFENSE: held(2.6, Infinity, [.0, -.072, .42]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, 2),
         LETHAL: held(1.7, 3), TACTICAL: held(1.7, 3)
       });
       const K = .06;
@@ -2213,7 +2335,11 @@
       const skinOf = (w) => skins.find((k) => k.id === w.cfg.skin && skinUnlocked(k, w.item.id) && k.img.complete && k.img.naturalWidth);
       const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return skinOf(w) ? (m === "metal" ? fin : materials[m]) : (m === "body" ? fin : materials[m]); };
       function buildWeapon(item) {
-        const def = modelDefs[item.id], cfg = customOf(item), kind = kinds[item.type];
+        const def = modelDefs[item.id], cfg = customOf(item);
+        const baseKind = kinds[item.type];
+        const kind = selectedOperatorId === "ms-a" && !baseKind.held && !baseKind.melee
+          ? { ...baseKind, mag: Math.ceil(baseKind.mag * 1.5), reload: baseKind.reload * .7 }
+          : baseKind;
         const base = buildPolys([...def.parts, ...(def.mag || [])]).flatMap((poly) => poly.v);
         const lo = [0, 1, 2].map((i) => Math.min(...base.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...base.map((q) => q[i])));
         const mid = lo.map((v, i) => (v + hi[i]) / 2);
@@ -2228,9 +2354,10 @@
         const mag = kind.mag;
         const sight = cfg.optic !== "none" && def.mounts.optic ? def.mounts.optic : def.sight || def.mounts.optic || [0, 0, 0];
         return { item, kind, cfg, polys, magPolys, mid, tip, rear, stats, sight, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
-          ammo: old ? old.ammo : mag, reserve: old ? old.reserve : mag * 4, next: 0, reloadEnd: 0, swingStart: -1, swingHit: false, kick: 0, flash: 0 };
+          ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1, swingHit: false, kick: 0, flash: 0 };
       }
       const wpn = () => weapons[loadout[curSlot]];
+      const shieldWeapon = (equipped) => equipped.item.id === "shield" && loadout.secondary === "p45" ? weapons.p45 : equipped;
       function refreshWeapons() {
         ["primary", "secondary", "gadget", "equipment"].forEach((id) => { const item = loadoutSlots.find((sl) => sl.id === id).items.find((it) => it.id === loadout[id]); weapons[item.id] = buildWeapon(item); });
       }
@@ -2254,6 +2381,36 @@
         qb(list, -.46, -.3, 1.0, 1.5, -.1, .1, body, tf); qb(list, .3, .46, 1.0, 1.5, -.1, .1, body, tf);
         qb(list, -.2, .2, 1.58, 2, -.2, .2, skin, tf);
         qb(list, -.21, .21, 1.76, 1.82, -.21, .21, "#c42a30", tf);
+      }
+      const worldItemModels = new Map();
+      function worldItemQuads(list, itemId, state, side = .28) {
+        const def = modelDefs[itemId];
+        if (!def) return;
+        if (!worldItemModels.has(itemId)) {
+          const polys = buildPolys([...def.parts, ...(def.mag || [])]);
+          const points = polys.flatMap((poly) => poly.v);
+          const lo = [0, 1, 2].map((axis) => Math.min(...points.map((p) => p[axis])));
+          const hi = [0, 1, 2].map((axis) => Math.max(...points.map((p) => p[axis])));
+          worldItemModels.set(itemId, { polys, mid: lo.map((v, i) => (v + hi[i]) / 2),
+            span: Math.max(...hi.map((v, i) => v - lo[i])) });
+        }
+        const model = worldItemModels.get(itemId), size = state.activeSlot === "primary" ? .85 : state.activeSlot === "secondary" ? .48 : .38;
+        const scale = size / model.span, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
+        const pitch = state.pitch || 0, cp = Math.cos(pitch), sp = Math.sin(pitch), lean = state.lean || 0;
+        const base = state.y - (state.crouched ? CROUCH_EYE : EYE);
+        const transform = (p) => {
+          const x = (p[0] - model.mid[0]) * scale, y = (p[1] - model.mid[1]) * scale, z = (p[2] - model.mid[2]) * scale;
+          const forward = .48 + x * cp - y * sp, lateral = side + z + lean * .7;
+          return [state.x + lateral * c + forward * s, base + (state.crouched ? .97 : 1.3) + x * sp + y * cp,
+            state.z - lateral * s + forward * c];
+        };
+        model.polys.forEach((poly) => list.push({ pts: poly.v.map(transform), color: materials[poly.m] }));
+      }
+      function remoteEquippedItem(player) {
+        const state = player.state;
+        if (state.equippedItem && modelDefs[state.equippedItem]) return state.equippedItem;
+        if (state.shieldActive) return "shield";
+        return operatorRoster.find((entry) => entry.id === player.operatorId && entry.id !== "custom")?.loadout[state.activeSlot] || null;
       }
       function operatorMeshQuads(list, player, teamColor) {
         const state = player.state, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
@@ -2284,6 +2441,23 @@
           box(0, 1.97, -.01, .41, .15, .39, "#414a3d");
         }
         box(0, state.crouched ? .79 : 1.22, .245, .12, .12, .035, "#d3ef59");
+        const item = remoteEquippedItem(player);
+        if (!state.droneState && (state.shieldActive || item === "shield")) {
+          const lean = state.lean || 0, lx = state.x + c * lean * .7, lz = state.z - s * lean * .7;
+          const shieldTransform = ([x, y, z]) => [lx + x * c + z * s, base + y, lz - x * s + z * c];
+          const bottom = state.crouched ? .05 : .15, top = state.crouched ? 1.7 : 2.02;
+          const windowBottom = state.crouched ? .9 : 1.65, windowTop = state.crouched ? 1.17 : 1.92;
+          const panel = (x0, x1, y0, y1, color) => qb(list, x0, x1, y0, y1, .52, .58, color, shieldTransform);
+          panel(-.65, .65, bottom, windowBottom, "#414a3d");
+          panel(-.65, .65, windowTop, top, "#414a3d");
+          panel(-.65, -.38, windowBottom, windowTop, "#414a3d");
+          panel(.38, .65, windowBottom, windowTop, "#414a3d");
+          panel(-.68, -.65, bottom, top, "#747d78");
+          panel(.65, .68, bottom, top, "#747d78");
+          if (player.operatorId === "ms-c") worldItemQuads(list, "p45", state, .76);
+        } else if (item && !state.droneState) {
+          worldItemQuads(list, item, state);
+        }
       }
       function droneWorldQuads(list, state) {
         const c = Math.cos(state.yaw || 0), s = Math.sin(state.yaw || 0);
@@ -2302,6 +2476,35 @@
         });
         box(0, .1, .2, .12, .09, .06, "#d3ef59");
       }
+      function droneLaserQuads(list, companion, target, color = "#ff3030") {
+        if (!target) return;
+        const dx = target.x - companion.x, dy = target.y - companion.y, dz = target.z - companion.z;
+        const targetDistance = Math.hypot(dx, dy, dz);
+        if (targetDistance < .01) return;
+        const horizontal = Math.hypot(dx, dz) || 1, right = [dz / horizontal, 0, -dx / horizontal];
+        const direction = [dx / targetDistance, dy / targetDistance, dz / targetDistance];
+        let length = targetDistance;
+        if (color === "#ff3030" && multiplayer.match) {
+          const origin = [companion.x, companion.y, companion.z];
+          for (const player of multiplayer.match.players) {
+            if (player.health > 0) length = Math.min(length, shieldHitDistance(player.state, origin, direction));
+          }
+        }
+        const up = [-direction[1] * right[2], direction[2] * right[0] - direction[0] * right[2], direction[1] * right[0]];
+        const transform = ([x, y, z]) => [companion.x + right[0] * x + up[0] * y + direction[0] * z,
+          companion.y + right[1] * x + up[1] * y + direction[1] * z,
+          companion.z + right[2] * x + up[2] * y + direction[2] * z];
+        qb(list, -.025, .025, -.025, .025, 0, length, color, transform);
+      }
+      function remoteDroneTarget(id) {
+        const player = multiplayer.match?.players.find((entry) => entry.id === id);
+        const state = player?.state;
+        if (!state || player.health <= 0) return null;
+        const lean = state.lean || 0;
+        return { x: state.x + Math.cos(state.yaw) * lean * .7,
+          y: state.y - Math.abs(lean) * .12 - (state.crouched ? CROUCH_EYE : EYE) + (state.crouched ? 1.43 : 1.8),
+          z: state.z - Math.sin(state.yaw) * lean * .7 };
+      }
 
       // ---- Ray casting against colliders, ground and dummies ----
       const rayBox = (o, dr, b) => {
@@ -2316,6 +2519,19 @@
         }
         return t0;
       };
+      function shieldHitDistance(state, origin, direction) {
+        if (!state?.shieldActive) return Infinity;
+        const c = Math.cos(state.yaw), s = Math.sin(state.yaw), lean = state.lean || 0;
+        const forward = direction[0] * s + direction[2] * c;
+        if (forward >= -1e-8) return Infinity;
+        const dx = origin[0] - (state.x + c * lean * .7), dz = origin[2] - (state.z - s * lean * .7);
+        const t = (.58 - (dx * s + dz * c)) / forward;
+        if (t < 0) return Infinity;
+        const side = (dx + direction[0] * t) * c - (dz + direction[2] * t) * s;
+        const base = state.y - (state.crouched ? CROUCH_EYE : EYE);
+        const height = origin[1] + direction[1] * t - base;
+        return Math.abs(side) <= .68 && height >= (state.crouched ? .05 : .15) && height <= (state.crouched ? 1.7 : 2.02) ? t : Infinity;
+      }
       const hudMsg = document.querySelector("#field-msg"), hitmark = document.querySelector("#field-hitmark");
       let msgTimer, hitTimer;
       const say = (t) => { hudMsg.textContent = t; hudMsg.style.opacity = 1; clearTimeout(msgTimer); msgTimer = setTimeout(() => { hudMsg.style.opacity = 0; }, 900); };
@@ -2413,6 +2629,28 @@
         }
       }
       const sendMatch = (message) => { if (multiplayer.match) multiplayer.socket?.send(JSON.stringify(message)); };
+      let shieldImpacts = [];
+      function showShieldImpact(origin, point) {
+        spawnDebris(point[0], point[1], point[2], 8, false, ["#fff1b8", "#ffd04a", "#b9c3c4"], 8, .35);
+        shieldImpacts.push({ origin, point, until: tNow + .1 });
+        if (shieldImpacts.length > 24) shieldImpacts.shift();
+      }
+      function remoteDroneShot(message) {
+        if (!multiplayer.match || !Array.isArray(message.origin) || !Array.isArray(message.point) ||
+            message.origin.length !== 3 || message.point.length !== 3 ||
+            ![...message.origin, ...message.point].every(Number.isFinite)) return;
+        if (message.blocked) showShieldImpact(message.origin, message.point);
+        else {
+          shieldImpacts.push({ origin: message.origin, point: message.point, until: tNow + .1 });
+          if (shieldImpacts.length > 24) shieldImpacts.shift();
+        }
+      }
+      function remoteShieldImpact(message) {
+        if (!multiplayer.match || !Array.isArray(message.origin) || !Array.isArray(message.point) ||
+            message.origin.length !== 3 || message.point.length !== 3 ||
+            ![...message.origin, ...message.point].every(Number.isFinite)) return;
+        showShieldImpact(message.origin, message.point);
+      }
       let barSeq = 0, projSeq = 0;
       const barById = (id) => barricades.find((b) => b.id === id);
       function remoteBarricade(m) {
@@ -2490,7 +2728,7 @@
         barricades.push(b); rebuildBarricade(b);
         return b;
       }
-      function resetBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; debris = []; projectiles = []; smokes = []; barCount = 6; Object.keys(charges).forEach((k) => delete charges[k]); seedBarricades(); resetPickups(); }
+      function resetBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; debris = []; projectiles = []; smokes = []; shieldImpacts = []; barCount = selectedOperatorId === "skanska" ? Infinity : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
       // ---- Pre-built barricades and supply pickups ----
       // ax is the wall normal (0 = x, 2 = z), n the wall plane, a0..a1 the opening along the other axis
       function seedBarricades() {
@@ -2601,7 +2839,8 @@
       function trace(w, reach, damageMul) {
         const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
         const fwd = [sy * cp, sp2, cy * cp], right = [cy, 0, -sy], up = [-sy * sp2, cp, -cy * sp2];
-        const spread = (w.kind.spread || 0) + (keys.has(currentKeybinds.sprint) ? .012 : 0) + (w.kind.melee ? 0 : .004);
+        const spreadScale = selectedOperatorId === "mr-l" && w.kind.pellets ? 1.6 : 1;
+        const spread = (w.kind.spread || 0) * spreadScale + (keys.has(currentKeybinds.sprint) ? .012 : 0) + (w.kind.melee ? 0 : .004);
         const rx = (Math.random() * 2 - 1) * spread, ry = (Math.random() * 2 - 1) * spread;
         let dr = fwd.map((v, i) => v + right[i] * rx + up[i] * ry);
         const n = Math.hypot(...dr); dr = dr.map((v) => v / n);
@@ -2625,10 +2864,38 @@
           const distance = rayBox(o, dr, { x0: state.x + leanX - .45, x1: state.x + leanX + .45, y0: base + .05, y1: base + (state.crouched ? 1.7 : 2), z0: state.z + leanZ - .35, z1: state.z + leanZ + .35 });
           if (distance < playerDistance) { playerDistance = distance; playerTarget = other; }
         });
+        let droneTarget = null, droneDistance = Infinity;
+        if (multiplayer.round?.phase === "live") multiplayer.remotePlayers.forEach((other) => {
+          if (!other.state || other.health <= 0 || other.team === multiplayer.match?.team) return;
+          const targets = (other.state.companions || []).map((entry, index) => ({ entry, slot: entry.slot ?? index }));
+          if (other.state.droneState) targets.push({ entry: other.state.droneState, slot: "camera" });
+          targets.forEach(({ entry, slot }) => {
+            const distance = rayBox(o, dr, { x0: entry.x - .58, x1: entry.x + .58,
+              y0: entry.y - .15, y1: entry.y + .3, z0: entry.z - .58, z1: entry.z + .58 });
+            if (distance < droneDistance) { droneDistance = distance; droneTarget = { ownerId: other.id, slot }; }
+          });
+        });
+        if (w.item.id !== "longwatch") {
+          let shieldDistance = Infinity;
+          multiplayer.remotePlayers.forEach((other) => {
+            if (other.health > 0) shieldDistance = Math.min(shieldDistance, shieldHitDistance(other.state, o, dr));
+          });
+          if (shieldDistance <= reach && shieldDistance < tw && shieldDistance < bt && shieldDistance <= playerDistance && shieldDistance <= droneDistance) {
+            const point = o.map((v, i) => v + dr[i] * shieldDistance);
+            showShieldImpact(o, point);
+            sendMatch({ type: "shield_impact", direction: { x: dr[0], y: dr[1], z: dr[2] } });
+            say("SHIELD BLOCKED"); return;
+          }
+        }
+        if (droneTarget && droneDistance <= reach && droneDistance < tw && droneDistance < bt && droneDistance < playerDistance) {
+          sendMatch({ type: "drone_hit", ...droneTarget, direction: { x: dr[0], y: dr[1], z: dr[2] } });
+          return;
+        }
         if (playerTarget && playerDistance < tw && playerDistance < bt && playerDistance <= reach) {
           const effectiveRange = reach / 2;
           const falloff = playerDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (playerDistance - effectiveRange) / effectiveRange * .65);
-          const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul);
+          const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && playerTarget.health >= 100 ? 1.5 : 1;
+          const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
           multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage, direction: { x: dr[0], y: dr[1], z: dr[2] } }));
           recordHit(w.item.id); mark(false);
           return;
@@ -2645,20 +2912,22 @@
         if (!best || bt > tw || bt > reach) return;
         const eff = reach / 2;
         const fall = bt <= eff || w.kind.melee ? 1 : Math.max(.35, 1 - (bt - eff) / eff * .65);
-        const dmg = w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul;
+        const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && best.hp >= 100 ? 1.5 : 1;
+        const dmg = w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul * fullHealthBonus;
         recordHit(w.item.id);
         hurtDummy(best, dmg, head);
       }
       function hurtDummy(d, dmg, head) {
         d.hp -= dmg; d.hit = .12;
-        if (d.hp <= 0) { d.died = tNow; kills++; addDrop({ id: `l${tNow}${d.x0}`, kind: "ammo", x: d.x, y: 0, z: d.z, remote: false }); if (Math.random() < .3) addDrop({ id: `m${tNow}${d.x0}`, kind: ["grenade", "medkit", "wood", "metal"][Math.floor(Math.random() * 4)], x: d.x + .7, y: 0, z: d.z + .4, remote: false }); barCount = Math.min(MAX_BARS, barCount + 1); say(head ? "HEADSHOT KILL" : "TARGET DOWN"); mark(true); setTimeout(() => { d.hp = 100; d.died = 0; }, 3500); }
+        if (d.hp <= 0) { d.died = tNow; kills++; addDrop({ id: `l${tNow}${d.x0}`, kind: "ammo", x: d.x, y: 0, z: d.z, remote: false }); if (Math.random() < .3) addDrop({ id: `m${tNow}${d.x0}`, kind: ["grenade", "medkit", "wood", "metal"][Math.floor(Math.random() * 4)], x: d.x + .7, y: 0, z: d.z + .4, remote: false }); if (selectedOperatorId !== "skanska") barCount = Math.min(MAX_BARS, barCount + 1); say(head ? "HEADSHOT KILL" : "TARGET DOWN"); mark(true); setTimeout(() => { d.hp = 100; d.died = 0; }, 3500); }
         else { if (head) say("HEADSHOT"); mark(false); }
       }
       // ---- Gadgets and equipment ----
       let projectiles = [], smokes = [];
-      const drone = { active: false, returnTo: null, nextScan: 0, tags: new Map() };
+      const drone = { active: false, returnTo: null, nextScan: 0, uses: 3, companions: [], mode: "scanner", tags: new Map(), cameraDestroyed: false };
       const SMOKE_R = 4.5, SMOKE_LIFE = 16;
       const charges = {};
+      let nextGrenadeRecharge = 0;
       let droneAudioContext = null, droneHumNodes = [];
       function getDroneAudioContext() {
         if (!window.AudioContext) return null;
@@ -2712,6 +2981,75 @@
         });
         return targets;
       }
+      function droneCanSee(companion, target, range = 22) {
+        const origin = [companion.x, companion.y, companion.z];
+        const delta = [target.x - companion.x, target.y - companion.y, target.z - companion.z];
+        const distance = Math.hypot(...delta);
+        if (distance < .001 || distance > range) return false;
+        const direction = delta.map((value) => value / distance);
+        if (colliders.some((collider) => rayBox(origin, direction, collider) < distance - .15)) return false;
+        return !smokes.some((sm) => {
+          if (tNow - sm.t0 >= SMOKE_LIFE || smokeFade(sm) < .1) return false;
+          const center = [sm.x - origin[0], sm.y - origin[1], sm.z - origin[2]];
+          const along = Math.max(0, Math.min(distance, center.reduce((sum, value, i) => sum + value * direction[i], 0)));
+          return Math.hypot(...center.map((value, i) => value - along * direction[i])) < SMOKE_R;
+        });
+      }
+      function updateCompanionDrones() {
+        if (isDead()) { drone.companions = []; return; }
+        const targets = droneTargets().filter((target) => !multiplayer.match || target.id.startsWith("player-"));
+        drone.companions.forEach((companion) => {
+          const angle = tNow * .65 + companion.slot * Math.PI * 2 / 3;
+          const origin = [cam.x, cam.y, cam.z], offset = [Math.cos(angle) * 1.4, 1.35 + Math.sin(angle * 2) * .15, Math.sin(angle) * 1.4];
+          const distance = Math.hypot(...offset), direction = offset.map((value) => value / distance);
+          const clearance = Math.min(distance, ...colliders.map((collider) => rayBox(origin, direction, collider)));
+          const scale = Math.max(0, clearance - .25) / distance;
+          companion.x = origin[0] + offset[0] * scale;
+          companion.y = origin[1] + offset[1] * scale;
+          companion.z = origin[2] + offset[2] * scale;
+          companion.yaw = angle;
+          if (companion.mode === "scanner") {
+            if (tNow < companion.nextScan) return;
+            companion.nextScan = tNow + 45;
+            let count = 0;
+            targets.forEach((target) => {
+              if (!droneCanSee(companion, target)) return;
+              drone.tags.set(target.id, { expires: tNow + 8, name: target.name });
+              count++;
+            });
+            playDronePing();
+            say(`SCANNER DRONE · ${count} HOSTILE${count === 1 ? "" : "S"} TAGGED`);
+            return;
+          }
+          const canAttack = !multiplayer.match || multiplayer.round?.phase === "live";
+          let target = canAttack && targets.find((entry) => entry.id === companion.targetId && droneCanSee(companion, entry, 24));
+          if (!target && canAttack) target = targets.filter((entry) => droneCanSee(companion, entry, 24)).sort((a, b) =>
+            Math.hypot(a.x - companion.x, a.y - companion.y, a.z - companion.z) - Math.hypot(b.x - companion.x, b.y - companion.y, b.z - companion.z))[0];
+          if (target?.id !== companion.targetId) {
+            companion.targetId = target?.id || null;
+            companion.lockStarted = tNow;
+            companion.nextFire = tNow + 2;
+          }
+          companion.target = target || null;
+          if (!target || tNow - companion.lockStarted < 2 || tNow < companion.nextFire) return;
+          companion.nextFire = tNow + .2;
+          if (target.id.startsWith("dummy-")) {
+            const dummy = dummies[Number(target.id.slice(6))];
+            if (dummy?.hp > 0) hurtDummy(dummy, 4, false);
+          } else {
+            sendMatch({ type: "drone_attack", targetId: target.id.slice(7) });
+          }
+        });
+      }
+      function markEnemiesAround(x, z, radius) {
+        let count = 0;
+        multiplayer.remotePlayers.forEach((player) => {
+          if (!player.state || player.team === multiplayer.match?.team || player.health <= 0 || Math.hypot(player.state.x - x, player.state.z - z) > radius) return;
+          drone.tags.set(`player-${player.id}`, { expires: tNow + 8, name: player.name || "HOSTILE" });
+          count++;
+        });
+        if (count) say(`FLASH MARKED · ${count} HOSTILE${count === 1 ? "" : "S"}`);
+      }
       function scanDrone() {
         if (tNow < drone.nextScan) return say(`SCAN RECHARGING · ${Math.ceil(drone.nextScan - tNow)}s`);
         drone.nextScan = tNow + 4;
@@ -2731,6 +3069,15 @@
       const aimDir = () => { const cp = Math.cos(cam.pitch); return [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp]; };
       function deployDrone() {
         if (drone.active) return;
+        if (selectedOperatorId === "mr-m") {
+          if (drone.uses <= 0) return say("NO DRONES LEFT THIS ROUND");
+          const slot = 3 - drone.uses, mode = slot === 1 ? "attacker" : "scanner";
+          drone.companions.push({ slot, mode, x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, nextScan: tNow + 45, targetId: null, target: null, lockStarted: 0, nextFire: 0 });
+          drone.uses--;
+          return say(`${mode.toUpperCase()} DRONE DEPLOYED · ${drone.uses} REMAINING`);
+        }
+        if (drone.cameraDestroyed) return say("DRONE DESTROYED THIS ROUND");
+        drone.mode = selectedOperatorId === "hallway-monitor" ? "camera" : "scanner";
         drone.returnTo = { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch, vy: cam.vy, lean, crouched };
         const direction = aimDir();
         cam.x += direction[0] * .8; cam.z += direction[2] * .8;
@@ -2738,7 +3085,7 @@
         drone.active = true;
         drone.nextScan = tNow;
         startDroneHum();
-        say("DRONE DEPLOYED · WASD DRIVE · SPACE SCAN · G RECALL");
+        say(`${drone.mode.toUpperCase()} DRONE DEPLOYED · WASD DRIVE · SPACE SCAN · G RECALL`);
       }
       function recallDrone() {
         if (!drone.active || !drone.returnTo) return;
@@ -2749,10 +3096,23 @@
         stopDroneHum();
         say("DRONE RECALLED");
       }
+      function droneDestroyed(message) {
+        if (!multiplayer.match || ![message.x, message.y, message.z].every(Number.isFinite)) return;
+        spawnDebris(message.x, message.y, message.z, 14, true, ["#ffd96b", "#343a3b", "#80857a"], 10, .8);
+        const owner = multiplayer.remotePlayers.get(message.ownerId);
+        if (owner?.state) {
+          if (message.slot === "camera") owner.state.droneState = null;
+          else owner.state.companions = (owner.state.companions || []).filter((entry) => entry.slot !== message.slot);
+        }
+        if (message.ownerId !== multiplayer.playerId) return;
+        if (message.slot === "camera") { drone.cameraDestroyed = true; if (drone.active) recallDrone(); }
+        else drone.companions = drone.companions.filter((entry) => entry.slot !== message.slot);
+        say("DRONE DESTROYED");
+      }
       function useHeld(w) {
         const id = w.item.id, left = charges[id] ?? w.kind.uses;
         const o = [renderCam.x, renderCam.y, renderCam.z], dr = aimDir();
-        if (id === "drone") { deployDrone(); return; }
+        if (id === "drone" || id === "camera-drone") { deployDrone(); return; }
         if (id === "steel-bars") {
           if (left <= 0) return say("OUT OF STEEL BARS");
           const bar = aimedBarricade(o, dr, 3.5);
@@ -2779,39 +3139,104 @@
           projectiles.push(mine); sendMatch({ type: "throw", id: mine.pid, kind: id, x: mine.x, y: mine.y, z: mine.z, vx: 0, vy: 0, vz: 0, fuse: 99, mine: true });
           return say("MINE PLACED");
         }
-        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6, own: true };
+        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6, own: true,
+          tornado: id === "smoke" && selectedOperatorId === "mr-l", markedFlash: id === "flash" && selectedOperatorId === "mr-m" };
         projectiles.push(thrown);
         sendMatch({ type: "throw", id: thrown.pid, kind: id, x: thrown.x, y: thrown.y, z: thrown.z, vx: thrown.vx, vy: thrown.vy, vz: thrown.vz, fuse: thrown.fuse });
       }
       const smokeFade = (sm) => { const a = tNow - sm.t0; return Math.max(0, Math.min(1, a / 1.5, (SMOKE_LIFE - a) / 4)); };
+      function tornadoCurrent(sm, x, z) {
+        const dx = sm.x - x, dz = sm.z - z, distance = Math.hypot(dx, dz);
+        if (!sm.tornado || distance >= SMOKE_R * 1.5 || distance < 1e-6) return [0, 0];
+        const strength = smokeFade(sm) * Math.min(1, distance / .75);
+        return [(dx * 8 - dz * 3.5) / distance * strength, (dz * 8 + dx * 3.5) / distance * strength];
+      }
+      function moveDroneOperatorInTornado(dt) {
+        const body = drone.returnTo, feet = body.y - (body.crouched ? CROUCH_EYE : EYE);
+        let mx = 0, mz = 0;
+        for (const sm of smokes) { const [vx, vz] = tornadoCurrent(sm, body.x, body.z); mx += vx * dt; mz += vz * dt; }
+        if (!mx && !mz) return;
+        moveWithCollision(body, mx, mz, feet);
+        body.x = Math.max(-HL - 40, Math.min(HL + 40, body.x));
+        body.z = Math.max(-ZB - 9.4, Math.min(ZB + 3.4, body.z));
+        if (barrierOn()) body.z = clampToSide(body.z, BARRIER_LIMIT);
+        body.y = Math.max(body.y, Math.max(0, probe(body.x, body.z, feet)) + (body.crouched ? CROUCH_EYE : EYE));
+      }
+      function rechargeGrenades() {
+        if (tNow < nextGrenadeRecharge) return;
+        const id = selectedOperatorId === "ms-c" ? "frag" : selectedOperatorId === "mr-l" ? "smoke" : null;
+        if (!id) return;
+        const current = charges[id] ?? weapons[id].kind.uses;
+        if (current < weapons[id].kind.uses) { charges[id] = current + 1; say(id === "frag" ? "FRAG RECHARGED" : "TORNADO RECHARGED"); }
+        nextGrenadeRecharge = tNow + 15;
+      }
       function setSmoke(program, on) {
         smokes = smokes.filter((sm) => tNow - sm.t0 < SMOKE_LIFE);
         const c = new Float32Array(12), f = new Float32Array(3);
         for (let i = 0; i < 3; i++) {
           const sm = smokes[smokes.length - 1 - i];
           if (!sm || !on) continue;
-          const g = smokeFade(sm);
-          c.set([sm.x - renderCam.x, sm.y - renderCam.y, sm.z - renderCam.z, SMOKE_R * (.4 + .6 * Math.min(1, (tNow - sm.t0) / 1.5))], i * 4); f[i] = g;
+          const age = tNow - sm.t0, g = smokeFade(sm);
+          c.set([sm.x - renderCam.x, sm.y - renderCam.y, sm.z - renderCam.z,
+            SMOKE_R * (.4 + .6 * Math.min(1, age / 1.5)) * (sm.tornado ? .8 : 1)], i * 4); f[i] = g * (sm.tornado ? .35 : 1);
         }
         gl.uniform4fv(gl.getUniformLocation(program, "smc"), c); gl.uniform3fv(gl.getUniformLocation(program, "smf"), f);
       }
+      function tornadoQuads(sm) {
+        const list = [], age = tNow - sm.t0, growth = Math.min(1, Math.max(0, age / 1.5));
+        const baseY = sm.y - 1.4, height = 7 * growth, segments = 32, strands = 4;
+        const point = (fraction, strand, edge) => {
+          const angle = age * 3.2 + fraction * Math.PI * 5 + strand * Math.PI * 2 / strands + edge * .3;
+          const radius = (.25 + fraction * 2.8) * growth;
+          return [sm.x + Math.cos(angle) * radius, baseY + fraction * height, sm.z + Math.sin(angle) * radius];
+        };
+        for (let strand = 0; strand < strands; strand++) {
+          for (let i = 0; i < segments; i++) {
+            const a = i / segments, b = (i + 1) / segments;
+            list.push({ pts: [point(a, strand, -1), point(a, strand, 1), point(b, strand, 1), point(b, strand, -1)],
+              color: strand % 2 ? "#b1bac0" : "#d1d6d5" });
+          }
+        }
+        return list;
+      }
+      function drawTornadoes() {
+        const active = smokes.filter((sm) => sm.tornado && smokeFade(sm) > 0)
+          .sort((a, b) => Math.hypot(b.x - renderCam.x, b.z - renderCam.z) - Math.hypot(a.x - renderCam.x, a.z - renderCam.z));
+        if (!active.length) return;
+        const alpha = gl.getUniformLocation(prog, "al");
+        gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+        active.forEach((sm) => { gl.uniform1f(alpha, smokeFade(sm) * .42); drawDynamic(tornadoQuads(sm), false); });
+        gl.uniform1f(alpha, 1); gl.depthMask(true); gl.disable(gl.BLEND);
+      }
       function remoteThrow(m) {
         if (!multiplayer.match || projectiles.some((p) => p.pid === m.id)) return;
-        projectiles.push({ pid: m.id, type: m.kind, x: m.x, y: m.y, z: m.z, vx: m.vx, vy: m.vy, vz: m.vz, fuse: m.fuse, mine: m.mine, arm: Infinity, own: false });
+        projectiles.push({ pid: m.id, type: m.kind, x: m.x, y: m.y, z: m.z, vx: m.vx, vy: m.vy, vz: m.vz, fuse: m.fuse, mine: m.mine, arm: Infinity, own: false,
+          tornado: m.tornado === true, markedFlash: m.kind === "flash" && multiplayer.remotePlayers.get(m.from)?.operatorId === "mr-m" });
       }
       function applyEffect(p) {
         if (p.type === "frag") explode(p, 6, 320);
         else if (p.type === "claymore") explode(p, 5, 260);
         else if (p.type === "flash") {
           if (Math.hypot(cam.x - p.x, cam.z - p.z) < 14) { flashEl.style.transition = "none"; flashEl.style.opacity = 1; void flashEl.offsetWidth; flashEl.style.transition = "opacity 2.2s ease-out .4s"; flashEl.style.opacity = 0; }
+          if (p.markedFlash) markEnemiesAround(p.x, p.z, 14);
           spawnDebris(p.x, p.y + .2, p.z, 20, true, ["#ffffff", "#fff1b8"], 2, .35);
-        } else smokes.push({ x: p.x, y: Math.max(p.y, .1) + 1.4, z: p.z, t0: tNow });
+        } else if (!p.tornado || !smokes.some((sm) => sm.tornado && sm.id === p.pid)) {
+          smokes.push({ id: p.pid, x: p.x, y: Math.max(p.y, .1) + 1.4, z: p.z, t0: tNow, tornado: Boolean(p.tornado) });
+        }
       }
       function remoteExplosion(m) {
         if (!multiplayer.match) return;
         const i = projectiles.findIndex((p) => p.pid === m.id);
-        if (i >= 0) projectiles.splice(i, 1);
-        applyEffect({ type: m.kind, x: m.x, y: m.y, z: m.z });
+        const projectile = i >= 0 ? projectiles.splice(i, 1)[0] : {};
+        applyEffect({ ...projectile, pid: m.id, tornado: m.tornado === true, type: m.kind, x: m.x, y: m.y, z: m.z });
+      }
+      function syncTornadoes(tornadoes) {
+        for (const tornado of tornadoes) {
+          if (typeof tornado.id !== "string" || ![tornado.x, tornado.y, tornado.z, tornado.age].every(Number.isFinite) ||
+              tornado.age < 0 || tornado.age >= SMOKE_LIFE || smokes.some((sm) => sm.tornado && sm.id === tornado.id)) continue;
+          smokes.push({ id: tornado.id, x: tornado.x, y: Math.max(tornado.y, .1) + 1.4, z: tornado.z,
+            t0: performance.now() / 1000 - tornado.age, tornado: true });
+        }
       }
       const detonate = (p) => { sendMatch({ type: "explode", id: p.pid, x: p.x, y: p.y, z: p.z }); applyEffect(p); };
       function explode(p, radius, power) {
@@ -2885,7 +3310,7 @@
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
       let mouseDown = false, mouseAim = false, sprintPose = 0, lastT = 0, pressedAt = -1;
-      function viewmodelQuads(w, moving) {
+      function viewmodelQuads(w, moving, shieldSidearm = false) {
         const k = w.kick, bob = moving ? Math.sin(tNow * 9) * .008 : Math.sin(tNow * 1.5) * .002;
         let ang = k * .07, offY = -.2 + bob, offX = .17 + Math.cos(tNow * 4.5) * (moving ? .006 : 0), offZ = .22 + w.rear * K - k * .05;
         const reloadProgress = w.reloadEnd ? Math.max(0, Math.min(1, (tNow - w.reloadStart) / w.kind.reload)) : 1;
@@ -2896,12 +3321,13 @@
         }
         let vs = 1;
         if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
+        if (shieldSidearm) { offX = .24; offY = -.24 + bob; offZ = .43 + w.rear * K - k * .05; }
         if (w.reloadEnd) { ang -= .42 * reloadDip; offY -= .34 * reloadDip; offX += .1 * reloadDip; offZ -= .24 * reloadDip; }
         offY -= sprintPose * .48;
         offX += sprintPose * .12;
         offZ -= sprintPose * .28;
         ang += sprintPose * .38;
-        const aim = w.kind.held || w.kind.melee ? 0 : ads * (1 - sprintPose) * (1 - reloadDip);
+        const aim = w.kind.held || w.kind.melee || shieldSidearm ? 0 : ads * (1 - sprintPose) * (1 - reloadDip);
         vs = 1 - aim * .18;
         if (aim) {
           const sx = w.sight[0] - w.mid[0], sy = w.sight[1] - w.mid[1], sz = w.sight[2] - w.mid[2];
@@ -2915,7 +3341,9 @@
           const xr = x * ca - y * sa, yr = x * sa + y * ca;
           return [z * K * vs + offX, yr * K * vs + offY, xr * K * vs + offZ];
         };
-        const list = w.polys.map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv }));
+        const list = w.polys.filter((poly) => w.item.id !== "shield" || poly.m !== "glass" || poly.v.every((point) => point[0] === -.01))
+          .map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv,
+            shieldGlass: w.item.id === "shield" && poly.m === "glass" }));
         if (w.magPolys.length) {
           const magOffset = w.reloadEnd ? Math.max(0, Math.min(1, (reloadProgress - .16) / .18, (.78 - reloadProgress) / .2)) : 0;
           const placeMagazine = (q) => { const p = place(q); return [p[0] + .18 * magOffset, p[1] - .3 * magOffset, p[2]]; };
@@ -3083,9 +3511,11 @@
         });
       }
       function updateHud() {
-        const w = wpn(), k = w.kind;
-        const ammo = k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
-        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · KILLS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount}</div>`;
+        const equipped = wpn(), w = shieldWeapon(equipped), k = w.kind;
+        const ammo = selectedOperatorId === "mr-m" && w.item.id === "drone" ? `${drone.uses} LEFT` : k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
+        const droneCount = selectedOperatorId === "mr-m" ? ` · DRONES ${drone.companions.length} ACTIVE / ${drone.uses} LEFT` : "";
+        const fragCount = selectedOperatorId === "ms-c" ? ` · FRAGS ${charges.frag ?? 3}/3` : "";
+        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">${operatorInfo().name.toUpperCase()}${droneCount}${fragCount} · [${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · KILLS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount === Infinity ? "INF" : barCount}</div>`;
         if (multiplayer.match) {
           const players = multiplayer.match.players || [];
           const first = players.filter((player) => player.team === 1), second = players.filter((player) => player.team === 2);
@@ -3148,13 +3578,26 @@
         if (dead) { if (drone.active) recallDrone(); followSpectate(); }
         collectPickups();
         const cw = wpn();
-        const sp = (drone.active ? 3.5 : sprinting ? 8.5 : 5.5) * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
+        const speedBonus = selectedOperatorId === "hallway-monitor" ? 1.3 : 1;
+        const sp = (drone.active ? 3.5 : sprinting ? 8.5 : 5.5) * speedBonus * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
         const fwd = (k(currentKeybinds.moveForward) || k("arrowup")) - (k(currentKeybinds.moveBackward) || k("arrowdown")), str = k(currentKeybinds.moveRight) - k(currentKeybinds.moveLeft);
-        const mx = dead ? 0 : (Math.sin(cam.yaw) * fwd + Math.cos(cam.yaw) * str) * sp, mz = dead ? 0 : (Math.cos(cam.yaw) * fwd - Math.sin(cam.yaw) * str) * sp;
+        let mx = dead ? 0 : (Math.sin(cam.yaw) * fwd + Math.cos(cam.yaw) * str) * sp, mz = dead ? 0 : (Math.cos(cam.yaw) * fwd - Math.sin(cam.yaw) * str) * sp;
+        let tornadoMoving = false;
+        if (!dead && !drone.active) {
+          for (const sm of smokes) {
+            const [vx, vz] = tornadoCurrent(sm, cam.x, cam.z);
+            mx += vx * dt; mz += vz * dt;
+            tornadoMoving ||= vx !== 0 || vz !== 0;
+          }
+        }
+        if (!dead && drone.active) moveDroneOperatorInTornado(dt);
         let feet = drone.active ? .1 : cam.y - eyeHeight;
         if (drone.active) { cam.y = .42; cam.vy = 0; }
-        if (probe(cam.x + mx, cam.z, feet) >= 0) cam.x += mx;
-        if (probe(cam.x, cam.z + mz, feet) >= 0) cam.z += mz;
+        if (tornadoMoving) moveWithCollision(cam, mx, mz, feet);
+        else {
+          if (probe(cam.x + mx, cam.z, feet) >= 0) cam.x += mx;
+          if (probe(cam.x, cam.z + mz, feet) >= 0) cam.z += mz;
+        }
         cam.x = Math.max(-HL - 40, Math.min(HL + 40, cam.x));
         cam.z = Math.max(-ZB - 9.4, Math.min(ZB + 3.4, cam.z));
         if (barrierOn() && !dead && !drone.active) cam.z = clampToSide(cam.z, BARRIER_LIMIT);
@@ -3180,9 +3623,12 @@
         const leanScale = Math.cos(Math.abs(roll)) + Math.sin(Math.abs(roll)) * canvas.clientWidth / Math.max(1, canvas.clientHeight);
         canvas.style.transform = drone.active || dead ? "none" : `rotate(${-lean * 12}deg) scale(${leanScale})`;
         fieldTags.style.transform = canvas.style.transform;
+        if (selectedOperatorId === "mr-m") updateCompanionDrones();
         if (multiplayer.match && multiplayer.connected && !dead && now - multiplayer.lastStateAt >= 50) {
           const bodyState = operatorState();
-          multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch } : null } }));
+          const companions = drone.companions.map((entry) => ({ slot: entry.slot, x: entry.x, y: entry.y, z: entry.z, yaw: entry.yaw, mode: entry.mode,
+            targetId: entry.targetId?.startsWith("player-") ? entry.targetId.slice(7) : null }));
+          multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, activeSlot: curSlot, companions, droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch, mode: drone.mode } : null } }));
           multiplayer.lastStateAt = now;
         }
         const cssWidth = canvas.clientWidth || window.innerWidth, cssHeight = canvas.clientHeight || window.innerHeight;
@@ -3213,11 +3659,19 @@
         dummies.forEach((d) => dummyQuads(dq, d));
         multiplayer.remotePlayers.forEach((player) => {
           const state = player.state;
-          if (!state || player.health <= 0 || (dead && player.id === spectate.id)) return;
+          if (!state || player.health <= 0) return;
           const uniform = player.team === multiplayer.match?.team;
-          operatorMeshQuads(dq, player, uniform ? "#667653" : "#8e4a3e");
+          if (!(dead && player.id === spectate.id)) operatorMeshQuads(dq, player, uniform ? "#667653" : "#8e4a3e");
           if (state.droneState) droneWorldQuads(dq, state.droneState);
+          (state.companions || []).forEach((companion) => {
+            droneWorldQuads(dq, companion);
+            if (companion.mode === "attacker" && companion.targetId) droneLaserQuads(dq, companion, remoteDroneTarget(companion.targetId));
+          });
         });
+        drone.companions.forEach((companion) => { droneWorldQuads(dq, companion); droneLaserQuads(dq, companion, companion.target); });
+        shieldImpacts = shieldImpacts.filter((impact) => impact.until > tNow);
+        shieldImpacts.forEach(({ origin, point }) => droneLaserQuads(dq,
+          { x: origin[0], y: origin[1], z: origin[2] }, { x: point[0], y: point[1], z: point[2] }, "#ffd96b"));
         if (drone.active) operatorMeshQuads(dq, { state: operatorState() }, "#667653");
         barricades.slice().forEach((b) => { if (b.dirty) rebuildBarricade(b); dq.push(...b.quads); });
         pickupQuads(dq);
@@ -3230,8 +3684,11 @@
         });
         stepProjectiles(bdt, dq);
         drawDynamic(dq, true);
+        drawTornadoes();
         if (barrierOn()) drawBarrier();
-        if (!drone.active && !dead) updateWeapon(cw);
+        if (drone.active && drone.mode === "camera" && tNow >= drone.nextScan) scanDrone();
+        rechargeGrenades();
+        if (!drone.active && !dead) updateWeapon(shieldWeapon(cw));
         lastT = tNow;
         gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.uniform3f(u("cam"), 0, 0, 0);
@@ -3242,9 +3699,17 @@
           (cw.cfg.optic === "dot" || cw.cfg.optic === "scope") ? cw.cfg.optic : null;
         if (optic) el.dataset.optic = optic;
         else delete el.dataset.optic;
-        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : viewmodelQuads(cw, fwd !== 0 || str !== 0);
-        drawDynamic(vm.filter((q) => !q.skin), true);
+        const moving = fwd !== 0 || str !== 0;
+        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : viewmodelQuads(cw, moving);
+        if (!dead && !drone.active && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
+        drawDynamic(vm.filter((q) => !q.skin && !q.shieldGlass), true);
         drawSkinned(vm.filter((q) => q.skin));
+        const glass = vm.filter((q) => q.shieldGlass);
+        if (glass.length) {
+          gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+          gl.uniform1f(u("al"), .22); drawDynamic(glass, true);
+          gl.uniform1f(u("al"), 1); gl.depthMask(true); gl.disable(gl.BLEND);
+        }
         updateTeamTags();
         if (now - lastHudAt >= 100) {
           updateDroneTags();
@@ -3285,7 +3750,7 @@
           }
           const slotIndex = [currentKeybinds.switchWeapon1, currentKeybinds.switchWeapon2, currentKeybinds.switchWeapon3, currentKeybinds.switchWeapon4].indexOf(key);
           if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
-          if (key === currentKeybinds.reload) startReload(wpn());
+          if (key === currentKeybinds.reload) startReload(shieldWeapon(wpn()));
           if (key === currentKeybinds.barricade && !e.repeat) placeBarricade();
           if (key === currentKeybinds.scan && grounded) cam.vy = 6.5;
         }
@@ -3303,12 +3768,13 @@
         running = false; mouseDown = false; mouseAim = false; el.classList.remove("open"); keys.clear(); heldCodes.clear();
         delete el.dataset.optic;
         if (drone.active) recallDrone();
+        drone.companions = [];
         if (multiplayer.match && multiplayer.connected) multiplayer.socket.send(JSON.stringify({ type: "leave_match" }));
         multiplayer.match = null; multiplayer.remotePlayers.clear();
         if (locked()) document.exitPointerLock();
       }
       document.querySelector("#field-exit").addEventListener("click", close);
-      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, remoteBarricade, open({ practice = false } = {}) {
+      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, syncTornadoes, droneDestroyed, remoteDroneShot, remoteBarricade, remoteShieldImpact, open({ practice = false } = {}) {
         const b = (action) => bindLabel(currentKeybinds[action]);
         document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scan · ${b("recallDrone")} recall drone · ESC exit`;
         if (drone.active) recallDrone();
