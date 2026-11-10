@@ -20,6 +20,12 @@ const quickMatchPlaylists = ["standard", "defuse", "rescue", "duel"];
 const queueSeconds = Number(process.env.QUEUE_SECONDS || 60);
 const fullLobbySeconds = 15;
 const prepSeconds = Number(process.env.PREP_SECONDS || 10);
+const objectiveModes = new Set(["defuse", "rescue"]);
+const objectivePrepSeconds = Number(process.env.OBJECTIVE_PREP_SECONDS || 30);
+const roundLiveMs = Number(process.env.ROUND_SECONDS || 180) * 1000;
+const plantMs = 5000, removeMs = 5000, defuseMs = 25000, freeMs = 3000, followLagMs = 1200;
+const interactRange = 2.5;
+const objectiveSites = { press: { x: 0, y: 7.25, z: -55.5 }, bathroom: { x: -81, y: .12, z: -47 } };
 const roundEndSeconds = 6;
 const matchOverSeconds = 8;
 const roundsToWin = 2;
@@ -217,15 +223,30 @@ function spawnPoint(team, index) {
   return { x: spawnXs[index % spawnXs.length], y: 1.8, z: team === 1 ? -spawnZ : spawnZ, yaw: team === 1 ? 0 : Math.PI };
 }
 
+// Wins are tracked per original team ("group"); clients see them by the side each group currently plays.
+function sideWins(match) {
+  const first = match.swapped ? 2 : 1;
+  return { 1: match.wins[first], 2: match.wins[3 - first] };
+}
+
+function publicObjectives(match, now = Date.now()) {
+  return match.objectives.map((o) => o.kind === "bomb"
+    ? { id: o.id, kind: o.kind, site: o.site, x: o.x, y: o.y, z: o.z, armed: o.armed, defuseMs: o.armed ? Math.max(0, defuseMs - (now - o.armedAt)) : defuseMs, actor: o.actor, progress: o.progress }
+    : { id: o.id, kind: o.kind, site: o.site, x: o.x, y: o.y, z: o.z, alive: o.alive, health: o.health, released: o.released, followerId: o.followerId, actor: o.actor, progress: o.progress });
+}
+
 function matchInfo(match) {
+  const now = Date.now();
   return {
     matchId: match.id,
     mode: match.mode,
     map: match.map,
     round: match.round,
     phase: match.phase,
-    phaseMs: Math.max(0, match.phaseEnd - Date.now()),
-    wins: match.wins,
+    phaseMs: Math.max(0, match.phaseEnd - now),
+    roundMs: match.phase === "live" ? Math.max(0, match.liveEnd - now) : 0,
+    wins: sideWins(match),
+    objectives: publicObjectives(match, now),
     roundsToWin
   };
 }
@@ -272,10 +293,15 @@ function startRound(match, type) {
   match.projectiles = new Map();
   match.tornadoes = new Map();
   match.phase = "prep";
-  match.phaseEnd = Date.now() + prepSeconds * 1000;
+  const objective = objectiveModes.has(match.mode);
+  if (objective && match.round > 1) match.swapped = !match.swapped;
+  match.phaseEnd = Date.now() + (objective ? objectivePrepSeconds : prepSeconds) * 1000;
+  match.liveEnd = 0;
   const slots = { 1: 0, 2: 0 };
   const members = [...match.players].map((id) => players.get(id)).filter(Boolean);
   for (const player of members) {
+    player.team = match.swapped ? 3 - player.group : player.group;
+    player.interact = null;
     player.health = 100;
     player.medkits = 2;
     player.lastHealAt = 0;
@@ -287,6 +313,7 @@ function startRound(match, type) {
     player.spawn = spawnPoint(player.team, slots[player.team]++);
     player.state = { ...player.spawn, pitch: 0, crouched: false, lean: 0, droneState: null };
   }
+  match.objectives = buildObjectives(match, members);
   const roster = members.map(({ id, name, team, operatorId }) => ({ id, name, team, operatorId }));
   for (const player of members) {
     sendPlayer(player, { type, ...matchInfo(match), team: player.team, spawn: player.spawn, players: roster });
@@ -300,17 +327,91 @@ function teamAlive(match, team) {
   }).length;
 }
 
+function endRound(match, winner, reason) {
+  if (match.phase !== "live") return;
+  const group = match.swapped ? 3 - winner : winner;
+  match.wins[group]++;
+  const decided = match.wins[group] >= roundsToWin;
+  match.phase = decided ? "over" : "roundEnd";
+  match.phaseEnd = Date.now() + (decided ? matchOverSeconds : roundEndSeconds) * 1000;
+  for (const id of match.players) sendPlayer(players.get(id), { type: "round_end", winner, wins: sideWins(match), matchWinner: decided ? winner : null, reason, phaseMs: match.phaseEnd - Date.now() });
+}
+
 function checkRound(match) {
   if (match.phase !== "live") return;
   const first = teamAlive(match, 1), second = teamAlive(match, 2);
   if (first && second) return;
-  const winner = first ? 1 : second ? 2 : 0;
+  const objective = objectiveModes.has(match.mode);
+  const winner = first ? 1 : second ? 2 : objective ? 1 : 0;
   if (!winner) return;
-  match.wins[winner]++;
-  const decided = match.wins[winner] >= roundsToWin;
-  match.phase = decided ? "over" : "roundEnd";
-  match.phaseEnd = Date.now() + (decided ? matchOverSeconds : roundEndSeconds) * 1000;
-  for (const id of match.players) sendPlayer(players.get(id), { type: "round_end", winner, wins: match.wins, matchWinner: decided ? winner : null, phaseMs: match.phaseEnd - Date.now() });
+  endRound(match, winner, objective ? (winner === 1 ? "All attackers eliminated" : "All defenders eliminated") : "");
+}
+
+function buildObjectives(match, members) {
+  if (!objectiveModes.has(match.mode)) return [];
+  const defenders = members.filter((player) => player.team === 1).length;
+  const sites = defenders >= 4 ? ["press", "bathroom"] : [Math.random() < .5 ? "press" : "bathroom"];
+  return sites.map((site) => match.mode === "defuse"
+    ? { id: site, kind: "bomb", site, ...objectiveSites[site], armed: false, armedAt: 0, actor: null, since: 0, progress: 0 }
+    : { id: site, kind: "hostage", site, ...objectiveSites[site], alive: true, health: 100, released: false, followerId: null, trail: [], actor: null, since: 0, progress: 0 });
+}
+
+function feetY(state) {
+  return state.y - (state.crouched ? 1.05 : 1.8);
+}
+
+function tickObjectives(match, now) {
+  const alive = [...match.players].map((id) => players.get(id)).filter((player) => player && player.health > 0);
+  const near = (player, o) => Math.hypot(player.state.x - o.x, player.state.z - o.z) <= interactRange && Math.abs(feetY(player.state) - o.y) < 2.5;
+  for (const o of match.objectives) {
+    if (match.phase !== "live") return;
+    if (o.kind === "bomb") {
+      const role = o.armed ? 1 : 2;
+      const actor = alive.find((player) => player.team === role && player.interact === o.id && near(player, o));
+      if (!actor) { o.actor = null; o.progress = 0; }
+      else {
+        if (o.actor !== actor.id) { o.actor = actor.id; o.since = now; }
+        o.progress = Math.min(1, (now - o.since) / (o.armed ? removeMs : plantMs));
+        if (o.progress >= 1) {
+          o.armed = !o.armed;
+          o.armedAt = now;
+          o.actor = null;
+          o.progress = 0;
+        }
+      }
+      if (o.armed && now - o.armedAt >= defuseMs) return endRound(match, 2, "Defuser completed");
+    } else if (o.alive) {
+      if (o.followerId) {
+        const follower = players.get(o.followerId);
+        if (!follower || follower.matchId !== match.id || follower.health <= 0) { o.followerId = null; o.trail = []; }
+        else {
+          o.trail.push({ t: now, x: follower.state.x, y: feetY(follower.state), z: follower.state.z });
+          let index = -1;
+          o.trail.forEach((point, i) => { if (point.t <= now - followLagMs) index = i; });
+          if (index > 0) o.trail.splice(0, index);
+          if (index >= 0) Object.assign(o, { x: o.trail[0].x, y: o.trail[0].y, z: o.trail[0].z });
+        }
+      } else {
+        const actor = alive.find((player) => player.team === 2 && player.interact === o.id && near(player, o));
+        if (!actor) { o.actor = null; o.progress = 0; }
+        else {
+          if (o.actor !== actor.id) { o.actor = actor.id; o.since = now; }
+          o.progress = Math.min(1, (now - o.since) / freeMs);
+          if (o.progress >= 1) { o.followerId = actor.id; o.released = true; o.actor = null; o.progress = 0; o.trail = [{ t: now, x: o.x, y: o.y, z: o.z }]; }
+        }
+      }
+      if (o.released && o.z > 1) return endRound(match, 2, "Hostage rescued");
+    }
+  }
+}
+
+function hostageHurt(match, attacker, hostage, amount) {
+  if (match.phase !== "live" || !hostage.alive) return;
+  hostage.health = Math.max(0, hostage.health - amount);
+  if (hostage.health > 0) return;
+  hostage.alive = false;
+  hostage.followerId = null;
+  endRound(match, attacker.team === 1 ? 2 : 1, `Team ${attacker.team === 1 ? "defenders" : "attackers"} killed the hostage`);
 }
 
 function finishMatch(match, reason) {
@@ -325,8 +426,13 @@ function finishMatch(match, reason) {
 }
 
 function advanceMatch(match, now) {
+  if (match.phase === "live" && objectiveModes.has(match.mode)) {
+    tickObjectives(match, now);
+    // an armed defuser keeps the round alive past the clock so it cannot be cut short
+    if (match.phase === "live" && now >= match.liveEnd && !match.objectives.some((o) => o.armed)) endRound(match, 1, "Time expired");
+  }
   if (now < match.phaseEnd) return;
-  if (match.phase === "prep") match.phase = "live", match.phaseEnd = Infinity;
+  if (match.phase === "prep") match.phase = "live", match.phaseEnd = Infinity, match.liveEnd = now + roundLiveMs;
   else if (match.phase === "roundEnd") startRound(match, "round_start");
   else if (match.phase === "over") finishMatch(match, `Team ${match.wins[1] > match.wins[2] ? 1 : 2} won the match ${Math.max(match.wins[1], match.wins[2])}-${Math.min(match.wins[1], match.wins[2])}.`);
 }
@@ -371,7 +477,7 @@ function startLobby(lobby) {
 }
 
 function createMatch(mode, teams, map) {
-  const match = { id: crypto.randomUUID(), mode, map, players: new Set(), wins: { 1: 0, 2: 0 }, round: 0, phase: "prep", phaseEnd: 0 };
+  const match = { id: crypto.randomUUID(), mode, map, players: new Set(), wins: { 1: 0, 2: 0 }, round: 0, phase: "prep", phaseEnd: 0, swapped: false, liveEnd: 0, objectives: [] };
   teams.forEach((teamUnits, teamIndex) => {
     for (const unit of teamUnits) {
       unit.members.forEach((id) => {
@@ -381,6 +487,8 @@ function createMatch(mode, teams, map) {
         player.lobbyId = null;
         player.queuedMode = null;
         player.team = teamIndex + 1;
+        player.group = teamIndex + 1;
+        player.interact = null;
         player.kills = 0;
         player.deaths = 0;
         match.players.add(id);
@@ -423,6 +531,29 @@ function rayBox(origin, direction, box) {
     if (near > far) return Infinity;
   }
   return far >= 0 ? near : Infinity;
+}
+
+function shootHostage(match, player, message, now) {
+  const state = player.state, lean = state.lean || 0, aim = message.direction || {};
+  const length = Math.hypot(aim.x, aim.y, aim.z);
+  if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
+  const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
+  const cosPitch = Math.cos(state.pitch);
+  const forward = { x: Math.sin(state.yaw) * cosPitch, y: Math.sin(state.pitch), z: Math.cos(state.yaw) * cosPitch };
+  if (direction.x * forward.x + direction.y * forward.y + direction.z * forward.z < Math.cos(.3)) return;
+  const origin = { x: state.x + Math.cos(state.yaw) * lean * .7, y: state.y - Math.abs(lean) * .12, z: state.z - Math.sin(state.yaw) * lean * .7 };
+  let best = null, bestDistance = Infinity;
+  for (const o of match.objectives) {
+    if (o.kind !== "hostage" || !o.alive) continue;
+    const distance = rayBox(origin, direction, { x0: o.x - .4, x1: o.x + .4, y0: o.y, y1: o.y + 1.9, z0: o.z - .4, z1: o.z + .4 });
+    if (distance < bestDistance) { best = o; bestDistance = distance; }
+  }
+  const damage = Number(message.damage);
+  if (!best || bestDistance > 100 || !Number.isFinite(damage)) return;
+  player.lastShotAt = now;
+  const shieldDistance = hasActiveSniper(player) ? Infinity : nearestShieldHit(match, player, origin, direction, bestDistance);
+  if (Number.isFinite(shieldDistance)) return relayShieldImpact(match, player, origin, direction, shieldDistance, true);
+  hostageHurt(match, player, best, Math.min(55, Math.max(1, damage)));
 }
 
 function shieldHitDistance(state, origin, direction) {
@@ -560,6 +691,7 @@ function handleMessage(player, raw) {
     const match = matches.get(player.matchId);
     if (!match || match.phase !== "live" || player.health <= 0) return;
     if (now - player.lastShotAt < 70) return;
+    if (message.targetId === "hostage") return shootHostage(match, player, message, now);
     const target = players.get(String(message.targetId || ""));
     if (!target || target.matchId !== player.matchId || target.team === player.team || target.health <= 0) return;
     const lean = player.state.lean || 0;
@@ -591,6 +723,10 @@ function handleMessage(player, raw) {
       return;
     }
     applyDamage(match, player, target, Math.min(55, Math.max(1, damage)));
+    return;
+  }
+  if (message.type === "interact" && player.matchId) {
+    player.interact = message.holding === true && typeof message.id === "string" ? message.id.slice(0, 12) : null;
     return;
   }
   if (message.type === "shield_impact" && player.matchId) {
@@ -690,6 +826,11 @@ function handleMessage(player, raw) {
       if (!target || target.team === player.team || target.health <= 0) continue;
       const distance = Math.hypot(target.state.x - x, target.state.y - 1 - y, target.state.z - z);
       if (distance < radius) applyDamage(match, player, target, Math.max(1, Math.round(130 * (1 - distance / radius))));
+    }
+    for (const hostage of match.objectives) {
+      if (hostage.kind !== "hostage" || !hostage.alive) continue;
+      const distance = Math.hypot(hostage.x - x, hostage.y + .9 - y, hostage.z - z);
+      if (distance < radius) hostageHurt(match, player, hostage, Math.max(1, Math.round(130 * (1 - distance / radius))));
     }
     return;
   }

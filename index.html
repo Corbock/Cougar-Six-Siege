@@ -550,6 +550,7 @@
       <div id="field-damage" style="position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(190,20,20,.7) 100%);transition:opacity .6s"></div>
       <div id="field-round" style="position:absolute;left:50%;top:112px;transform:translateX(-50%);text-align:center;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 6px #000;font:700 22px/1.2 'Barlow Condensed',sans-serif;letter-spacing:2px;text-transform:uppercase"></div>
       <div id="field-health" style="position:absolute;left:22px;bottom:20px;width:220px;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 4px #000;font:700 16px/1.4 'Barlow Condensed',sans-serif;letter-spacing:1.2px"><span id="field-health-text"></span><div style="height:8px;margin-top:4px;background:rgba(0,0,0,.55);border:1px solid rgba(230,235,220,.3)"><i id="field-health-bar" style="display:block;height:100%;width:100%;background:#d3ef59;transition:width .15s,background .15s"></i></div></div>
+      <div id="field-objective" style="position:absolute;left:50%;top:176px;transform:translateX(-50%);text-align:center;display:none;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 6px #000;font:700 18px/1.35 'Barlow Condensed',sans-serif;letter-spacing:1.6px;text-transform:uppercase"></div>
       <div id="field-spectate" style="position:absolute;left:50%;bottom:64px;transform:translateX(-50%);text-align:center;display:none;pointer-events:none;color:#f3f2ec;text-shadow:0 1px 6px #000;font:700 20px/1.3 'Barlow Condensed',sans-serif;letter-spacing:2px;text-transform:uppercase"></div>
       <div id="field-tags" class="field-tags" aria-hidden="true"></div>
       <div class="field-hud">
@@ -716,7 +717,7 @@
       if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "set_name", name }));
       showToast(`Name set to ${name}.`);
     });
-    const multiplayer = { round: null, vote: null, voteTicker: null, reconnectTimer: null, socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, remotePlayers: new Map(), lastStateAt: 0 };
+    const multiplayer = { round: null, vote: null, voteTicker: null, reconnectTimer: null, socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, objectives: [], remotePlayers: new Map(), lastStateAt: 0 };
     const lobby = {
       el: document.querySelector("#match-lobby"),
       status: document.querySelector("#queue-status"),
@@ -786,7 +787,7 @@
     }
 
     function roundFrom(message) {
-      return { phase: message.phase, round: message.round, wins: message.wins, roundsToWin: message.roundsToWin, endsAt: performance.now() + (message.phaseMs || 0), winner: null };
+      return { phase: message.phase, round: message.round, wins: message.wins, roundsToWin: message.roundsToWin, endsAt: performance.now() + (message.phaseMs || 0), liveEndsAt: message.phase === "live" ? performance.now() + (message.roundMs || 0) : 0, winner: null };
     }
 
     function renderOnline(count) {
@@ -852,6 +853,7 @@
         if (message.type === "error") lobbyStatus(message.message, true);
         if (message.type === "match_found") {
           multiplayer.match = message;
+          multiplayer.objectives = message.objectives || [];
           multiplayer.round = roundFrom(message);
           multiplayer.vote = null;
           multiplayer.queuedMode = null;
@@ -863,16 +865,19 @@
           const previous = new Map(multiplayer.match.players.map((player) => [player.id, player]));
           multiplayer.match.players = message.players.map((player) => ({ ...player, health: 100, kills: previous.get(player.id)?.kills || 0, deaths: previous.get(player.id)?.deaths || 0 }));
           multiplayer.match.spawn = message.spawn;
+          multiplayer.match.team = message.team;
+          multiplayer.objectives = message.objectives || [];
           multiplayer.round = roundFrom(message);
           multiplayer.remotePlayers.clear();
           fieldView.beginRound(message.spawn);
         }
         if (message.type === "round_end" && multiplayer.round) {
-          multiplayer.round = { ...multiplayer.round, phase: message.matchWinner ? "over" : "roundEnd", wins: message.wins, winner: message.winner, endsAt: performance.now() + message.phaseMs };
+          multiplayer.round = { ...multiplayer.round, phase: message.matchWinner ? "over" : "roundEnd", wins: message.wins, winner: message.winner, reason: message.reason || "", endsAt: performance.now() + message.phaseMs };
         }
         if (message.type === "snapshot" && message.matchId === multiplayer.match?.matchId) {
-          multiplayer.round = { ...roundFrom(message), winner: multiplayer.round?.winner ?? null };
+          multiplayer.round = { ...roundFrom(message), winner: multiplayer.round?.winner ?? null, reason: multiplayer.round?.reason ?? "" };
           multiplayer.match.players = message.players;
+          multiplayer.objectives = message.objectives || [];
           multiplayer.remotePlayers = new Map(message.players.filter((player) => player.id !== multiplayer.playerId).map((player) => [player.id, player]));
           if (Array.isArray(message.tornadoes)) fieldView.syncTornadoes(message.tornadoes);
         }
@@ -901,6 +906,7 @@
           multiplayer.queuedMode = null;
           multiplayer.vote = null;
           multiplayer.round = null;
+          multiplayer.objectives = [];
           multiplayer.remotePlayers.clear();
           fieldView.close();
           lobby.el.classList.add("open");
@@ -1657,7 +1663,8 @@
       switchWeapon4: "4",
       sprint: "shift",
       scan: " ",
-      recallDrone: "g"
+      recallDrone: "g",
+      interact: "x"
     };
 
     const keybindLabels = {
@@ -1677,7 +1684,8 @@
       switchWeapon4: "Switch to Equipment",
       sprint: "Sprint",
       scan: "Jump / Scan (Drone)",
-      recallDrone: "Recall Drone"
+      recallDrone: "Recall Drone",
+      interact: "Interact (Defuser / Hostage)"
     };
 
     const validBind = (key) => key === " " || key === "shift" || /^[a-z0-9]$/.test(key);
@@ -2543,6 +2551,8 @@
       const isDead = () => Boolean(multiplayer.match) && (ownEntry()?.health ?? 100) <= 0;
       const barrierOn = () => Boolean(multiplayer.match) && multiplayer.round?.phase === "prep";
       const canFire = (w) => !isDead() && true;
+      const objectiveMatch = () => ["defuse", "rescue"].includes(multiplayer.match?.mode);
+      const defending = () => objectiveMatch() && multiplayer.match.team === 1;
       const clampToSide = (z, margin) => multiplayer.match?.team === 1 ? Math.min(z, -margin) : Math.max(z, margin);
       const angleStep = (from, to, rate) => from + (((to - from + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * rate;
       function spectateTarget(step) {
@@ -2561,7 +2571,43 @@
         cam.x += (state.x - cam.x) * .5; cam.y += (state.y - cam.y) * .5; cam.z += (state.z - cam.z) * .5;
         cam.yaw = angleStep(cam.yaw, state.yaw, .5); cam.pitch += (state.pitch - cam.pitch) * .5;
       }
+      const objectiveView = new Map(), interactState = { id: null };
+      function nearbyObjective() {
+        if (!objectiveMatch() || multiplayer.round?.phase !== "live" || isDead() || drone.active) return null;
+        const team = multiplayer.match.team;
+        return (multiplayer.objectives || []).find((o) => Math.hypot(cam.x - o.x, cam.z - o.z) <= 2.2 && Math.abs(cam.y - eyeHeight - o.y) <= 2.5 &&
+          (o.kind === "bomb" ? (o.armed ? team === 1 : team === 2) : o.alive && !o.followerId && team === 2)) || null;
+      }
+      function updateInteract() {
+        const id = keys.has(currentKeybinds.interact) ? nearbyObjective()?.id || null : null;
+        if (id === interactState.id) return;
+        interactState.id = id;
+        sendMatch({ type: "interact", holding: Boolean(id), id });
+      }
+      function objectiveQuads(list) {
+        (multiplayer.objectives || []).forEach((o) => {
+          let v = objectiveView.get(o.id);
+          if (!v) objectiveView.set(o.id, v = { x: o.x, y: o.y, z: o.z, yaw: Math.PI });
+          const dx = o.x - v.x, dz = o.z - v.z;
+          if (Math.hypot(dx, dz) > 6) { v.x = o.x; v.y = o.y; v.z = o.z; }
+          else { v.x += dx * .25; v.y += (o.y - v.y) * .25; v.z += dz * .25; if (Math.hypot(dx, dz) > .05) v.yaw = Math.atan2(dx, dz); }
+          if (o.kind === "hostage") {
+            if (o.alive) operatorMeshQuads(list, { operatorId: "hostage", state: { x: v.x, y: v.y + EYE, z: v.z, yaw: v.yaw, pitch: 0, lean: 0, crouched: false } }, "#e8b92c");
+            return;
+          }
+          qb(list, v.x - .45, v.x + .45, v.y, v.y + .35, v.z - .3, v.z + .3, "#2f3430");
+          qb(list, v.x - .46, v.x + .46, v.y + .35, v.y + .4, v.z - .31, v.z + .31, "#c42a30");
+          qb(list, v.x - .03, v.x + .03, v.y + .4, v.y + 2.2, v.z - .03, v.z + .03, "#c9ced3");
+          qb(list, v.x + .03, v.x + .55, v.y + 1.7, v.y + 2.2, v.z - .01, v.z + .01, o.armed ? "#3fb6ff" : "#ffdd33");
+          if (o.armed) {
+            qb(list, v.x - .25, v.x + .25, v.y + .4, v.y + .65, v.z - .18, v.z + .18, "#1d6fa5");
+            const on = Math.floor(tNow * 4) % 2 === 0;
+            qb(list, v.x - .06, v.x + .06, v.y + .65, v.y + .72, v.z - .06, v.z + .06, on ? "#58d65c" : "#1b3a1c");
+          }
+        });
+      }
       function beginRound(spawn) {
+        objectiveView.clear(); interactState.id = null;
         if (drone.active) recallDrone();
         crouched = false; eyeHeight = EYE; lean = 0; spectate.id = null;
         if (spawn) { cam.x = spawn.x; cam.y = EYE; cam.z = spawn.z; cam.yaw = spawn.yaw; cam.pitch = 0; cam.vy = 0; }
@@ -2728,7 +2774,7 @@
         barricades.push(b); rebuildBarricade(b);
         return b;
       }
-      function resetBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; debris = []; projectiles = []; smokes = []; shieldImpacts = []; barCount = selectedOperatorId === "skanska" ? Infinity : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
+      function resetBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; debris = []; projectiles = []; smokes = []; shieldImpacts = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
       // ---- Pre-built barricades and supply pickups ----
       // ax is the wall normal (0 = x, 2 = z), n the wall plane, a0..a1 the opening along the other axis
       function seedBarricades() {
@@ -2886,6 +2932,18 @@
             sendMatch({ type: "shield_impact", direction: { x: dr[0], y: dr[1], z: dr[2] } });
             say("SHIELD BLOCKED"); return;
           }
+        }
+        let hostageDistance = Infinity;
+        if (multiplayer.round?.phase === "live") (multiplayer.objectives || []).forEach((h) => {
+          if (h.kind === "hostage" && h.alive) hostageDistance = Math.min(hostageDistance, rayBox(o, dr, { x0: h.x - .4, x1: h.x + .4, y0: h.y, y1: h.y + 1.9, z0: h.z - .4, z1: h.z + .4 }));
+        });
+        if (hostageDistance <= reach && hostageDistance < tw && hostageDistance < bt && hostageDistance < playerDistance && hostageDistance <= droneDistance) {
+          const effectiveRange = reach / 2;
+          const falloff = hostageDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (hostageDistance - effectiveRange) / effectiveRange * .65);
+          const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul);
+          multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: "hostage", damage, direction: { x: dr[0], y: dr[1], z: dr[2] } }));
+          recordHit(w.item.id); mark(false);
+          return;
         }
         if (droneTarget && droneDistance <= reach && droneDistance < tw && droneDistance < bt && droneDistance < playerDistance) {
           sendMatch({ type: "drone_hit", ...droneTarget, direction: { x: dr[0], y: dr[1], z: dr[2] } });
@@ -3436,6 +3494,7 @@
           barrierN = data.length / 6;
         }
         const al = gl.getUniformLocation(prog, "al");
+        if (objectiveMatch()) { gl.uniform1f(al, 1); drawBuf(barrierBuf, barrierN); return; }
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
         gl.uniform1f(al, .4); drawBuf(barrierBuf, barrierN);
         gl.uniform1f(al, 1); gl.depthMask(true); gl.disable(gl.BLEND);
@@ -3532,13 +3591,33 @@
         updateRoundHud();
       }
       const roundEl = document.querySelector("#field-round"), healthEl = document.querySelector("#field-health"), healthText = document.querySelector("#field-health-text"), healthBar = document.querySelector("#field-health-bar");
-      const damageEl = document.querySelector("#field-damage"), spectateEl = document.querySelector("#field-spectate");
+      const objectiveEl = document.querySelector("#field-objective"), damageEl = document.querySelector("#field-damage"), spectateEl = document.querySelector("#field-spectate");
       let hudPhase = null, hudHealth = 100, hudDead = false;
       const clock = (ms) => { const total = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`; };
+      const siteName = (o) => o.site === "press" ? "PRESS BOX" : "BATHROOM";
+      function updateObjectiveHud(match, round) {
+        const objectives = multiplayer.objectives || [];
+        if (!objectiveMatch() || !objectives.length || round.phase === "roundEnd" || round.phase === "over") { objectiveEl.style.display = "none"; return; }
+        const bomb = match.mode === "defuse", defendingNow = match.team === 1;
+        const role = bomb
+          ? (defendingNow ? "DEFENDING · stop attackers from holding a defuser for 25s" : "ATTACKING · place a defuser on a bomb and hold it for 25s")
+          : (defendingNow ? "DEFENDING · keep the hostage from reaching the attackers' side" : "ATTACKING · free a hostage and escort them past midfield");
+        const lines = [role, ...objectives.map((o) => bomb
+          ? `${siteName(o)} BOMB · ${o.armed ? `DEFUSER ARMED ${Math.ceil(o.defuseMs / 1000)}s` : "SECURE"}`
+          : `${siteName(o)} HOSTAGE · ${!o.alive ? "DEAD" : o.followerId ? "ESCORTED" : o.released ? "ABANDONED" : "HELD"}`)];
+        const target = round.phase === "live" ? nearbyObjective() : null;
+        if (target) {
+          const mine = target.actor === multiplayer.playerId;
+          const verb = target.kind === "bomb" ? (target.armed ? "REMOVE DEFUSER" : "PLACE DEFUSER") : "FREE HOSTAGE";
+          lines.push(`<span style="color:#d3ef59">HOLD [${bindLabel(currentKeybinds.interact)}] TO ${verb}${mine ? ` · ${Math.round(target.progress * 100)}%` : ""}</span>`);
+        }
+        objectiveEl.innerHTML = lines.join("<br>");
+        objectiveEl.style.display = "block";
+      }
       function updateRoundHud() {
         const round = multiplayer.round, match = multiplayer.match;
         healthEl.style.display = match ? "block" : "none";
-        if (!match || !round) { roundEl.textContent = ""; spectateEl.style.display = "none"; damageEl.style.opacity = 0; hudPhase = null; hudHealth = 100; hudDead = false; return; }
+        if (!match || !round) { roundEl.textContent = ""; objectiveEl.style.display = "none"; spectateEl.style.display = "none"; damageEl.style.opacity = 0; hudPhase = null; hudHealth = 100; hudDead = false; return; }
         const health = Math.max(0, Math.round(ownEntry()?.health ?? 100)), dead = health <= 0;
         healthText.textContent = dead ? "ELIMINATED" : `HP ${health}`;
         healthBar.style.width = `${health}%`;
@@ -3549,11 +3628,15 @@
         const mine = match.team, wonRound = round.winner === mine;
         const title = `ROUND ${round.round} OF ${round.roundsToWin * 2 - 1}`;
         if (round.phase === "prep") roundEl.innerHTML = `${title} · PREPARATION ${clock(round.endsAt - performance.now())}<small style="display:block;font-size:13px;opacity:.8;letter-spacing:1.2px">Barrier locks both teams to their side until the timer ends</small>`;
-        else if (round.phase === "live") roundEl.textContent = `${title} · LIVE`;
-        else if (round.phase === "roundEnd") roundEl.textContent = `${wonRound ? "ROUND WON" : "ROUND LOST"} · NEXT ROUND IN ${clock(round.endsAt - performance.now())}`;
+        else if (round.phase === "live") {
+          const overtime = round.liveEndsAt && round.liveEndsAt <= performance.now();
+          roundEl.textContent = `${title} · LIVE${round.liveEndsAt ? ` · ${overtime ? "OVERTIME" : clock(round.liveEndsAt - performance.now())}` : ""}`;
+        }
+        else if (round.phase === "roundEnd") roundEl.innerHTML = `${wonRound ? "ROUND WON" : "ROUND LOST"} · NEXT ROUND IN ${clock(round.endsAt - performance.now())}${round.reason ? `<small style="display:block;font-size:13px;opacity:.8;letter-spacing:1.2px">${round.reason}</small>` : ""}`;
         else roundEl.textContent = `${wonRound ? "VICTORY" : "DEFEAT"} · ${round.wins[round.winner]}—${round.wins[round.winner === 1 ? 2 : 1]}`;
         if (hudPhase === "prep" && round.phase === "live") say("ROUND START");
         hudPhase = round.phase;
+        updateObjectiveHud(match, round);
         const watching = dead && multiplayer.remotePlayers.get(spectate.id);
         spectateEl.style.display = dead ? "block" : "none";
         spectateEl.innerHTML = dead ? `${watching ? `SPECTATING ${watching.name}` : "NO TEAMMATES ALIVE"}<small style="display:block;font-size:13px;opacity:.8;letter-spacing:1.2px">CLICK / TAB next teammate · RIGHT CLICK previous</small>` : "";
@@ -3577,6 +3660,7 @@
         const dead = isDead();
         if (dead) { if (drone.active) recallDrone(); followSpectate(); }
         collectPickups();
+        if (multiplayer.match) updateInteract();
         const cw = wpn();
         const speedBonus = selectedOperatorId === "hallway-monitor" ? 1.3 : 1;
         const sp = (drone.active ? 3.5 : sprinting ? 8.5 : 5.5) * speedBonus * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
@@ -3675,6 +3759,7 @@
         if (drone.active) operatorMeshQuads(dq, { state: operatorState() }, "#667653");
         barricades.slice().forEach((b) => { if (b.dirty) rebuildBarricade(b); dq.push(...b.quads); });
         pickupQuads(dq);
+        objectiveQuads(dq);
         const bdt = tNow - lastT;
         debris = debris.filter((p) => (p.life -= bdt) > 0);
         debris.forEach((p) => {
@@ -3776,7 +3861,7 @@
       document.querySelector("#field-exit").addEventListener("click", close);
       return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, syncTornadoes, droneDestroyed, remoteDroneShot, remoteBarricade, remoteShieldImpact, open({ practice = false } = {}) {
         const b = (action) => bindLabel(currentKeybinds[action]);
-        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scan · ${b("recallDrone")} recall drone · ESC exit`;
+        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
         if (drone.active) recallDrone();
         crouched = false; eyeHeight = EYE; lean = 0;
         el.classList.add("open"); if (!gl) initGL();
