@@ -34,7 +34,7 @@ test("tornado current pulls strongly inward with a spiral and respects fade, ran
 test("a drone operator's body is pulled while respecting collision", () => {
   const context = { Math, SMOKE_LIFE: 16, SMOKE_R: 4.5, EYE: 1.8, CROUCH_EYE: 1.05, HL: 50, ZB: 20,
     tNow: 3, smokes: [{ x: 0, z: 0, t0: 0, tornado: true }], drone: { returnTo: { x: 4, y: 1.8, z: 0 } },
-    probe: () => 0, barrierOn: () => false };
+    probe: () => 0, barrierOn: () => false, isCanyon: () => false };
   vm.runInNewContext(section(html, "      function moveWithCollision(", "      let running =") +
     section(html, "      const smokeFade =", "      function rechargeGrenades()"), context);
   context.moveDroneOperatorInTornado(.05);

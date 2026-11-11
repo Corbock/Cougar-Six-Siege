@@ -13,9 +13,13 @@ Open `http://localhost:8000` or share the server's reachable address with other 
 
 ## Matchmaking
 
-Choose a squad playlist (up to five players per team) or **1v1 Duel**, then select **Deploy**. Matches start as soon as players can be placed on both teams; squad matches do not wait for full teams. Create a party to get a six-character code, or join a friend's party with their code. Party members queue together and stay on the same team; 1v1 is solo-only. Online matches currently use **The Field** map.
+Choose a squad playlist (up to five players per team) or **1v1 Duel**, then select **Deploy**. Matches start as soon as players can be placed on both teams; squad matches do not wait for full teams. Create a party to get a six-character code, or join a friend's party with their code. Party members queue together and stay on the same team; 1v1 is solo-only. Vote for **The Field** or **The Grand Canyon** where available; The 200s still uses The Field's layout. Freeplay also offers both completed maps.
 
-In The Field, press **C** to crouch. Hallway Monitor and Custom can deploy a controllable drone from the gadget slot: use **WASD** to drive, **Space** to scan, and **G** to recall it. The match scoreboard shows team kills and each player's kills, deaths, and health.
+The Grand Canyon is an indoor school map with spacious connected hallways, classrooms, bathrooms and a furnished cafeteria with a glass west wall. Hallways feature wood paneling and posters; open classroom and bathroom doorways can be barricaded. Sealed rooms cannot be entered. Defenders start at the west end and attackers at the east; the preparation barrier divides the map from north to south. Bomb and hostage sites can appear at the three marked locations. In hostage rescue, escort the hostage across the preparation line to the attackers' side.
+
+The minimap at the top right shows the current map's rough layout. A white arrow marks your position and facing, a blue square marks your spawn, green circles show living teammates, and diamonds show active objectives (yellow, or red when a defuser is armed). A cyan circle marks a piloted drone. Enemies are not shown.
+
+Press **C** to crouch. Hallway Monitor and Custom can deploy a controllable drone from the gadget slot: use **WASD** to drive and **G** to recall it. Hallway Monitor's camera drone ascends with **Space**, descends with **C**, and scans on left-click; it also scans automatically. The Custom scanner drone scans with **Space** by default. The match scoreboard shows team kills and each player's kills, deaths, and health.
 
 Choose an operator from the roster before deploying. Preset operators use their listed kits; the loadout panel shows their bonuses and models of all four equipped items. **Custom** lets you configure all four loadout slots and inspect and customize individual items. Mr M can deploy up to three autonomous drones at once, in scanner, attacker, scanner order. Each scanner marks visible enemies within 22 units every 45 seconds; the attacker tracks a visible enemy within 24 units with a red laser, then fires 4-damage shots every 0.2 seconds after two continuous seconds of tracking. Cover and smoke break line of sight. Enemy drones, including controllable drones, can be destroyed with a single shot; a destroyed drone is unavailable for the rest of the round. Drones reset each round and stop when Mr M is eliminated. Hallway Monitor's controllable camera drone scans automatically. Operator selection and Custom's kit are saved in the browser.
 
@@ -25,6 +29,6 @@ Multiplayer effects require the current server and client versions. If hosting t
 
 Weapons equipped with a red dot or 4x scope display a 2D sight while aiming; iron sights retain the weapon view.
 
-Controls for The Field can be changed in the main menu's **Settings** tab and are saved in the browser. Choose an action and press a letter, number, Space, or Shift; press Escape to cancel. ADS defaults to right mouse and can also be bound to middle mouse by pressing it in the settings panel. Jump and drone scan share a binding. Mouse look, left-click fire, arrow keys, and Escape to exit remain fixed.
+Controls can be changed in the main menu's **Settings** tab and are saved in the browser. Choose an action and press a letter, number, Space, or Shift; press Escape to cancel. ADS defaults to right mouse and can also be bound to middle mouse by pressing it in the settings panel. Jump and the Custom scanner drone's scan share a binding. Camera-drone ascent, descent and scanning, mouse look, left-click fire, arrow keys, and Escape to exit remain fixed.
 
 The field renderer automatically caps resolution and render rate on lower-memory or lower-core-count devices, including many school Chromebooks.

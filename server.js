@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { WebSocketServer, WebSocket } = require("ws");
+const grandCanyon = require("./grand-canyon");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 8000);
@@ -12,7 +13,7 @@ const lobbies = new Map();
 const playlistMaps = {
   standard: ["field", "harbor", "foundry"],
   ranked: ["field", "harbor"],
-  defuse: ["field", "foundry"],
+  defuse: ["field", "harbor", "foundry"],
   rescue: ["harbor", "foundry"],
   duel: ["field"]
 };
@@ -219,7 +220,8 @@ function detachParty(player) {
   broadcastParty(party);
 }
 
-function spawnPoint(team, index) {
+function spawnPoint(team, index, map) {
+  if (map === "harbor") return { ...grandCanyon.spawns[team][index % grandCanyon.spawns[team].length] };
   return { x: spawnXs[index % spawnXs.length], y: 1.8, z: team === 1 ? -spawnZ : spawnZ, yaw: team === 1 ? 0 : Math.PI };
 }
 
@@ -310,7 +312,7 @@ function startRound(match, type) {
     player.lastDroneShotAt = 0;
     player.destroyedDrones = new Set();
     player.cameraDroneDestroyed = false;
-    player.spawn = spawnPoint(player.team, slots[player.team]++);
+    player.spawn = spawnPoint(player.team, slots[player.team]++, match.map);
     player.state = { ...player.spawn, pitch: 0, crouched: false, lean: 0, droneState: null };
   }
   match.objectives = buildObjectives(match, members);
@@ -350,10 +352,14 @@ function checkRound(match) {
 function buildObjectives(match, members) {
   if (!objectiveModes.has(match.mode)) return [];
   const defenders = members.filter((player) => player.team === 1).length;
-  const sites = defenders >= 4 ? ["press", "bathroom"] : [Math.random() < .5 ? "press" : "bathroom"];
+  const locations = match.map === "harbor" ? grandCanyon.sites : objectiveSites;
+  const available = Object.keys(locations);
+  const count = defenders >= 4 ? 2 : 1;
+  const sites = [];
+  while (sites.length < count) sites.push(available.splice(available.length === count ? 0 : Math.floor(Math.random() * available.length), 1)[0]);
   return sites.map((site) => match.mode === "defuse"
-    ? { id: site, kind: "bomb", site, ...objectiveSites[site], armed: false, armedAt: 0, actor: null, since: 0, progress: 0 }
-    : { id: site, kind: "hostage", site, ...objectiveSites[site], alive: true, health: 100, released: false, followerId: null, trail: [], actor: null, since: 0, progress: 0 });
+    ? { id: site, kind: "bomb", site, ...locations[site], armed: false, armedAt: 0, actor: null, since: 0, progress: 0 }
+    : { id: site, kind: "hostage", site, ...locations[site], alive: true, health: 100, released: false, followerId: null, trail: [], actor: null, since: 0, progress: 0 });
 }
 
 function feetY(state) {
@@ -400,7 +406,7 @@ function tickObjectives(match, now) {
           if (o.progress >= 1) { o.followerId = actor.id; o.released = true; o.actor = null; o.progress = 0; o.trail = [{ t: now, x: o.x, y: o.y, z: o.z }]; }
         }
       }
-      if (o.released && o.z > 1) return endRound(match, 2, "Hostage rescued");
+      if (o.released && (match.map === "harbor" ? o.x > grandCanyon.barrier + 1 : o.z > 1)) return endRound(match, 2, "Hostage rescued");
     }
   }
 }
@@ -808,7 +814,8 @@ function handleMessage(player, raw) {
     if (!id || match.projectiles.has(id) || [...match.projectiles.values()].filter((entry) => entry.owner === player.id).length >= 12) return;
     const tornado = message.kind === "smoke" && player.operatorId === "mr-l";
     match.projectiles.set(id, { owner: player.id, kind: message.kind, tornado });
-    relayToMatch(match, player, { type: "throw", id, kind: message.kind, tornado, x: finite(message.x, 150), y: finite(message.y, 40), z: finite(message.z, 150), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
+    const positionLimit = match.map === "harbor" ? 240 : 150;
+    relayToMatch(match, player, { type: "throw", id, kind: message.kind, tornado, x: finite(message.x, positionLimit), y: finite(message.y, 40), z: finite(message.z, positionLimit), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
     return;
   }
   if (message.type === "explode" && player.matchId) {
@@ -816,7 +823,8 @@ function handleMessage(player, raw) {
     const projectile = match?.projectiles.get(String(message.id || ""));
     if (!projectile || projectile.owner !== player.id || match.phase === "over") return;
     match.projectiles.delete(String(message.id));
-    const x = finite(message.x, 150), y = finite(message.y, 40), z = finite(message.z, 150);
+    const positionLimit = match.map === "harbor" ? 240 : 150;
+    const x = finite(message.x, positionLimit), y = finite(message.y, 40), z = finite(message.z, positionLimit);
     if (projectile.tornado) match.tornadoes.set(String(message.id), { id: String(message.id), x, y, z, startedAt: Date.now() });
     relayToMatch(match, player, { type: "explosion", id: String(message.id), kind: projectile.kind, tornado: projectile.tornado, x, y, z });
     const radius = blastRadius[projectile.kind];
@@ -873,12 +881,16 @@ function handleMessage(player, raw) {
     if (now - player.lastStateAt < 40 || player.health <= 0) return;
     const state = message.state || {};
     const number = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
-    const locked = matches.get(player.matchId)?.phase === "prep";
-    const side = (z) => locked ? (player.team === 1 ? Math.min(z, -barrierClampZ) : Math.max(z, barrierClampZ)) : z;
+    const match = matches.get(player.matchId);
+    const locked = match?.phase === "prep";
+    const side = (value) => locked ? (player.team === 1 ? Math.min(value, -barrierClampZ) : Math.max(value, barrierClampZ)) : value;
+    const positionLimit = match?.map === "harbor" ? 240 : 120;
+    const xPosition = (value) => match?.map === "harbor" ? side(number(value, positionLimit)) : number(value, positionLimit);
+    const zPosition = (value) => match?.map === "harbor" ? number(value, positionLimit) : side(number(value, positionLimit));
     const body = {
-      x: number(state.x, 120),
+      x: xPosition(state.x),
       y: number(state.y, 30),
-      z: side(number(state.z, 120)),
+      z: zPosition(state.z),
       yaw: number(state.yaw, Math.PI * 4),
       pitch: number(state.pitch, Math.PI / 2),
       crouched: state.crouched === true,
@@ -898,7 +910,7 @@ function handleMessage(player, raw) {
         const target = slot === 1 ? players.get(String(entry.targetId || "")) : null;
         const targetId = target && target.matchId === player.matchId && target.team !== player.team && target.health > 0 &&
           Math.hypot(entry.x - target.state.x, entry.y - target.state.y, entry.z - target.state.z) <= 24 ? target.id : null;
-        companions.push({ x: number(entry.x, 120), y: number(entry.y, 30), z: side(number(entry.z, 120)),
+        companions.push({ x: xPosition(entry.x), y: number(entry.y, 30), z: zPosition(entry.z),
           yaw: number(entry.yaw, Math.PI * 4), mode: modes[slot], slot, targetId });
       }
     }
@@ -912,9 +924,9 @@ function handleMessage(player, raw) {
       ...body,
       companions,
       droneState: !player.cameraDroneDestroyed && state.droneState && typeof state.droneState === "object" ? {
-        x: number(state.droneState.x, 120),
+        x: number(state.droneState.x, positionLimit),
         y: number(state.droneState.y, 30),
-        z: number(state.droneState.z, 120),
+        z: number(state.droneState.z, positionLimit),
         yaw: number(state.droneState.yaw, Math.PI * 4),
         pitch: number(state.droneState.pitch, Math.PI / 2),
         mode: ["scanner", "attacker", "camera"].includes(state.droneState.mode) ? state.droneState.mode : null

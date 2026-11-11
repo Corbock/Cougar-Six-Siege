@@ -36,6 +36,9 @@ async function startMatch(t, mode, env = {}) {
   await Promise.all(sockets.map((socket) => new Promise((resolve, reject) => { socket.once("open", resolve); socket.once("error", reject); })));
   const send = (index, message) => sockets[index].send(JSON.stringify(message));
   sockets.forEach((_socket, index) => send(index, { type: "queue", mode }));
+  await waitFor(() => messages.every((list) => list.some((message) => message.type === "lobby_update" && message.total === 2)), "Lobby did not form");
+  sockets.forEach((_socket, index) => send(index, { type: "vote_map", map: mode === "rescue" ? "foundry" : "field" }));
+  sockets.forEach((_socket, index) => send(index, { type: "ready" }));
   const found = await waitFor(() => messages.every((list) => list.some((message) => message.type === "match_found")), "Match did not start", 10000)
     .then(() => messages.map((list) => list.find((message) => message.type === "match_found")));
   // index of the defender (team 1, press box side) and attacker (team 2)
