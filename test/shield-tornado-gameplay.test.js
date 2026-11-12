@@ -53,6 +53,34 @@ test("strong tornado movement cannot skip through thin walls", () => {
   assert.ok(position.x < .4);
 });
 
+test("lean camera stops at walls and never skips through thin collision geometry", () => {
+  const context = { Math, colliders: [{ x0: .4, x1: .5, y0: 0, y1: 2.5, z0: -1, z1: 1 }],
+    R: .35, STEP: .7, eyeHeight: 1.8 };
+  vm.runInNewContext(section(html, "      const probe =", "      function moveWithCollision(") +
+    section(html, "      function clampLean(", "      let running =") + "this.testProbe = probe;", context);
+  const position = { x: 0, z: 0 }, amount = context.clampLean(position, 0, 1, 0, 1.8);
+  assert.ok(amount > 0 && amount < .2, "Lean should stop before the wall while preserving the clear part of the movement");
+  for (let offset = 0; offset <= amount * .7; offset += .01) {
+    assert.ok(context.testProbe(position.x + offset, position.z, 0, 1.8) >= 0, "Camera path must remain outside solid geometry");
+  }
+  assert.equal(context.clampLean(position, 0, -1, 0, 1.8), -1, "Lean away from the wall should remain unrestricted");
+});
+
+test("each multiplayer round starts with three medkit uses", () => {
+  const player = { id: "p1", name: "Player", operatorId: "custom", group: 1 };
+  const sent = [], context = { players: new Map([[player.id, player]]), objectiveModes: new Set(),
+    objectivePrepSeconds: 10, prepSeconds: 10, spawnPoint: () => ({ x: 0, y: 1.8, z: 0 }),
+    buildObjectives: () => [], matchInfo: () => ({}), sendPlayer: (_player, message) => sent.push(message) };
+  vm.runInNewContext(section(serverCode, "function startRound(match, type)", "function teamAlive("), context);
+  const match = { round: 0, players: new Set([player.id]), mode: "skirmish", swapped: false, map: "field" };
+  context.startRound(match, "match_found");
+  assert.equal(player.medkits, 3);
+  assert.equal(sent[0].type, "match_found");
+  player.medkits = 0;
+  context.startRound(match, "round_start");
+  assert.equal(player.medkits, 3, "Medkit charges should replenish at the start of each round");
+});
+
 test("shields intercept shots aimed at other players only when in the shot path", () => {
   const holder = { id: "shield", health: 100, state: { x: 0, y: 1.8, z: 5, yaw: Math.PI, shieldActive: true } };
   const context = { Math, players: new Map([["shield", holder]]) };

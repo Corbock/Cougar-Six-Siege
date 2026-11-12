@@ -704,7 +704,7 @@
       if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "set_name", name }));
       showToast(`Name set to ${name}.`);
     });
-    const multiplayer = { round: null, vote: null, voteTicker: null, reconnectTimer: null, socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, objectives: [], remotePlayers: new Map(), lastStateAt: 0 };
+    const multiplayer = { round: null, vote: null, voteTicker: null, reconnectTimer: null, socket: null, connected: false, playerId: null, party: null, queuedMode: null, match: null, objectives: [], remotePlayers: new Map(), lastStateAt: 0, lastSnapshotAt: 0 };
     const lobby = {
       el: document.querySelector("#match-lobby"),
       status: document.querySelector("#queue-status"),
@@ -863,6 +863,7 @@
         }
         if (message.type === "snapshot" && message.matchId === multiplayer.match?.matchId) {
           multiplayer.round = { ...roundFrom(message), winner: multiplayer.round?.winner ?? null, reason: multiplayer.round?.reason ?? "" };
+          multiplayer.lastSnapshotAt = message.serverTime;
           multiplayer.match.players = message.players;
           multiplayer.objectives = message.objectives || [];
           multiplayer.remotePlayers = new Map(message.players.filter((player) => player.id !== multiplayer.playerId).map((player) => [player.id, player]));
@@ -1011,7 +1012,7 @@
         { id: "drone", name: "Recon Drone", type: "INTEL", desc: "Scout rooms and tag hostile units." },
         { id: "camera-drone", name: "Camera Drone", type: "INTEL", desc: "Pilot a camera drone and watch the field from its viewpoint." },
         { id: "steel-bars", name: "Galvanized Steel Bars", type: "FORTIFICATION", desc: "Reinforce player barricades with galvanized steel bars." },
-        { id: "medkit", name: "Field Medkit", type: "SUPPORT", desc: "Restore 50 health. Two charges per round." }
+        { id: "medkit", name: "Field Medkit", type: "SUPPORT", desc: "Restore 50 health. Three charges per round." }
       ] },
       { id: "equipment", label: "EQUIPMENT", items: [
         { id: "frag", name: "Frag Grenade", type: "LETHAL", desc: "Timed explosive for clearing cover." },
@@ -1133,8 +1134,12 @@
         box(0, 1.7, 0, 4.2, .3, .4, "body"), box(0, -1.7, 0, 4.2, .3, .4, "body"), box(0, 0, 0, 4.2, .25, .35, "body"),
         box(-2.3, 0, 0, .3, 4, .4, "dark"), box(2.3, 0, 0, .3, 4, .4, "dark") ] },
       medkit: { mounts: {}, parts: [
-        box(0, 0, 0, 3, 2, 1.4, "body"), box(0, 0, .72, 1.2, .35, .06, "red"), box(0, 0, .72, .35, 1.2, .06, "red"),
-        box(0, 1.2, 0, 1.4, .2, .3, "dark"), box(-1.2, 0, .72, .3, .5, .06, "metal"), box(1.2, 0, .72, .3, .5, .06, "metal") ] },
+        box(0, 0, 0, 2.4, 1.35, 1.0, "medical"), box(0, -.6, .52, 2.2, .12, .05, "medicalTrim"),
+        box(0, 0, .52, 2.15, 1.12, .03, "medicalWhite"), box(0, 0, .55, .76, .76, .04, "medicalRed"),
+        box(0, 0, .58, .18, .52, .04, "medicalWhite"), box(0, 0, .58, .52, .18, .04, "medicalWhite"),
+        box(0, .78, 0, .9, .18, .4, "medicalTrim"), box(0, .9, 0, .54, .1, .24, "medicalTrim"),
+        box(-1.0, -.14, .55, .18, .28, .05, "medicalTrim"), box(1.0, -.14, .55, .18, .28, .05, "medicalTrim"),
+        box(-.64, -.46, .58, .1, .06, .02, "metal"), box(.64, -.46, .58, .1, .06, .02, "metal") ] },
       frag: { mounts: {}, parts: [
         ball(0, 0, 0, 1, "body", 1.25), cyl("y", 0, 1.35, 0, .4, .3, "metal"), box(.55, 1.4, 0, 1.1, .1, .3, "metal"),
         cyl("y", 0, 1.7, 0, .15, .18, "dark"), cyl("y", 0, .2, 0, .14, 1.02, "dark"), cyl("y", 0, -.4, 0, .14, 1.02, "dark") ] },
@@ -1167,12 +1172,20 @@
       { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg", need: 60 },
       { id: "ember", name: "Ember", src: "assets/skin-ember.jpg", need: 100 }
     ];
+    const keychains = [
+      { id: "none", name: "None", color: "#3d413c", shape: "none" },
+      { id: "cougar-tag", name: "Cougar Tag", color: "#d3ef59", shape: "tag" },
+      { id: "lucky-star", name: "Lucky Star", color: "#f6df35", shape: "star" },
+      { id: "lucky-dice", name: "Lucky Dice", color: "#f3f2ec", shape: "dice" },
+      { id: "mini-drone", name: "Mini Drone", color: "#54c7d9", shape: "drone" }
+    ];
     skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); if (activeSection === "LOADOUT" && selectedOperatorId !== "custom") drawOperatorKit(); }; skin.img.src = skin.src; });
     const usage = {};
     try { Object.assign(usage, JSON.parse(localStorage.getItem("c6-usage") || "{}")); } catch (error) {}
     const hitsWith = (id) => usage[id] || 0;
     const UNLOCK_ALL_WRAPS = true; // testing switch; unlock toasts still follow the hit thresholds
     const skinUnlocked = (skin, id) => UNLOCK_ALL_WRAPS || hitsWith(id) >= skin.need;
+    const weaponSkin = (id, skinId) => skins.find((skin) => skin.id === skinId && skinUnlocked(skin, id) && skin.img.complete && skin.img.naturalWidth) || null;
     const weaponName = (id) => loadoutSlots.flatMap((slot) => slot.items).find((item) => item.id === id)?.name || id;
     function recordHit(id) {
       const before = hitsWith(id);
@@ -1195,11 +1208,17 @@
         { id: "none", name: "Stock", mod: {} },
         { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
     };
-    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c" };
+    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
+      medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b" };
 
     const custom = {};
     try { Object.assign(custom, JSON.parse(localStorage.getItem("c6-custom") || "{}")); } catch (error) {}
-    const customOf = (item) => custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", optic: "none", muzzle: "none", grip: "none" });
+    const customOf = (item) => {
+      const cfg = custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", keychain: "none", optic: "none", muzzle: "none", grip: "none" });
+      if (!skins.some((skin) => skin.id === cfg.skin)) cfg.skin = "none";
+      if (!keychains.some((keychain) => keychain.id === cfg.keychain)) cfg.keychain = "none";
+      return cfg;
+    };
     const saveCustom = () => {
       try { localStorage.setItem("c6-custom", JSON.stringify(custom)); }
       catch (error) { console.warn("Could not save customization:", error); showToast("Could not save customization in this browser."); }
@@ -1229,6 +1248,41 @@
         out.push(box(x, y - .55, z, .35, 1.1, .35, "dark"), box(x, y - 1.15, z, .45, .15, .45, "metal"));
       }
       return out;
+    }
+
+    const keychainMounts = {
+      mk18: [-2.2, -.55, .4], vector: [-1.25, -.55, .46], hammer: [-1.5, -.52, .4],
+      longwatch: [-2.8, -.5, .34], p45: [-1, -1.05, .32], rattler: [-.85, -.95, .38],
+      magnum: [-1.25, -1.08, .3], sledgehammer: [-2, -.25, .28]
+    };
+    function weaponKeychainParts(item, cfg) {
+      if (!item.dmg) return [];
+      const charm = keychains.find((entry) => entry.id === cfg.keychain);
+      const mount = keychainMounts[item.id];
+      if (!charm || charm.id === "none" || !mount) return [];
+      const [x, y, z] = mount, ringY = y - .12, tagY = y - .88;
+      const parts = [
+        cyl("x", x, ringY, z, .42, .035, "metal"),
+        cyl("x", x, ringY - .2, z, .42, .035, "metal"),
+        cyl("y", x - .21, ringY - .1, z, .2, .035, "metal"),
+        cyl("y", x + .21, ringY - .1, z, .2, .035, "metal"),
+        cyl("y", x, ringY - .38, z, .18, .035, "metal")
+      ];
+      if (charm.shape === "tag") {
+        parts.push(box(x, tagY, z, .45, .55, .14, "keychain"), box(x, tagY + .12, z + .08, .23, .06, .025, "metal"));
+      } else if (charm.shape === "star") {
+        parts.push(box(x, tagY, z, .55, .13, .13, "keychain"), box(x, tagY, z, .13, .55, .13, "keychain"),
+          box(x, tagY, z, .36, .12, .13, "keychain"), ball(x, tagY, z + .08, .12, "metal"));
+      } else if (charm.shape === "dice") {
+        parts.push(box(x, tagY, z, .42, .42, .28, "keychain"),
+          ball(x - .1, tagY + .1, z + .15, .035, "red"), ball(x + .1, tagY - .1, z + .15, .035, "red"),
+          ball(x, tagY, z + .15, .035, "red"));
+      } else {
+        parts.push(box(x, tagY, z, .28, .12, .24, "keychain"),
+          box(x, tagY, z, .8, .055, .08, "dark"), box(x, tagY, z, .08, .055, .8, "dark"),
+          ...[[-.34, -.34], [-.34, .34], [.34, -.34], [.34, .34]].map(([dx, dz]) => ball(x + dx, tagY, z + dz, .09, "metal")));
+      }
+      return parts;
     }
 
     function buildPolys(parts) {
@@ -1272,7 +1326,7 @@
 
     function buildInspectModel(item, includeMagazine = true) {
       const def = modelDefs[item.id], cfg = customOf(item);
-      const parts = [...def.parts, ...(includeMagazine ? (def.mag || []) : []), ...attachmentParts(item, cfg)];
+      const parts = [...def.parts, ...(includeMagazine ? (def.mag || []) : []), ...attachmentParts(item, cfg), ...weaponKeychainParts(item, cfg)];
       const base = buildPolys(includeMagazine ? parts : def.parts), pts = base.flatMap((poly) => poly.v);
       const lo = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
       const mid = lo.map((v, i) => (v + hi[i]) / 2);
@@ -1308,8 +1362,10 @@
       ctx.clearRect(0, 0, w, h);
       const s = Math.min(w, h * 1.25) * .42 / model.radius;
       const cfg = customOf(item), finish = finishes[cfg.finish] || finishes[0];
-      const skin = item.dmg ? skins.find((k) => k.id === cfg.skin && skinUnlocked(k, item.id) && k.img.complete && k.img.naturalWidth) : null;
-      const color = (m) => m === "paint" ? paintColor(item) : skin ? (m === "metal" ? finish.c : materials[m]) : (m === "body" ? finish.c : materials[m]);
+      const skin = item.dmg ? weaponSkin(item.id, cfg.skin) : null;
+      const keychain = keychains.find((entry) => entry.id === cfg.keychain);
+      const color = (m) => m === "paint" ? paintColor(item) : m === "keychain" ? keychain.color :
+        skin ? (m === "metal" ? finish.c : materials[m]) : (m === "body" ? finish.c : materials[m]);
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = ([x, y, z]) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cp - z1 * sp, y * sp + z1 * cp]; };
       ctx.fillStyle = "rgba(0,0,0,.35)";
@@ -1424,11 +1480,13 @@
       };
       document.querySelector("#inspect-stats").innerHTML = slot.stats ? `<div class="item-stats">${stat("DAMAGE", item.dmg, mods.dmg)}${stat("RANGE", item.rng, mods.rng)}${stat("MOBILITY", item.mob, mods.mob)}</div>` : "";
       const box_ = document.querySelector("#inspect-custom");
-      const wrapGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WRAP · ${hitsWith(item.id)} HITS</div><div class="choices"><button class="choice wrap${cfg.skin === "none" ? " selected" : ""}" data-skin="none">Factory</button>${skins.map((k) => {
+      const wrapGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON SKIN · ${hitsWith(item.id)} HITS</div><div class="choices"><button class="choice wrap${cfg.skin === "none" ? " selected" : ""}" data-skin="none">Factory</button>${skins.map((k) => {
         const open = skinUnlocked(k, item.id);
         return `<button class="choice wrap${cfg.skin === k.id ? " selected" : ""}" data-skin="${k.id}"${open ? "" : " disabled"}>${k.name}<small>${open ? "" : `LOCKED · ${k.need} HITS`}</small></button>`;
       }).join("")}</div></div>` : "";
-      box_.innerHTML = wrapGroup + (paintable(item) ? `<div class="custom-group"><div class="custom-label">PAINT COLOR · ${paintColors.find((color) => color.c === paintColor(item)).name.toUpperCase()}</div><div class="swatches">${paintColors.map((color) =>
+      const keychainGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON KEYCHAIN</div><div class="choices">${keychains.map((keychain) =>
+        `<button class="choice keychain-choice${cfg.keychain === keychain.id ? " selected" : ""}" data-keychain="${keychain.id}" aria-pressed="${cfg.keychain === keychain.id}">${keychain.name}</button>`).join("")}</div></div>` : "";
+      box_.innerHTML = wrapGroup + keychainGroup + (paintable(item) ? `<div class="custom-group"><div class="custom-label">PAINT COLOR · ${paintColors.find((color) => color.c === paintColor(item)).name.toUpperCase()}</div><div class="swatches">${paintColors.map((color) =>
         `<button class="swatch paint-swatch${color.c === paintColor(item) ? " selected" : ""}" data-paint="${color.c}" style="background:${color.c}" title="${color.name} paint" aria-label="${color.name} paint" aria-pressed="${color.c === paintColor(item)}"></button>`).join("")}</div></div>` : "") + `<div class="custom-group"><div class="custom-label">COLOR · ${(finishes[cfg.finish] || finishes[0]).name.toUpperCase()}</div><div class="swatches">${finishes.map((f, i) =>
         `<button class="swatch${i === cfg.finish ? " selected" : ""}" data-finish="${i}" style="background:${f.c}" title="${f.name}" aria-label="${f.name}"></button>`).join("")}</div></div>` +
         Object.entries(attachmentOptions).filter(([kind]) => slot.stats && modelDefs[item.id].mounts[kind]).map(([kind, group]) =>
@@ -1437,6 +1495,7 @@
       box_.querySelectorAll(".swatch[data-finish]").forEach((b) => b.addEventListener("click", () => { cfg.finish = Number(b.dataset.finish); saveCustom(); renderInspect(); }));
       box_.querySelectorAll(".paint-swatch").forEach((b) => b.addEventListener("click", () => { cfg.paint = b.dataset.paint; saveCustom(); renderInspect(); }));
       box_.querySelectorAll(".wrap").forEach((b) => b.addEventListener("click", () => { cfg.skin = b.dataset.skin; saveCustom(); renderInspect(); }));
+      box_.querySelectorAll(".keychain-choice").forEach((b) => b.addEventListener("click", () => { cfg.keychain = b.dataset.keychain; saveCustom(); renderInspect(); }));
       box_.querySelectorAll(".choice:not(.wrap)").forEach((b) => b.addEventListener("click", () => { cfg[b.dataset.kind] = b.dataset.id; saveCustom(); renderInspect(); }));
       box_.querySelector("#reset-custom").addEventListener("click", () => { delete custom[item.id]; saveCustom(); renderInspect(); });
       rebuildModel();
@@ -2002,6 +2061,26 @@
           if (probe(position.x, position.z + mz / steps, feet) >= 0) position.z += mz / steps;
         }
       }
+      function clampLean(position, yaw, amount, feet, height = eyeHeight) {
+        const distance = Math.abs(amount) * .7, direction = Math.sign(amount);
+        const steps = Math.max(1, Math.ceil(distance / .08));
+        const clear = (offset) => probe(position.x + Math.cos(yaw) * direction * offset,
+          position.z - Math.sin(yaw) * direction * offset, feet, height) >= 0;
+        let safeDistance = 0, blockedDistance = distance;
+        for (let step = 1; step <= steps; step++) {
+          const offset = distance * step / steps;
+          if (!clear(offset)) { blockedDistance = offset; break; }
+          safeDistance = offset;
+        }
+        if (safeDistance < blockedDistance) {
+          for (let iteration = 0; iteration < 8; iteration++) {
+            const middle = (safeDistance + blockedDistance) / 2;
+            if (clear(middle)) safeDistance = middle;
+            else blockedDistance = middle;
+          }
+        }
+        return direction * safeDistance / .7;
+      }
       let running = false, last = 0, lastRender = 0, lastHudAt = 0, gl, prog, loc, groundBuf, solidBuf, groundN, solidN;
       const lowPowerDevice = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
       const frameInterval = 16.67;
@@ -2264,14 +2343,16 @@
       // Gadgets and equipment are held items: vs scales the armory model for the viewmodel, uses is the charges per life
       const held = (vs, uses, at) => ({ rate: 1.6, auto: false, mag: Infinity, reload: 0, mult: 0, held: true, vs, uses, at: at || [.14, -.16, .4] });
       Object.assign(kinds, {
-        DEFENSE: held(2.6, Infinity, [.0, -.072, .42]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, 2),
+        DEFENSE: held(2.6, Infinity, [.0, -.072, .42]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, 3),
         LETHAL: held(1.7, 3), TACTICAL: held(1.7, 3)
       });
       const K = .06;
       const weapons = {};
       let curSlot = "primary";
-      const skinOf = (w) => skins.find((k) => k.id === w.cfg.skin && skinUnlocked(k, w.item.id) && k.img.complete && k.img.naturalWidth);
-      const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return m === "paint" ? paintColor(w.item) : skinOf(w) ? (m === "metal" ? fin : materials[m]) : (m === "body" ? fin : materials[m]); };
+      const skinOf = (w) => weaponSkin(w.item.id, w.cfg.skin);
+      const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return m === "paint" ? paintColor(w.item) :
+        m === "keychain" ? keychains.find((entry) => entry.id === w.cfg.keychain).color :
+          skinOf(w) ? (m === "metal" ? fin : materials[m]) : (m === "body" ? fin : materials[m]); };
       function buildWeapon(item) {
         const def = modelDefs[item.id], cfg = customOf(item);
         const baseKind = kinds[item.type];
@@ -2281,7 +2362,7 @@
         const base = buildPolys([...def.parts, ...(def.mag || [])]).flatMap((poly) => poly.v);
         const lo = [0, 1, 2].map((i) => Math.min(...base.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...base.map((q) => q[i])));
         const mid = lo.map((v, i) => (v + hi[i]) / 2);
-        const polys = buildPolys([...def.parts, ...attachmentParts(item, cfg)]);
+        const polys = buildPolys([...def.parts, ...attachmentParts(item, cfg), ...weaponKeychainParts(item, cfg)]);
         const magPolys = buildPolys(def.mag || []);
         const all = polys.flatMap((poly) => poly.v), tip = Math.max(...all.map((q) => q[0])) - mid[0], rear = mid[0] - Math.min(...all.map((q) => q[0]));
         const mods = { dmg: 0, rng: 0, mob: 0 };
@@ -2324,7 +2405,7 @@
         qb(list, -.21, .21, 1.76, 1.82, -.21, .21, "#c42a30", tf);
       }
       const worldItemModels = new Map();
-      function worldItemQuads(list, itemId, state, side = .28, paint = state.equippedPaint) {
+      function worldItemQuads(list, itemId, state, side = .28, paint = state.equippedPaint, appearance = {}) {
         const def = modelDefs[itemId];
         if (!def) return;
         if (!worldItemModels.has(itemId)) {
@@ -2339,13 +2420,18 @@
         const scale = size / model.span, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
         const pitch = state.pitch || 0, cp = Math.cos(pitch), sp = Math.sin(pitch), lean = state.lean || 0;
         const base = state.y - (state.crouched ? CROUCH_EYE : EYE);
+        const charm = keychains.find((entry) => entry.id === appearance.keychain) || keychains[0];
+        const polys = [...model.polys, ...buildPolys(weaponKeychainParts({ id: itemId, dmg: true }, { keychain: charm.id }))];
+        const skin = weaponSkin(itemId, appearance.skin);
         const transform = (p) => {
           const x = (p[0] - model.mid[0]) * scale, y = (p[1] - model.mid[1]) * scale, z = (p[2] - model.mid[2]) * scale;
           const forward = .48 + x * cp - y * sp, lateral = side + z + lean * .7;
           return [state.x + lateral * c + forward * s, base + (state.crouched ? .97 : 1.3) + x * sp + y * cp,
             state.z - lateral * s + forward * c];
         };
-        model.polys.forEach((poly) => list.push({ pts: poly.v.map(transform), color: poly.m === "paint" ? (paint || paintColors[0].c) : materials[poly.m] }));
+        polys.forEach((poly) => list.push({ pts: poly.v.map(transform), uv: poly.uv,
+          color: poly.m === "paint" ? (paint || paintColors[0].c) : poly.m === "keychain" ? charm.color : materials[poly.m],
+          skin: skin && poly.uv ? skin : undefined }));
       }
       function remoteEquippedItem(player) {
         const state = player.state;
@@ -2357,31 +2443,53 @@
         const state = player.state, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
         const height = state.crouched ? CROUCH_EYE : EYE, base = state.y - height, leanAngle = -(state.lean || 0) * .24;
         const lc = Math.cos(leanAngle), ls = Math.sin(leanAngle);
+        const look = {
+          "mr-m": ["#34516c", "#343b4b", "#c89170", "#392922"],
+          "mr-l": ["#725d43", "#39424a", "#ad7956", "#29211e"],
+          "ms-c": ["#76505b", "#3d4050", "#d7ad8e", "#332822"],
+          "ms-a": ["#506748", "#39434a", "#c58c69", "#573b2d"],
+          "hallway-monitor": ["#777c68", "#42434a", "#dcb99a", "#827259"],
+          skanska: ["#53616b", "#393f48", "#a96f50", "#2e2925"],
+          custom: ["#58656a", "#38444b", "#c99778", "#41302a"]
+        }[player.operatorId] || ["#58656a", "#38444b", "#c99778", "#41302a"];
+        const [shirt, pants, skin, hair] = look;
         const transform = ([x, y, z]) => {
           const lx = x * lc - y * ls, ly = x * ls + y * lc;
           return [state.x + lx * c + z * s, base + ly, state.z - lx * s + z * c];
         };
         const box = (x, y, z, w, h, d, color) => qb(list, x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - d / 2, z + d / 2, color, transform);
+        const crouched = state.crouched;
+        const torsoY = crouched ? 1 : 1.32, headY = crouched ? 1.43 : 1.8;
+        const sleeveY = crouched ? .93 : 1.29, forearmY = crouched ? .73 : 1.02, handY = crouched ? .6 : .88;
         if (state.crouched) {
-          box(-.16, .15, .26, .24, .24, .54, "#252b25"); box(.16, .15, .26, .24, .24, .54, "#252b25");
-          box(-.16, .42, -.02, .27, .38, .43, "#414a3d"); box(.16, .42, -.02, .27, .38, .43, "#414a3d");
-          box(0, .62, -.01, .46, .28, .42, "#343a33");
-          box(0, 1.0, -.02, .65, .63, .38, teamColor);
-          box(-.43, .95, .04, .2, .58, .24, "#414a3d"); box(.43, .95, .04, .2, .58, .24, "#414a3d");
-          box(0, 1.0, .21, .4, .4, .08, "#343a33");
-          box(0, 1.43, -.01, .3, .32, .3, "#c8a47a");
-          box(0, 1.62, -.02, .4, .15, .38, "#414a3d");
+          box(-.16, .15, .26, .25, .22, .48, "#292b2e"); box(.16, .15, .26, .25, .22, .48, "#292b2e");
+          box(-.16, .42, -.02, .28, .39, .38, pants); box(.16, .42, -.02, .28, .39, .38, pants);
+          box(0, .62, -.01, .46, .28, .38, pants);
+          box(0, torsoY, -.02, .6, .62, .36, shirt);
+          box(-.43, sleeveY, .04, .2, .32, .24, shirt); box(.43, sleeveY, .04, .2, .32, .24, shirt);
+          box(-.43, forearmY, .04, .15, .19, .2, skin); box(.43, forearmY, .04, .15, .19, .2, skin);
+          box(-.43, handY, .12, .14, .14, .18, skin); box(.43, handY, .12, .14, .14, .18, skin);
         } else {
-          box(-.16, .14, .03, .24, .28, .42, "#252b25"); box(.16, .14, .03, .24, .28, .42, "#252b25");
-          box(-.16, .51, 0, .25, .48, .3, "#414a3d"); box(.16, .51, 0, .25, .48, .3, "#414a3d");
-          box(0, .91, 0, .48, .34, .34, "#343a33");
-          box(0, 1.32, 0, .68, .68, .4, teamColor);
-          box(-.43, 1.27, .01, .2, .62, .25, "#414a3d"); box(.43, 1.27, .01, .2, .62, .25, "#414a3d");
-          box(0, 1.28, .22, .42, .42, .08, "#343a33");
-          box(0, 1.78, 0, .31, .34, .31, "#c8a47a");
-          box(0, 1.97, -.01, .41, .15, .39, "#414a3d");
+          box(-.16, .12, .08, .27, .18, .43, "#292b2e"); box(.16, .12, .08, .27, .18, .43, "#292b2e");
+          box(-.16, .51, 0, .27, .58, .31, pants); box(.16, .51, 0, .27, .58, .31, pants);
+          box(0, .91, 0, .5, .28, .35, pants);
+          box(0, torsoY, 0, .59, .66, .37, shirt);
+          box(-.43, sleeveY, .01, .2, .35, .25, shirt); box(.43, sleeveY, .01, .2, .35, .25, shirt);
+          box(-.43, forearmY, .02, .15, .2, .2, skin); box(.43, forearmY, .02, .15, .2, .2, skin);
+          box(-.43, handY, .08, .14, .14, .18, skin); box(.43, handY, .08, .14, .14, .18, skin);
         }
-        box(0, state.crouched ? .79 : 1.22, .245, .12, .12, .035, "#d3ef59");
+        box(-.43, sleeveY - .1, .01, .205, .045, .26, teamColor);
+        box(.43, sleeveY - .1, .01, .205, .045, .26, teamColor);
+        box(0, crouched ? 1.31 : 1.69, 0, .16, .18, .17, skin);
+        box(0, headY, 0, .32, .34, .3, skin);
+        box(0, headY + .17, -.015, .35, .12, .32, hair);
+        box(-.16, headY + .08, -.005, .045, .12, .27, hair);
+        box(.16, headY + .08, -.005, .045, .12, .27, hair);
+        box(-.07, headY + .025, .155, .045, .035, .025, "#302722");
+        box(.07, headY + .025, .155, .045, .035, .025, "#302722");
+        box(0, headY - .035, .17, .055, .09, .05, skin);
+        box(0, headY - .11, .155, .09, .025, .025, "#754f45");
+        box(0, crouched ? .79 : 1.12, .19, .16, .24, .04, "#f1f0eb");
         const item = remoteEquippedItem(player);
         if (!state.droneState && (state.shieldActive || item === "shield")) {
           const lean = state.lean || 0, lx = state.x + c * lean * .7, lz = state.z - s * lean * .7;
@@ -2395,9 +2503,11 @@
           panel(.38, .65, windowBottom, windowTop, "#414a3d");
           panel(-.68, -.65, bottom, top, "#747d78");
           panel(.65, .68, bottom, top, "#747d78");
-          if (player.operatorId === "ms-c") worldItemQuads(list, "p45", state, .76, state.sidearmPaint);
+          if (player.operatorId === "ms-c") worldItemQuads(list, "p45", state, .76, state.sidearmPaint,
+            { skin: state.sidearmSkin, keychain: state.sidearmKeychain });
         } else if (item && !state.droneState) {
-          worldItemQuads(list, item, state);
+          worldItemQuads(list, item, state, .28, state.equippedPaint,
+            { skin: state.equippedSkin, keychain: state.equippedKeychain });
         }
       }
       function droneWorldQuads(list, state) {
@@ -2873,7 +2983,7 @@
           return true;
         }
         if (kind === "medkit") {
-          const cur = charges.medkit ?? 2;
+          const cur = charges.medkit ?? 3;
           if (cur >= 3) return false;
           if (!dry) charges.medkit = cur + 1;
           return true;
@@ -2995,7 +3105,9 @@
           const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && playerTarget.health >= 100 ? 1.5 : 1;
           const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
           paintHit(w, o, dr, playerDistance, playerBox, playerTarget.id);
-          multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage, shotId: w.kind.pellets ? w.shotId : undefined, direction: { x: dr[0], y: dr[1], z: dr[2] } }));
+          multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage,
+            shotId: w.kind.pellets ? w.shotId : undefined, snapshotAt: multiplayer.lastSnapshotAt,
+            direction: { x: dr[0], y: dr[1], z: dr[2] } }));
           recordHit(w.item.id); mark(false);
           return;
         }
@@ -3029,6 +3141,13 @@
       }
       // ---- Gadgets and equipment ----
       let projectiles = [], smokes = [];
+      const medkitActionDuration = 4.2;
+      let medkitActionStart = -1;
+      const medkitActionActive = () => {
+        if (medkitActionStart < 0) return false;
+        if (tNow - medkitActionStart >= medkitActionDuration) { medkitActionStart = -1; return false; }
+        return true;
+      };
       const drone = { active: false, returnTo: null, nextScan: 0, uses: 3, companions: [], mode: "scanner", tags: new Map(), cameraDestroyed: false };
       const SMOKE_R = 4.5, SMOKE_LIFE = 16;
       const charges = {};
@@ -3233,11 +3352,17 @@
         }
         if (id === "medkit") {
           const me = ownEntry();
-          if (!me || me.health >= 100) return say("NO INJURIES TO TREAT");
+          const freeplay = freeplayMode && !multiplayer.match;
+          const liveRound = !multiplayer.match || !multiplayer.round || multiplayer.round.phase === "live";
+          if (!freeplay && (!me || me.health >= 100 || !liveRound)) return say("NO INJURIES TO TREAT");
           if (left <= 0) return say("OUT OF MEDKITS");
-          charges[id] = left - 1; w.kick = 1; me.health = Math.min(100, me.health + 50);
-          multiplayer.socket?.send(JSON.stringify({ type: "heal" }));
-          return say("HEALED +50");
+          medkitActionStart = tNow;
+          charges[id] = left - 1; w.kick = 1;
+          if (me && !freeplay) {
+            me.health = Math.min(100, me.health + 50);
+            multiplayer.socket?.send(JSON.stringify({ type: "heal" }));
+          }
+          return say(freeplay ? "MEDKIT USED" : "HEALED +50");
         }
         if (w.kind.uses === Infinity) return say(id === "medkit" ? "NO INJURIES TO TREAT" : id === "shield" ? "SHIELD READY" : "NOT AVAILABLE YET");
         if (left <= 0) return say("OUT OF " + w.item.name.toUpperCase());
@@ -3446,14 +3571,15 @@
         }
         const sprinting = !crouched && isSprinting();
         if (sprinting) pressedAt = -1;
-        const wantsFire = !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
+        const wantsFire = !medkitActionActive() && !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
         if (wantsFire && !w.reloadEnd && tNow >= w.next && w.swingStart < 0) { fire(w); pressedAt = -1; }
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
       let mouseDown = false, mouseAim = false, sprintPose = 0, lastT = 0, pressedAt = -1;
       function viewmodelQuads(w, moving, shieldSidearm = false) {
-        const k = w.kick, bob = moving ? Math.sin(tNow * 9) * .008 : Math.sin(tNow * 1.5) * .002;
-        let ang = k * .07, offY = -.2 + bob, offX = .17 + Math.cos(tNow * 4.5) * (moving ? .006 : 0), offZ = .22 + w.rear * K - k * .05;
+        const k = w.kick, bob = moving ? Math.sin(tNow * 10) * .014 : Math.sin(tNow * 1.5) * .004;
+        let ang = k * .12, offY = -.2 + bob, offX = .17 + Math.cos(tNow * 5) * (moving ? .012 : .003), offZ = .22 + w.rear * K - k * .11;
+        if (moving) offX += Math.sin(tNow * 10) * .008;
         const reloadProgress = w.reloadEnd ? Math.max(0, Math.min(1, (tNow - w.reloadStart) / w.kind.reload)) : 1;
         const reloadDip = w.reloadEnd ? Math.sin(Math.PI * reloadProgress) : 0;
         if (w.kind.melee) {
@@ -3463,11 +3589,16 @@
         let vs = 1;
         if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
         if (shieldSidearm) { offX = .24; offY = -.24 + bob; offZ = .43 + w.rear * K - k * .05; }
-        if (w.reloadEnd) { ang -= .42 * reloadDip; offY -= .34 * reloadDip; offX += .1 * reloadDip; offZ -= .24 * reloadDip; }
-        offY -= sprintPose * .48;
-        offX += sprintPose * .12;
-        offZ -= sprintPose * .28;
-        ang += sprintPose * .38;
+        if (w.reloadEnd) {
+          ang -= .36 * reloadDip;
+          offY += .1 * reloadDip;
+          offX += .04 * reloadDip;
+          offZ -= .1 * reloadDip;
+        }
+        offY += sprintPose * .02;
+        offX += sprintPose * .09;
+        offZ += sprintPose * .05;
+        ang += sprintPose * .32;
         const aim = w.kind.held || w.kind.melee || shieldSidearm ? 0 : ads * (1 - sprintPose) * (1 - reloadDip);
         vs = 1 - aim * .18;
         if (aim) {
@@ -3486,9 +3617,53 @@
           .map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv,
             shieldGlass: w.item.id === "shield" && poly.m === "glass" }));
         if (w.magPolys.length) {
-          const magOffset = w.reloadEnd ? Math.max(0, Math.min(1, (reloadProgress - .16) / .18, (.78 - reloadProgress) / .2)) : 0;
-          const placeMagazine = (q) => { const p = place(q); return [p[0] + .18 * magOffset, p[1] - .3 * magOffset, p[2]]; };
-          w.magPolys.forEach((poly) => list.push({ pts: poly.v.map(placeMagazine), color: colorOf(w, poly.m), uv: poly.uv }));
+          const removing = w.reloadEnd && reloadProgress <= .32;
+          const inserting = w.reloadEnd && reloadProgress >= .48 && reloadProgress <= .78;
+          const seated = w.reloadEnd && reloadProgress > .78;
+          const smooth = (value) => value * value * (3 - 2 * value);
+          const phase = removing ? smooth(reloadProgress / .32) : inserting ? 1 - smooth((reloadProgress - .48) / .3) : 0;
+          const magazineOffset = [ .07 * phase, -.14 * phase, .08 * phase ];
+          if (!w.reloadEnd || removing || inserting || seated) {
+            const placeMagazine = (q) => {
+              const p = place(q);
+              return [p[0] + magazineOffset[0], p[1] + magazineOffset[1], p[2] + magazineOffset[2]];
+            };
+            w.magPolys.forEach((poly) => list.push({ pts: poly.v.map(placeMagazine), color: colorOf(w, poly.m), uv: poly.uv }));
+          }
+          if (w.reloadEnd) {
+            const vertices = w.magPolys.flatMap((poly) => poly.v.map(place));
+            const magCenter = vertices.reduce((sum, point) => sum.map((value, i) => value + point[i] / vertices.length), [0, 0, 0]);
+            const contact = [magCenter[0] + magazineOffset[0] + .02, magCenter[1] + magazineOffset[1] + .01,
+              magCenter[2] + magazineOffset[2] - .04];
+            const offscreen = [magCenter[0] + .72, magCenter[1] - .58, magCenter[2] - .02];
+            let hand = null;
+            if (removing || inserting) hand = contact;
+            else if (reloadProgress > .32 && reloadProgress < .42) {
+              const t = smooth((reloadProgress - .32) / .1);
+              const removedContact = [magCenter[0] + .09, magCenter[1] - .13, magCenter[2] + .04];
+              hand = removedContact.map((value, i) => value + (offscreen[i] - value) * t);
+            } else if (reloadProgress > .78 && reloadProgress < .9) {
+              const t = smooth((reloadProgress - .78) / .12);
+              hand = [magCenter[0] + .02, magCenter[1] + .01, magCenter[2] - .04]
+                .map((value, i) => value + (offscreen[i] - value) * t);
+            }
+            if (hand) {
+              const appendBox = (center, size, color) => {
+                const [x, y, z] = center, [width, height, depth] = size;
+                const x0 = x - width / 2, x1 = x + width / 2, y0 = y - height / 2, y1 = y + height / 2;
+                const z0 = z - depth / 2, z1 = z + depth / 2;
+                const vertices = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+                  [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+                [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [3, 2, 6, 7], [0, 3, 7, 4], [1, 2, 6, 5]]
+                  .forEach((face) => list.push({ pts: face.map((index) => vertices[index]), color }));
+              };
+              appendBox([hand[0] + .15, hand[1] - .2, hand[2] + .02], [.16, .34, .13], "#394a5d");
+              appendBox([hand[0] + .04, hand[1] - .035, hand[2] - .025], [.17, .13, .12], "#c89170");
+              [-.045, 0, .045].forEach((x) =>
+                appendBox([hand[0] + x + .04, hand[1] - .115, hand[2] - .02], [.035, .09, .1], "#c89170"));
+              appendBox([hand[0] - .065, hand[1] - .005, hand[2] - .01], [.06, .12, .1], "#c89170");
+            }
+          }
         }
         if (w.flash > 0 && !w.kind.melee) {
           const mx = w.mid[0] + w.tip + .1, my = w.mid[1] + w.muzzle[0], mz = w.mid[2] + w.muzzle[1], r = .9 + Math.random() * .5;
@@ -3497,6 +3672,145 @@
         }
         const sk = skinOf(w);
         if (sk) list.forEach((q) => { if (q.uv) q.skin = sk; });
+        return list;
+      }
+      function medkitActionQuads() {
+        const elapsed = tNow - medkitActionStart;
+        if (elapsed >= medkitActionDuration) { medkitActionStart = -1; return []; }
+        const list = [], clamp = (value) => Math.max(0, Math.min(1, value));
+        const smooth = (value) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+        const mix = (from, to, amount) => from + (to - from) * amount;
+        const box = (center, size, color, angle = 0, pivot = center, axis = "z") => {
+          const rotate = (point) => {
+            const x = point[0] - pivot[0], y = point[1] - pivot[1], z = point[2] - pivot[2];
+            return axis === "x"
+              ? [point[0], pivot[1] + y * Math.cos(angle) - z * Math.sin(angle),
+                pivot[2] + y * Math.sin(angle) + z * Math.cos(angle)]
+              : [pivot[0] + x * Math.cos(angle) - y * Math.sin(angle),
+                pivot[1] + x * Math.sin(angle) + y * Math.cos(angle), point[2]];
+          };
+          qb(list, center[0] - size[0] / 2, center[0] + size[0] / 2,
+            center[1] - size[1] / 2, center[1] + size[1] / 2,
+            center[2] - size[2] / 2, center[2] + size[2] / 2, color, rotate);
+        };
+        const arm = (start, end, z, sleeve) => {
+          const dx = end[0] - start[0], dy = end[1] - start[1], length = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx), at = (fraction) => [start[0] + dx * fraction, start[1] + dy * fraction, z];
+          box(at(.34), [length * .7, .14, .12], sleeve, angle);
+          box(at(.81), [length * .32, .12, .11], "#c89170", angle);
+          box([end[0], end[1], z], [.17, .14, .15], "#c89170", angle);
+        };
+        const drop = smooth((elapsed - 1.75) / .55);
+        const pull = smooth(elapsed / .65);
+        const caseX = mix(mix(-.56, -.08, pull), .34, drop);
+        const caseY = mix(mix(-.78, -.2, pull), -1.12, drop);
+        const caseZ = .76;
+        const lidOpen = smooth((elapsed - .62) / .48);
+        const lidAngle = 1.45 * lidOpen;
+        const hinge = [caseX, caseY + .1, caseZ + .075];
+        const lidCenter = [caseX, caseY + .125, caseZ - .005];
+
+        if (elapsed < 2.32) {
+          box([caseX, caseY - .008, caseZ], [.28, .15, .15], "#919b91");
+          box([caseX, caseY, caseZ], [.29, .16, .16], "#d9ded5");
+          box([caseX, caseY, caseZ + .082], [.26, .13, .01], "#f7f5ea");
+          box([caseX, caseY - .07, caseZ + .09], [.25, .012, .01], "#c42a30");
+          box([caseX, caseY + .063, caseZ - .09], [.24, .008, .01], "#b9c1b8");
+          box([caseX, caseY, caseZ - .09], [.09, .09, .01], "#c42a30");
+          box([caseX, caseY, caseZ - .098], [.024, .064, .008], "#f7f5ea");
+          box([caseX, caseY, caseZ - .098], [.064, .024, .008], "#f7f5ea");
+          [-.11, .11].forEach((x) => {
+            box([caseX + x, caseY - .044, caseZ - .094], [.028, .022, .01], "#68716b");
+            box([caseX + x, caseY - .044, caseZ - .102], [.014, .008, .005], "#d2d7cf");
+          });
+          box(lidCenter, [.31, .04, .17], "#f1f2eb", lidAngle, hinge, "x");
+          box([lidCenter[0], lidCenter[1] + .022, lidCenter[2]], [.03, .01, .08], "#c42a30", lidAngle, hinge, "x");
+          box([lidCenter[0], lidCenter[1] + .022, lidCenter[2]], [.08, .01, .03], "#c42a30", lidAngle, hinge, "x");
+          [-.035, .035].forEach((x) =>
+            box([caseX + x, lidCenter[1] + .038, lidCenter[2] - .036], [.014, .024, .02], "#68716b", lidAngle, hinge, "x"));
+          box([caseX, lidCenter[1] + .048, lidCenter[2] - .036], [.08, .014, .02], "#aeb7ad", lidAngle, hinge, "x");
+          if (elapsed > .92) {
+            box([caseX, caseY + .085, caseZ], [.24, .01, .12], "#68716b");
+            const addBandageRoll = (center) => {
+              const radius = .022, halfLength = .048, sides = 8;
+              const ring = (angle, z) => [center[0] + Math.cos(angle) * radius,
+                center[1] + Math.sin(angle) * radius, z];
+              const sections = [
+                [center[2] - halfLength, center[2] - .008, "#f7f5ea"],
+                [center[2] - .008, center[2] + .008, "#c42a30"],
+                [center[2] + .008, center[2] + halfLength, "#f7f5ea"]
+              ];
+              sections.forEach(([z0, z1, color]) => {
+                for (let side = 0; side < sides; side++) {
+                  const a0 = side / sides * Math.PI * 2, a1 = (side + 1) / sides * Math.PI * 2;
+                  list.push({ pts: [ring(a0, z0), ring(a1, z0), ring(a1, z1), ring(a0, z1)], color });
+                }
+              });
+              [center[2] - halfLength, center[2] + halfLength].forEach((z) => {
+                list.push({ pts: [[center[0], center[1], z],
+                  ...Array.from({ length: sides }, (_, side) => ring(side / sides * Math.PI * 2, z))], color: "#d3d8d0" });
+              });
+            };
+            const remainingBandages = Math.min(3, Math.max(0, charges.medkit ?? 3));
+            const spacing = remainingBandages === 3 ? .085 : .075;
+            for (let index = 0; index < remainingBandages; index++) {
+              addBandageRoll([caseX + (index - (remainingBandages - 1) / 2) * spacing, caseY + .11, caseZ]);
+            }
+          }
+        }
+
+        const wrapPose = smooth((elapsed - 2.25) / .5);
+        const leftStart = [mix(-.78, -.82, wrapPose), mix(-.86, -.36, wrapPose)];
+        const leftEnd = elapsed > 2.25
+          ? [mix(-.5, .44, wrapPose), mix(-.72, -.15, wrapPose)]
+          : [caseX - .17, caseY - .02];
+        arm(leftStart, leftEnd, .58, "#394a5d");
+
+        const wrapProgress = clamp((elapsed - 2.55) / 1.45);
+        let rightEnd, rightStart = [.78, -.86];
+        if (elapsed < .55) rightEnd = [.82, -.82];
+        else if (elapsed < 1.12) {
+          const progress = smooth((elapsed - .55) / .57);
+          rightEnd = [mix(.82, caseX + .12, progress), mix(-.82, caseY + .15, progress)];
+        } else if (elapsed < 1.72) {
+          const progress = smooth((elapsed - 1.12) / .6);
+          rightEnd = [mix(caseX + .12, caseX + .18, progress), mix(caseY + .15, caseY + .2, progress)];
+        } else if (elapsed < 2.52) {
+          const progress = smooth((elapsed - 1.72) / .8);
+          rightEnd = [mix(caseX + .18, .48, progress), mix(caseY + .2, -.66, progress)];
+        } else {
+          const x = .39 - wrapProgress * .34;
+          const armY = -.36 + ((x + .82) / 1.26) * .21;
+          rightEnd = [x, armY + .09 + Math.sin(wrapProgress * Math.PI * 10) * .012];
+          rightStart = [.78, mix(-.86, -.6, smooth((elapsed - 2.52) / .35))];
+        }
+        arm(rightStart, rightEnd, .48, "#394a5d");
+
+        if (elapsed >= 1.18 && elapsed < 2.55) {
+          box([rightEnd[0] - .035, rightEnd[1] - .045, .405], [.13, .055, .045], "#f7f5ea");
+        }
+        if (elapsed >= 2.55) {
+          const fullWrapAngle = 4.5 * Math.PI * 2;
+          const turns = wrapProgress * 4.5, segments = Math.ceil(turns * 16);
+          const armDx = rightEnd[0] - rightStart[0], armDy = rightEnd[1] - rightStart[1];
+          const armLength = Math.hypot(armDx, armDy);
+          const perpendicular = [-armDy / armLength, armDx / armLength];
+          const ribbonPoint = (angle, edge) => {
+            const fraction = .94 - angle / fullWrapAngle * .26 + edge * .018 / armLength;
+            const armRadius = Math.cos(angle) * .065;
+            return [rightStart[0] + armDx * fraction + perpendicular[0] * armRadius,
+              rightStart[1] + armDy * fraction + perpendicular[1] * armRadius,
+              .48 - Math.sin(angle) * .06];
+          };
+          for (let segment = 0; segment < segments; segment++) {
+            const start = turns * Math.PI * 2 * segment / segments;
+            const end = turns * Math.PI * 2 * (segment + 1) / segments;
+            list.push({ pts: [ribbonPoint(start, -1), ribbonPoint(end, -1),
+              ribbonPoint(end, 1), ribbonPoint(start, 1)], color: "#f7f5ea" });
+          }
+
+          box([rightEnd[0] + .035, rightEnd[1] - .015, .38], [.018, .035, .008], "#c42a30");
+        }
         return list;
       }
       function droneViewmodelQuads() {
@@ -3597,7 +3911,7 @@
       const fieldPos = document.querySelector("#field-pos");
       const fieldTags = document.querySelector("#field-tags");
       const minimapCanvas = document.querySelector("#minimap-canvas");
-      let minimap, practiceSpawn;
+      let minimap, practiceSpawn, freeplayMode = false;
       function updateMinimap() {
         const match = multiplayer.match;
         const teammates = match ? [...multiplayer.remotePlayers.values()]
@@ -3820,6 +4134,7 @@
           if (nf <= g) { nf = g; cam.vy = 0; grounded = true; }
           cam.y = nf + eyeHeight;
         }
+        if (!dead && !drone.active) lean = clampLean(cam, cam.yaw, lean, cam.y - eyeHeight, eyeHeight);
         renderCam = { x: cam.x + Math.cos(cam.yaw) * lean * .7, y: cam.y - Math.abs(lean) * .12, z: cam.z - Math.sin(cam.yaw) * lean * .7 };
         if (dead) renderCam = { x: cam.x, y: cam.y, z: cam.z };
         else if (barrierOn() && !drone.active) clampBarrier(renderCam, BARRIER_HALF + .05);
@@ -3832,7 +4147,11 @@
           const bodyState = operatorState();
           const companions = drone.companions.map((entry) => ({ slot: entry.slot, x: entry.x, y: entry.y, z: entry.z, yaw: entry.yaw, mode: entry.mode,
             targetId: entry.targetId?.startsWith("player-") ? entry.targetId.slice(7) : null }));
-          multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, activeSlot: curSlot, equippedPaint: paintColor(cw.item), sidearmPaint: paintColor({ id: "p45" }), dronePaint: paintColor({ id: "drone" }), companions, droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch, mode: drone.mode } : null } }));
+          const sidearmConfig = customOf({ id: "p45" });
+          multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, activeSlot: curSlot, equippedPaint: paintColor(cw.item),
+            equippedSkin: cw.cfg.skin, equippedKeychain: cw.cfg.keychain, sidearmPaint: paintColor({ id: "p45" }),
+            sidearmSkin: sidearmConfig.skin, sidearmKeychain: sidearmConfig.keychain, dronePaint: paintColor({ id: "drone" }), companions,
+            droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch, mode: drone.mode } : null } }));
           multiplayer.lastStateAt = now;
         }
         const cssWidth = canvas.clientWidth || window.innerWidth, cssHeight = canvas.clientHeight || window.innerHeight;
@@ -3888,7 +4207,8 @@
           qb(dq, p.x - p.s, p.x + p.s, p.y - p.s, p.y + p.s, p.z - p.s, p.z + p.s, p.c);
         });
         stepProjectiles(bdt, dq);
-        drawDynamic(dq, true);
+        drawDynamic(dq.filter((q) => !q.skin), true);
+        drawSkinned(dq.filter((q) => q.skin));
         const paint = [];
         paintQuads(paint);
         drawDynamic(paint, false);
@@ -3907,14 +4227,15 @@
         gl.uniform3f(u("cam"), 0, 0, 0);
         gl.uniform4f(u("rot"), 1, 0, 1, 0);
         setSmoke(prog, false);
-        const optic = !dead && !drone.active && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
+        const optic = !dead && !drone.active && !medkitActionActive() && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
           (mouseAim || k(currentKeybinds.ads)) && ads > .5 && modelDefs[cw.item.id].mounts.optic &&
           (cw.cfg.optic === "dot" || cw.cfg.optic === "scope") ? cw.cfg.optic : null;
         if (optic) el.dataset.optic = optic;
         else delete el.dataset.optic;
         const moving = fwd !== 0 || str !== 0;
-        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : viewmodelQuads(cw, moving);
-        if (!dead && !drone.active && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
+        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : medkitActionActive()
+          ? medkitActionQuads() : viewmodelQuads(cw, moving);
+        if (!dead && !drone.active && !medkitActionActive() && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
         drawDynamic(vm.filter((q) => !q.skin && !q.shieldGlass), true);
         drawSkinned(vm.filter((q) => q.skin));
         const glass = vm.filter((q) => q.shieldGlass);
@@ -3997,6 +4318,7 @@
       }
       document.querySelector("#field-exit").addEventListener("click", close);
       return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, open({ practice = false } = {}) {
+        freeplayMode = practice;
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);
         document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
