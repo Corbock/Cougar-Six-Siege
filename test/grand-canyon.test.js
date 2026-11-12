@@ -111,6 +111,15 @@ test("the enlarged map closes narrow gaps while retaining a door-width classroom
   }
 });
 
+test("the complete Grand Canyon layout is mirrored left-to-right", () => {
+  const originalPoint = (x) => (x - 280) * map.scale;
+  for (const x of [0, 14, 53, 255, 510]) {
+    assert.ok(Math.abs(map.point(x, 0).x - (-30 - originalPoint(x))) < 1e-8);
+  }
+  assert.ok(map.spawns[1].every((spawn) => spawn.x > 0 && spawn.yaw === -Math.PI / 2));
+  assert.ok(map.spawns[2].every((spawn) => spawn.x < 0 && spawn.yaw === Math.PI / 2));
+});
+
 test("doors and classroom signs retain their original world-space widths", () => {
   assert.equal(map.openings.filter((opening) => Math.abs(opening.a1 - opening.a0 - 3) < 1e-8).length, 1);
   assert.equal(map.openings.filter((opening) => Math.abs(opening.a1 - opening.a0 - 2.1) < 1e-8).length, map.openings.length - 1);
@@ -285,25 +294,30 @@ test("classroom boards face away from entrances and signs read from the hallway"
   const room = (name) => map.rooms.find((entry) => entry.name === name);
   for (const name of ["A103", "A104", "A102"]) {
     const r = room(name);
+    const roomX0 = Math.min(map.point(r.x0, 0).x, map.point(r.x1, 0).x);
+    const roomX1 = Math.max(map.point(r.x0, 0).x, map.point(r.x1, 0).x);
     const boards = boxes.filter((box) => box.color === "#e1e4dc" &&
-      box.x0 >= map.point(r.x0, 0).x && box.x1 <= map.point(r.x1, 0).x &&
+      box.x0 >= roomX0 && box.x1 <= roomX1 &&
       box.z0 >= map.point(0, r.z0).z && box.z1 <= map.point(0, r.z1).z);
     assert.equal(boards.length, 1, `${name} needs one board`);
     const board = boards[0];
     if (r.door === "north") assert.ok(board.z0 > map.point(0, r.z1 - 1).z);
     if (r.door === "south") assert.ok(board.z1 < map.point(0, r.z0 + 1).z);
-    if (r.door === "east") assert.ok(board.x1 < map.point(r.x0 + 1, 0).x);
+    if (r.door === "east") assert.ok(board.x0 > map.point(r.x0 + 1, 0).x);
   }
   for (const name of ["A103", "A104"]) {
     const r = room(name), signZ = r.door === "south" ? r.z1 + .25 : r.z0 - .25;
+    const signX0 = Math.min(map.point(r.doorAt - 6, 0).x, map.point(r.doorAt + 6, 0).x);
+    const signX1 = Math.max(map.point(r.doorAt - 6, 0).x, map.point(r.doorAt + 6, 0).x);
     const pixels = boxes.filter((box) => box.color === "#f5f2e5" && Math.abs(box.y1 - 3.10) < 1e-8 &&
       Math.abs(box.z0 - map.point(0, signZ - .2).z) < 1e-8 &&
-      box.x0 >= map.point(r.doorAt - 6, 0).x && box.x1 <= map.point(r.doorAt + 6, 0).x);
+      box.x0 >= signX0 && box.x1 <= signX1);
     const columns = [1, 1, 0, 1, 2, 0, name === "A103" ? 1 : 2];
     const letters = [0, 1, 2, 2, 2, 3, 3];
     const expected = columns.map((col, i) => {
       const offset = letters[i] * 1.05 + col * .25;
-      return map.point(r.door === "south" ? r.doorAt + 2.1 - offset - .2 : r.doorAt - 2.1 + offset, 0).x;
+      const x = r.door === "south" ? r.doorAt - 2.1 + offset + .2 : r.doorAt + 2.1 - offset;
+      return map.point(x + .2, 0).x;
     });
     assert.equal(pixels.length, expected.length, `${name} top glyph row`);
     pixels.forEach((pixel, i) => assert.ok(Math.abs(pixel.x0 - expected[i]) < 1e-8, `${name} glyph ${i} is mirrored`));

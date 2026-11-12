@@ -3,16 +3,19 @@
   else root.GrandCanyon = factory();
 })(typeof globalThis === "object" ? globalThis : this, function () {
   const scale = .6;
-  const point = (x, z) => ({ x: (x - 280) * scale, z: (z - 150) * scale });
-  const bounds = { x0: point(0, 0).x, x1: point(510, 331).x, z0: point(0, 0).z, z1: point(510, 331).z };
+  const point = (x, z) => ({ x: (230 - x) * scale, z: (z - 150) * scale });
+  const bounds = {
+    x0: Math.min(point(0, 0).x, point(510, 0).x), x1: Math.max(point(0, 0).x, point(510, 0).x),
+    z0: point(0, 0).z, z1: point(0, 331).z
+  };
   const sites = {
     a101: { ...point(14, 88), y: 0 },
     northBath: { ...point(160, 58), y: 0 },
     cafeteria: { ...point(152, 300), y: 0 }
   };
   const spawns = {
-    1: [25, 32, 39, 46, 53].map((x) => ({ ...point(x, 153), y: 1.8, yaw: Math.PI / 2 })),
-    2: [501, 494, 487, 480, 473].map((x) => ({ ...point(x, 153), y: 1.8, yaw: -Math.PI / 2 }))
+    1: [25, 32, 39, 46, 53].map((x) => ({ ...point(x, 153), y: 1.8, yaw: -Math.PI / 2 })),
+    2: [501, 494, 487, 480, 473].map((x) => ({ ...point(x, 153), y: 1.8, yaw: Math.PI / 2 }))
   };
   const rooms = [
     { name: "B104", x0: 40, x1: 80, z0: 0, z1: 29, door: "south", doorAt: 59 },
@@ -52,7 +55,9 @@
     { x: 91, z: 300, along: "z", length: 4.5, corner: [1, 1] },
     { x: 125, z: 300, along: "x", length: 4.5 },
     { x: 160, z: 290, along: "z", length: 4.5 }
-  ];
+  ].map((barricade) => barricade.corner
+    ? { ...barricade, corner: [-barricade.corner[0], barricade.corner[1]] }
+    : barricade);
   const cover = [
     { x: 110, z: 146, along: "z", length: 3.2 },
     { x: 155, z: 157, along: "z", length: 3.2 },
@@ -85,8 +90,9 @@
     const panels = [panel(ax, n, a, length)];
     if (shape) {
       const leg = 1.8;
-      panels.push(panel(ax === 0 ? 2 : 0, a - length / 2, n + leg / 2, leg));
-      if (shape === "U") panels.push(panel(ax === 0 ? 2 : 0, a + length / 2, n + leg / 2, leg));
+      const reflectedOffset = ax === 0 ? -leg / 2 : leg / 2;
+      panels.push(panel(ax === 0 ? 2 : 0, a - length / 2, n + reflectedOffset, leg));
+      if (shape === "U") panels.push(panel(ax === 0 ? 2 : 0, a + length / 2, n + reflectedOffset, leg));
     }
     return panels;
   });
@@ -119,7 +125,7 @@
     const p = point, wall = "@canyon-wood-panels", trim = "#7a3034";
     const rect = (x0, x1, y0, y1, z0, z1, color, side = color, noCollide = false) => {
       const a = p(x0, z0), b = p(x1, z1);
-      box(a.x, b.x, y0, y1, a.z, b.z, color, side, noCollide);
+      box(Math.min(a.x, b.x), Math.max(a.x, b.x), y0, y1, a.z, b.z, color, side, noCollide);
     };
     const surface = (x0, x1, z0, z1, y, color) => {
       const a = p(x0, z0), b = p(x1, z1);
@@ -183,7 +189,7 @@
       rect(middle - width / 2 - .5, middle + width / 2 + .5, 2.65, 3.16, z - .12, z + .12, "#69262c", "#69262c", true);
       [...room.name].forEach((letter, n) => glyphs[letter].forEach((row, r) => [...row].forEach((bit, c) => {
         const offset = n * 1.05 + c * .25;
-        const x = room.door === "south" ? middle + width / 2 - offset - .2 : middle - width / 2 + offset;
+        const x = room.door === "south" ? middle - width / 2 + offset + .2 : middle + width / 2 - offset;
         if (bit === "1") rect(x, x + .2, 3.04 - r * .075, 3.10 - r * .075, z - .2, z + .2, "#f5f2e5", "#f5f2e5", true);
       })));
     }
