@@ -41,6 +41,8 @@ const customItems = {
   equipment: ["frag", "flash", "smoke", "claymore"]
 };
 const paintColors = ["#f6df35", "#f04c9b", "#32a6ef", "#70df45", "#f78a30", "#a765e9"];
+const weaponSkins = new Set(["none", "night-digital", "tiger-stripe", "circuit", "ember"]);
+const weaponKeychains = new Set(["none", "cougar-tag", "lucky-star", "lucky-dice", "mini-drone"]);
 const validPaint = (color) => paintColors.includes(color) ? color : paintColors[0];
 const spawnXs = [-17.6, -5.9, 5.9, 17.6, 29.3];
 const spawnZ = 50.5;
@@ -302,7 +304,7 @@ function startRound(match, type) {
     player.team = match.swapped ? 3 - player.group : player.group;
     player.interact = null;
     player.health = 100;
-    player.medkits = 2;
+    player.medkits = 3;
     player.lastHealAt = 0;
     player.lastShotAt = 0;
     player.droneLock = null;
@@ -311,6 +313,7 @@ function startRound(match, type) {
     player.cameraDroneDestroyed = false;
     player.spawn = spawnPoint(player.team, slots[player.team]++, match.map);
     player.state = { ...player.spawn, pitch: 0, crouched: false, lean: 0, droneState: null };
+    player.stateHistory = [{ at: Date.now(), state: player.state }];
   }
   match.objectives = buildObjectives(match, members);
   const roster = members.map(({ id, name, team, operatorId }) => ({ id, name, team, operatorId }));
@@ -536,6 +539,15 @@ function rayBox(origin, direction, box) {
   return far >= 0 ? near : Infinity;
 }
 
+function stateAt(player, timestamp, now) {
+  if (!Number.isFinite(timestamp) || timestamp > now || now - timestamp > 300) return player.state;
+  for (let i = (player.stateHistory?.length || 0) - 1; i >= 0; i--) {
+    const entry = player.stateHistory[i];
+    if (entry.at <= timestamp) return entry.state;
+  }
+  return player.state;
+}
+
 function uncoveredHeadHit(state, origin, direction) {
   const lean = state.lean || 0, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
   const x = state.x + c * lean * .7, z = state.z - s * lean * .7;
@@ -547,6 +559,12 @@ function uncoveredHeadHit(state, origin, direction) {
   return Number.isFinite(headDistance) &&
     headDistance < rayBox(origin, direction, box(.205, .195, ...helmet)) &&
     headDistance < rayBox(origin, direction, box(.45, .35, .05, head[0]));
+}
+
+function isInstantHeadshotWeapon(player, kit) {
+  if (!player?.state?.activeSlot) return false;
+  return player.state.activeSlot === "primary" ||
+    (player.state.activeSlot === "secondary" && kit?.secondary === "magnum");
 }
 
 function shootHostage(match, player, message, now) {
@@ -594,13 +612,13 @@ function shieldBlocks(match, attacker, origin, direction, distance) {
   return false;
 }
 
-function nearestShieldHit(match, attacker, origin, direction, maxDistance) {
+function nearestShieldHit(match, attacker, origin, direction, maxDistance, timestamp, now) {
   let distance = maxDistance;
   let hit = false;
   for (const id of match.players) {
     const holder = players.get(id);
     if (!holder || holder.id === attacker.id || holder.health <= 0) continue;
-    const candidate = shieldHitDistance(holder.state, origin, direction);
+    const candidate = shieldHitDistance(stateAt(holder, timestamp, now), origin, direction);
     if (Number.isFinite(candidate) && candidate <= distance) { distance = candidate; hit = true; }
   }
   return hit ? distance : Infinity;
@@ -730,12 +748,14 @@ function handleMessage(player, raw) {
     if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
     const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
     if (direction.x * forward.x + direction.y * forward.y + direction.z * forward.z < Math.cos(.3)) return;
-    const targetLean = target.state.lean || 0;
-    const targetBase = target.state.y - Math.abs(targetLean) * .12 - (target.state.crouched ? 1.05 : 1.8);
+    const snapshotAt = Number(message.snapshotAt);
+    const targetState = stateAt(target, snapshotAt, now);
+    const targetLean = targetState.lean || 0;
+    const targetBase = targetState.y - Math.abs(targetLean) * .12 - (targetState.crouched ? 1.05 : 1.8);
     const distance = rayBox(origin, direction, {
-      x0: target.state.x + Math.cos(target.state.yaw) * targetLean * .7 - .45, x1: target.state.x + Math.cos(target.state.yaw) * targetLean * .7 + .45,
-      y0: targetBase + .05, y1: targetBase + (target.state.crouched ? 1.7 : 2),
-      z0: target.state.z - Math.sin(target.state.yaw) * targetLean * .7 - .35, z1: target.state.z - Math.sin(target.state.yaw) * targetLean * .7 + .35
+      x0: targetState.x + Math.cos(targetState.yaw) * targetLean * .7 - .45, x1: targetState.x + Math.cos(targetState.yaw) * targetLean * .7 + .45,
+      y0: targetBase + .05, y1: targetBase + (targetState.crouched ? 1.7 : 2),
+      z0: targetState.z - Math.sin(targetState.yaw) * targetLean * .7 - .35, z1: targetState.z - Math.sin(targetState.yaw) * targetLean * .7 + .35
     });
     const damage = Number(message.damage);
     if (!Number.isFinite(distance) || distance > 100 || !Number.isFinite(damage)) return;
@@ -744,14 +764,12 @@ function handleMessage(player, raw) {
       else player.shotgunVolley = { id: pelletId, started: now, count: 1 };
     }
     if (!volley) player.lastShotAt = now;
-    const shieldDistance = hasActiveSniper(player) ? Infinity : nearestShieldHit(match, player, origin, direction, distance);
+    const shieldDistance = hasActiveSniper(player) ? Infinity : nearestShieldHit(match, player, origin, direction, distance, snapshotAt, now);
     if (Number.isFinite(shieldDistance)) {
       relayShieldImpact(match, player, origin, direction, shieldDistance, true);
       return;
     }
-    const instantHeadshot = (player.state.activeSlot === "primary" ||
-      (player.state.activeSlot === "secondary" && kit.secondary === "magnum")) &&
-      uncoveredHeadHit(target.state, origin, direction);
+    const instantHeadshot = isInstantHeadshotWeapon(player, kit) && uncoveredHeadHit(targetState, origin, direction);
     if (volley && !instantHeadshot) return;
     applyDamage(match, player, target, instantHeadshot ? target.health : Math.min(55, Math.max(1, damage)));
     return;
@@ -917,7 +935,7 @@ function handleMessage(player, raw) {
   if (message.type === "heal" && player.matchId) {
     const match = matches.get(player.matchId);
     const now = Date.now();
-    if (!match || match.phase === "over" || player.health <= 0 || player.health >= 100 || player.medkits <= 0 || now - player.lastHealAt < 1000) return;
+    if (!match || match.phase !== "live" || player.health <= 0 || player.health >= 100 || player.medkits <= 0 || now - player.lastHealAt < 1000) return;
     player.lastHealAt = now;
     player.medkits--;
     player.health = Math.min(100, player.health + 50);
@@ -973,6 +991,10 @@ function handleMessage(player, raw) {
       equippedPaint: validPaint(state.equippedPaint),
       sidearmPaint: validPaint(state.sidearmPaint),
       dronePaint: validPaint(state.dronePaint),
+      equippedSkin: weaponSkins.has(state.equippedSkin) ? state.equippedSkin : "none",
+      equippedKeychain: weaponKeychains.has(state.equippedKeychain) ? state.equippedKeychain : "none",
+      sidearmSkin: weaponSkins.has(state.sidearmSkin) ? state.sidearmSkin : "none",
+      sidearmKeychain: weaponKeychains.has(state.sidearmKeychain) ? state.sidearmKeychain : "none",
       companions,
       droneState: !player.cameraDroneDestroyed && state.droneState && typeof state.droneState === "object" ? {
         x: number(state.droneState.x, positionLimit),
@@ -986,6 +1008,10 @@ function handleMessage(player, raw) {
       equippedItem: activeSlot ? (player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId])[activeSlot] : null,
       shieldActive: hasActiveShield(player, state)
     };
+    player.stateHistory ||= [];
+    player.stateHistory.push({ at: now, state: player.state });
+    while (player.stateHistory.length > 1 && (player.stateHistory.length > 16 || now - player.stateHistory[0].at > 500))
+      player.stateHistory.shift();
     player.lastStateAt = now;
   }
 }
@@ -1062,7 +1088,8 @@ setInterval(() => {
     }));
     for (const [id, tornado] of match.tornadoes) if (now - tornado.startedAt >= 16000) match.tornadoes.delete(id);
     const tornadoes = [...match.tornadoes.values()].map(({ id, x, y, z, startedAt }) => ({ id, x, y, z, age: (now - startedAt) / 1000 }));
-    const snapshot = JSON.stringify({ type: "snapshot", ...matchInfo(match), phaseMs: Number.isFinite(match.phaseEnd) ? Math.max(0, match.phaseEnd - now) : 0, players: roster, tornadoes });
+    const snapshot = JSON.stringify({ type: "snapshot", ...matchInfo(match), serverTime: now,
+      phaseMs: Number.isFinite(match.phaseEnd) ? Math.max(0, match.phaseEnd - now) : 0, players: roster, tornadoes });
     for (const id of match.players) {
       const player = players.get(id);
       if (player?.socket.readyState === WebSocket.OPEN) player.socket.send(snapshot);

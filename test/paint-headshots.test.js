@@ -37,6 +37,11 @@ test("only primaries and the magnum eliminate on uncovered headshots", () => {
     sim.fire();
     assert.equal(sim.target.health, expected, `${slot} ${secondary}`);
   }
+  const wounded = shooting();
+  wounded.target.health = 35;
+  wounded.shooter.state.activeSlot = "primary";
+  wounded.fire();
+  assert.equal(wounded.target.health, 0, "A headshot should kill a wounded player in one shot");
   const body = shooting();
   body.shooter.state.y = 1.3;
   body.fire();

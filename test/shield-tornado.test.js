@@ -66,7 +66,144 @@ test("shield sidearm view follows the P45 recoil and reload state", () => {
   assert.ok(recoiling[2] < rest[2]);
   gun.kick = 0; gun.reloadStart = 0; gun.reloadEnd = 2; context.tNow = 1;
   const reloading = context.viewmodelQuads(gun, false, true)[0].pts[0];
-  assert.ok(reloading[1] < rest[1] - .3);
+  assert.ok(reloading[1] > rest[1] + .05 && reloading[1] < rest[1] + .15,
+    "Reload pose should lift the weapon slightly while keeping it in view");
+});
+
+test("sprinting keeps the weapon viewmodel within the camera frame", () => {
+  const context = { Math, K: .06, tNow: 0, sprintPose: 1, ads: 0, skinOf: () => null, colorOf: () => "#ffffff" };
+  vm.runInNewContext(section("      function viewmodelQuads(", "      function droneViewmodelQuads("), context);
+  const weapon = { item: { id: "mk18" }, kind: {}, kick: 0, rear: 5, reloadEnd: 0, magPolys: [], flash: 0,
+    mid: [0, 0, 0], polys: [{ m: "body", v: [[-5, -.4, 0], [5, -.4, 0], [5, .4, 0], [-5, .4, 0]] }] };
+  const points = context.viewmodelQuads(weapon, true).flatMap((quad) => quad.pts);
+  const centerY = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+  const centerZ = points.reduce((sum, point) => sum + point[2], 0) / points.length;
+  assert.ok(centerZ > .1, "Sprint pose should keep the weapon in front of the camera");
+  assert.ok(centerY > -centerZ / 1.8, "Sprint pose should keep the weapon above the bottom of the view");
+});
+
+test("reload removes the magazine, leaves the well empty, and seats it again", () => {
+  const context = { Math, K: .06, tNow: 0, sprintPose: 0, ads: 0, skinOf: () => null, colorOf: (_w, m) => m };
+  vm.runInNewContext(section("      function viewmodelQuads(", "      function droneViewmodelQuads("), context);
+  const weapon = { item: { id: "mk18" }, kind: { reload: 2 }, kick: 0, rear: 0, reloadEnd: 0, reloadStart: 0, flash: 0,
+    mid: [0, 0, 0], polys: [{ m: "body", v: [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]] }],
+    magPolys: [{ m: "paint", v: [[0, -1, 0], [.2, -1, 0], [.2, 0, 0], [0, 0, 0]] }] };
+  const magazine = () => context.viewmodelQuads(weapon, false).find((quad) => quad.color === "paint");
+  const seated = magazine().pts[0];
+  assert.notDeepEqual(context.viewmodelQuads(weapon, false)[0].pts[0], context.viewmodelQuads(weapon, true)[0].pts[0],
+    "Walking should add sway to the weapon pose");
+  weapon.reloadEnd = 2;
+  context.tNow = .32;
+  let pose = context.viewmodelQuads(weapon, false), removed = pose.find((quad) => quad.color === "paint");
+  assert.ok(removed.pts[3][1] < pose[0].pts[0][1] - .05, "Old magazine should pull free and drop");
+  assert.ok(pose.some((quad) => quad.color === "#c89170"), "Hand should grab the old magazine");
+  context.tNow = .8;
+  assert.equal(magazine(), undefined, "Magazine well should be visibly empty");
+  context.tNow = .9;
+  assert.equal(context.viewmodelQuads(weapon, false).some((quad) => quad.color === "#c89170"), false,
+    "Hand should leave the screen between magazines");
+  context.tNow = 1.2;
+  pose = context.viewmodelQuads(weapon, false);
+  const inserted = pose.find((quad) => quad.color === "paint");
+  assert.ok(inserted.pts[3][1] < pose[0].pts[0][1] - .05, "Fresh magazine should start below the weapon");
+  assert.ok(pose.some((quad) => quad.color === "#c89170"), "Hand should return with the fresh magazine");
+  context.tNow = 1.98;
+  const reloaded = magazine();
+  assert.ok(Math.abs(reloaded.pts[0][1] - seated[1]) < .05, "Magazine should return to its seated position");
+  assert.equal(context.viewmodelQuads(weapon, false).some((quad) => quad.color === "#c89170"), false,
+    "Hand should leave the weapon after insertion");
+});
+
+test("compact medkit opens away from the player, shows remaining bandages, then wraps the forearm", () => {
+  const context = { Math, tNow: 0, medkitActionStart: 0, medkitActionDuration: 4.2, charges: { medkit: 3 },
+    qb(list, x0, x1, y0, y1, z0, z1, color, transform = (point) => point) {
+      const points = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+        [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]].map(transform);
+      [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [3, 2, 6, 7], [0, 3, 7, 4], [1, 2, 6, 5]]
+        .forEach((face) => list.push({ pts: face.map((index) => points[index]), color }));
+    } };
+  vm.runInNewContext(section("      function medkitActionQuads()", "      function droneViewmodelQuads("), context);
+  const drawAt = (time) => { context.tNow = time; return context.medkitActionQuads(); };
+  const average = (quads, color, axis) => {
+    const points = quads.filter((quad) => quad.color === color).flatMap((quad) => quad.pts);
+    return points.reduce((sum, point) => sum + point[axis], 0) / points.length;
+  };
+  const closed = drawAt(.5), open = drawAt(.9);
+  assert.ok(average(open, "#f1f2eb", 1) - average(open, "#d9ded5", 1) >
+    average(closed, "#f1f2eb", 1) - average(closed, "#d9ded5", 1) + .04, "Lid should hinge upward");
+  assert.ok(average(open, "#f1f2eb", 2) - average(open, "#d9ded5", 2) >
+    average(closed, "#f1f2eb", 2) - average(closed, "#d9ded5", 2) + .04, "Lid should swing away from the player");
+  const casePoints = open.filter((quad) => quad.color === "#d9ded5").flatMap((quad) => quad.pts);
+  const caseSpans = [0, 1, 2].map((axis) => Math.max(...casePoints.map((point) => point[axis])) -
+    Math.min(...casePoints.map((point) => point[axis])));
+  assert.ok(Math.max(...caseSpans) <= .38, "Medkit case should stay compact");
+  const remainingRollCaps = (count) => {
+    context.charges.medkit = count;
+    return drawAt(1.5).filter((quad) => quad.color === "#d3d8d0").length;
+  };
+  assert.equal(remainingRollCaps(3), 6, "Three bandage rolls should be visible before using a charge");
+  assert.equal(remainingRollCaps(2), 4, "One roll should disappear after using a charge");
+  assert.equal(remainingRollCaps(1), 2, "Only one roll should remain after two uses");
+  const wrapped = drawAt(3.8);
+  assert.equal(wrapped.some((quad) => quad.color === "#d9ded5"), false, "Medkit should drop out of view");
+  assert.ok(wrapped.filter((quad) => quad.color === "#f7f5ea").length >= 60,
+    "Bandage should form a visible spiral around the forearm");
+  const spiralPoints = wrapped.filter((quad) => quad.color === "#f7f5ea" &&
+    quad.pts.reduce((sum, point) => sum + point[0], 0) / quad.pts.length > .15 &&
+    quad.pts.reduce((sum, point) => sum + point[0], 0) / quad.pts.length < .3)
+    .flatMap((quad) => quad.pts);
+  assert.ok(Math.min(...spiralPoints.map((point) => point[2])) < .43 &&
+    Math.max(...spiralPoints.map((point) => point[2])) > .53,
+  "Bandage should wrap around both the near and far sides of the forearm");
+  const wrapProgress = (3.8 - 2.55) / 1.45;
+  const armStart = [.78, -.6];
+  const armEndX = .39 - wrapProgress * .34;
+  const armEndY = -.36 + ((armEndX + .82) / 1.26) * .21 +
+    .09 + Math.sin(wrapProgress * Math.PI * 10) * .012;
+  const armDx = armEndX - armStart[0], armDy = armEndY - armStart[1];
+  const armLength = Math.hypot(armDx, armDy);
+  const forearmFractions = spiralPoints.map((point) =>
+    ((point[0] - armStart[0]) * armDx + (point[1] - armStart[1]) * armDy) / armLength ** 2);
+  assert.ok(Math.min(...forearmFractions) >= .64 && Math.max(...forearmFractions) <= .98,
+    "Bandage should stay on the exposed forearm instead of drifting onto the hand or sleeve");
+  const wrappedHand = wrapped.filter((quad) => quad.color === "#c89170" &&
+    quad.pts.reduce((sum, point) => sum + point[2], 0) / quad.pts.length > .54)
+    .flatMap((quad) => quad.pts);
+  assert.ok(Math.max(...wrappedHand.map((point) => point[0])) > .48 &&
+    Math.max(...wrappedHand.map((point) => point[1])) > -.11, "Wrapped forearm and hand should be prominent on screen");
+});
+
+test("full-health medkits are usable in freeplay but remain blocked in multiplayer", () => {
+  const useMedkit = ({ freeplayMode, match, round, health }) => {
+    const messages = [], sent = [], patient = health === null ? null : { health };
+    const context = { freeplayMode, multiplayer: { match, round, socket: { send: (message) => sent.push(JSON.parse(message)) } },
+      charges: { medkit: 3 }, ownEntry: () => patient, medkitActionStart: -1, tNow: 5,
+      renderCam: { x: 0, y: 1.8, z: 0 }, aimDir: () => [0, 0, 1], say: (message) => messages.push(message) };
+    vm.runInNewContext(section("      function useHeld(w)", "      const smokeFade ="), context);
+    context.useHeld({ item: { id: "medkit" }, kind: { uses: 3 }, kick: 0 });
+    return { context, messages, sent, patient };
+  };
+  const freeplay = useMedkit({ freeplayMode: true, match: null, health: 100 });
+  assert.equal(freeplay.context.charges.medkit, 2);
+  assert.equal(freeplay.context.medkitActionStart, 5);
+  assert.deepEqual(freeplay.messages, ["MEDKIT USED"]);
+  assert.equal(freeplay.patient.health, 100);
+  assert.deepEqual(freeplay.sent, []);
+
+  const multiplayer = useMedkit({ freeplayMode: false, match: {}, health: 100 });
+  assert.equal(multiplayer.context.charges.medkit, 3);
+  assert.equal(multiplayer.context.medkitActionStart, -1);
+  assert.deepEqual(multiplayer.messages, ["NO INJURIES TO TREAT"]);
+
+  const prep = useMedkit({ freeplayMode: false, match: {}, round: { phase: "prep" }, health: 60 });
+  assert.equal(prep.context.charges.medkit, 3);
+  assert.equal(prep.context.medkitActionStart, -1);
+  assert.deepEqual(prep.messages, ["NO INJURIES TO TREAT"]);
+
+  const injured = useMedkit({ freeplayMode: false, match: {}, round: { phase: "live" }, health: 60 });
+  assert.equal(injured.context.charges.medkit, 2);
+  assert.equal(injured.patient.health, 100);
+  assert.deepEqual(injured.sent, [{ type: "heal" }]);
 });
 
 test("shield retains an equipped P45 and safely handles other Custom secondaries", () => {
@@ -89,6 +226,7 @@ function renderViewmodel(operator, item, droneActive = false) {
   };
   const context = { fwd: 0, str: 0, dead: false, optic: null, drone: { active: droneActive },
     cw: { item: { id: item } }, selectedOperatorId: operator, weapons: { p45: { item: { id: "p45" } } },
+    medkitActionActive: () => false, medkitActionQuads: () => [{}],
     gl, u: () => "alpha",
     viewmodelQuads: (w, _moving, sidearm) => {
       calls.push(["model", w.item.id, Boolean(sidearm)]);
