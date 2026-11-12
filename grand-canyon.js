@@ -53,6 +53,43 @@
     { x: 125, z: 300, along: "x", length: 4.5 },
     { x: 160, z: 290, along: "z", length: 4.5 }
   ];
+  const cover = [
+    { x: 110, z: 146, along: "z", length: 3.2 },
+    { x: 155, z: 157, along: "z", length: 3.2 },
+    { x: 215, z: 146, along: "z", length: 3.2 },
+    { x: 255, z: 157, along: "z", length: 3.2 },
+    { x: 315, z: 146, along: "z", length: 3.2 },
+    { x: 355, z: 157, along: "z", length: 3.2 },
+    { x: 415, z: 146, along: "z", length: 3.2 },
+    { x: 455, z: 157, along: "z", length: 3.2 },
+    { x: 100, z: 33.5, along: "z", length: 2.4 },
+    { x: 360, z: 33.5, along: "z", length: 2.4 },
+    { x: 115, z: 83, along: "z", length: 2.4 },
+    { x: 380, z: 103.5, along: "z", length: 2.4 },
+    { x: 65, z: 292, along: "x", length: 3.2 },
+    { x: 105, z: 292, along: "x", length: 3.2 },
+    { x: 140, z: 305, along: "x", length: 3.2 },
+    { x: 180, z: 146, along: "z", length: 3.2, shape: "L" },
+    { x: 295, z: 157, along: "z", length: 3.2, shape: "L" },
+    { x: 390, z: 146, along: "z", length: 3.2, shape: "L" },
+    { x: 75, z: 304, along: "x", length: 3.2, shape: "U" },
+    { x: 112, z: 304, along: "x", length: 3.2, shape: "L" },
+    { x: 155, z: 305, along: "x", length: 3.2, shape: "U" }
+  ].flatMap(({ x, z, along, length, shape }) => {
+    const center = point(x, z);
+    const panel = (ax, n, a, width) => ({
+      ax, ta: ax === 0 ? 2 : 0, n, a0: a - width / 2, a1: a + width / 2, y0: 0, y1: 2.2
+    });
+    const ax = along === "x" ? 2 : 0;
+    const n = ax === 0 ? center.x : center.z, a = ax === 0 ? center.z : center.x;
+    const panels = [panel(ax, n, a, length)];
+    if (shape) {
+      const leg = 1.8;
+      panels.push(panel(ax === 0 ? 2 : 0, a - length / 2, n + leg / 2, leg));
+      if (shape === "U") panels.push(panel(ax === 0 ? 2 : 0, a + length / 2, n + leg / 2, leg));
+    }
+    return panels;
+  });
   const openings = rooms.flatMap((room) => {
     const east = room.door === "east", ax = east ? 0 : 2, ta = east ? 2 : 0;
     const middle = room.doorAt ?? (east ? (room.z0 + room.z1) / 2 : (room.x0 + room.x1) / 2);
@@ -91,6 +128,14 @@
     const prop = (anchorX, anchorZ, x0, x1, y0, y1, z0, z1, color, side = color, noCollide = false) =>
       rect(anchorX + (x0 - anchorX) / 2, anchorX + (x1 - anchorX) / 2, y0, y1,
         anchorZ + (z0 - anchorZ) / 2, anchorZ + (z1 - anchorZ) / 2, color, side, noCollide);
+    const facade = (x0, x1, z0, z1, mainHall) => {
+      const bands = mainHall ? [[0, 4.1, "@canyon-beige-brick"]] : [
+        [0, 1.15, "@canyon-white-brick*#ed3034"],
+        [1.15, 1.65, "@canyon-white-brick*#1b1b1b"],
+        [1.65, 4.1, "@canyon-white-brick"]
+      ];
+      bands.forEach(([y0, y1, material]) => rect(x0, x1, y0, y1, z0, z1, material, material, true));
+    };
     surface(0, 510, 0, 331, 0, "#b8b3a9");
     for (let x = 0; x < 510; x += 8) for (let z = 0; z < 331; z += 8) {
       surface(x, Math.min(x + 7.85, 510), z, Math.min(z + 7.85, 331), .012, (Math.floor(x / 8) + Math.floor(z / 8)) % 2 ? "#c9c7bc" : "#bdbbb2");
@@ -106,7 +151,13 @@
       [188, 329, 88, 138], [477, 510, 108, 138],
       [45, 105, 166, 220], [108, 135, 164, 175], [148, 185, 164, 224],
       [185, 510, 164, 331], [447, 510, 0, 67], [475, 505, 67, 103]
-    ].forEach(([x0, x1, z0, z1]) => rect(x0, x1, 0, 4.1, z0, z1, wall));
+    ].forEach(([x0, x1, z0, z1]) => {
+      rect(x0, x1, 0, 4.1, z0, z1, wall);
+      facade(x0, x1, z0 - .02, z0, z0 === 164 || z0 === 166);
+      facade(x0, x1, z1, z1 + .02, z1 === 138);
+      facade(x0 - .02, x0, z0, z1, false);
+      facade(x1, x1 + .02, z0, z1, false);
+    });
     [
       [215, 77, 1], [253, 77, 1], [304, 77, 1], [210, 88, -1],
       [247, 88, -1], [290, 88, -1], [313, 138, 1], [80, 166, -1],
@@ -138,18 +189,26 @@
     }
     rooms.forEach((room) => {
       const { x0, x1, z0, z1, door } = room;
+      const roomWall = room.cafeteria ? "@canyon-beige-brick" : wall;
       const middle = room.doorAt ?? (door === "east" ? (z0 + z1) / 2 : (x0 + x1) / 2);
       const half = doorHalf(room);
       const openings = room.doors ?? [middle];
       const horizontal = (z, hasDoor) => {
-        if (!hasDoor) return rect(x0, x1, 0, 4.1, z - .35, z + .35, wall);
+        const segment = (a, b) => {
+          rect(a, b, 0, 4.1, z - .35, z + .35, roomWall);
+          if (!room.cafeteria && (hasDoor || [29, 38, 77, 88, 99, 108, 138].includes(z))) {
+            const face = z + (z === z0 ? -.35 : .35);
+            facade(a, b, face - .01, face + .01, z === 138);
+          }
+        };
+        if (!hasDoor) return segment(x0, x1);
         let edge = x0;
         openings.forEach((at) => {
-          rect(edge, at - half, 0, 4.1, z - .35, z + .35, wall);
+          segment(edge, at - half);
           rect(at - half, at + half, 2.6, 4.1, z - .35, z + .35, trim);
           edge = at + half;
         });
-        rect(edge, x1, 0, 4.1, z - .35, z + .35, wall);
+        segment(edge, x1);
       };
       const vertical = (x, hasDoor) => {
         if (room.cafeteria && x === x0 && glassBox) {
@@ -157,9 +216,16 @@
           glassBox(a.x, b.x, 0, 4.1, a.z, b.z);
           return;
         }
-        if (!hasDoor) return rect(x - .35, x + .35, 0, 4.1, z0, z1, wall);
-        rect(x - .35, x + .35, 0, 4.1, z0, middle - half, wall);
-        rect(x - .35, x + .35, 0, 4.1, middle + half, z1, wall);
+        const segment = (a, b) => {
+          rect(x - .35, x + .35, 0, 4.1, a, b, roomWall);
+          if (!room.cafeteria && (hasDoor || [57, 170, 337, 402, 416, 477].includes(x))) {
+            const face = x + (x === x0 ? -.35 : .35);
+            facade(face - .01, face + .01, a, b, false);
+          }
+        };
+        if (!hasDoor) return segment(z0, z1);
+        segment(z0, middle - half);
+        segment(middle + half, z1);
         rect(x - .35, x + .35, 2.6, 4.1, middle - half, middle + half, trim);
       };
       horizontal(z0, door === "north"); horizontal(z1, door === "south");
@@ -209,6 +275,10 @@
         }
       }
     });
+    [
+      ...[54, 92, 130, 195, 230, 270, 300, 350, 385, 432, 466].map((x) => [x, 138.36, 140]),
+      ...[220, 270, 320, 365, 405, 450, 480].map((x) => [x, 162.35, 163.99])
+    ].forEach(([x, z0, z1]) => rect(x - .8, x + .8, 0, 4.1, z0, z1, "@canyon-red-brick"));
     for (let x = 20; x < 500; x += 18) {
       prop(x, 151, x, x + 9, 4.02, 4.08, 148, 154, "#f7f5e6", "#f7f5e6", true);
     }
@@ -222,7 +292,14 @@
         const center = p(x, 164);
         poster(i + 1, center.x, center.z - .015, 1.5 * ratios[i], 1.5);
       });
+      for (const [x, z, side] of [
+        ...[225, 275, 325, 370, 415, 445, 475, 500].map((x) => [x, 164, -1]),
+        [205, 77, 1], [275, 77, 1], [225, 88, -1], [285, 88, -1]
+      ]) {
+        const center = p(x, z);
+        poster(2, center.x, center.z + side * .025, 1.5 * ratios[1], 1.5);
+      }
     }
   }
-  return { point, scale, bounds, sites, spawns, rooms, openings, cafeteriaBarricades, findOpening, barrier: 0, build };
+  return { point, scale, bounds, sites, spawns, rooms, openings, cafeteriaBarricades, cover, findOpening, barrier: 0, build };
 });

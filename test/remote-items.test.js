@@ -11,7 +11,7 @@ function section(start, end) {
 }
 
 function simulation() {
-  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, materials: {
+  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, paintColors: [{ c: "#f6df35" }], materials: {
     body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c"
   }, operatorRoster: [
     { id: "ms-c", loadout: { primary: "mk18", secondary: "p45", gadget: "shield", equipment: "frag" } },

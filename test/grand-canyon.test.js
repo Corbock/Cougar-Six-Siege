@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const WebSocket = require("ws");
 const map = require("../grand-canyon");
 
-function mapColliders() {
+function mapColliders(includeCover = true) {
   const colliders = [];
   map.build((x0, x1, y0, y1, z0, z1, _color, _side, noCollide) => {
     if (!noCollide) colliders.push({ x0, x1, y0, y1, z0, z1 });
@@ -24,6 +24,11 @@ function mapColliders() {
       const lz = along === "x" ? center.z + corner[1] * (leg / 2 - .09) : center.z + corner[1] * edge;
       addWall(lx, lz, along === "x" ? "z" : "x", leg);
     }
+  }
+  for (const cover of includeCover ? map.cover : []) {
+    const midpoint = (cover.a0 + cover.a1) / 2;
+    addWall(cover.ax === 0 ? cover.n : midpoint, cover.ax === 2 ? cover.n : midpoint,
+      cover.ax === 2 ? "x" : "z", cover.a1 - cover.a0);
   }
   return colliders;
 }
@@ -177,12 +182,101 @@ test("Grand Canyon furnishings and hallway posters use the requested assets", ()
   assert.ok(boxes.some((box) => box[6] === "@canyon-wood-panels"));
   assert.ok(boxes.some((box) => box[6] === "@canyon-ceiling-tiles"));
   assert.equal(boxes.filter((box) => box[6] === "@wood-boards").length, 20);
-  assert.deepEqual(posters.map((entry) => entry[0]), [1, 2, 3, 4, 5]);
+  assert.deepEqual(posters.slice(0, 5).map((entry) => entry[0]), [1, 2, 3, 4, 5]);
+  assert.equal(posters.filter((entry) => entry[0] === 2).length, 13);
   assert.ok(fs.existsSync("assets/tex/canyon-wood-panels.jpg"));
   assert.ok(fs.existsSync("assets/tex/canyon-ceiling-tiles.jpg"));
   const html = fs.readFileSync("index.html", "utf8");
   for (let i = 1; i <= 5; i++) assert.match(html, new RegExp(`canyon-poster-${i}.*Poster_${i}\\.`));
   assert.match(html, /isCanyon\(\) \? GrandCanyon\.findOpening\(o, dr, 4\.2, clearance\)/);
+});
+
+test("hallway and cafeteria walls have the requested brick finishes without adding colliders", () => {
+  const boxes = [];
+  map.build((...args) => boxes.push(args), () => {}, [], () => {});
+  const facade = (material) => boxes.filter((box) => box[6] === material);
+  const beige = facade("@canyon-beige-brick");
+  assert.ok(beige.some((box) => Math.abs(box[4] - map.point(0, 164 - .02).z) < 1e-8 && box[2] === 0 && box[3] === 4.1 && box[8] === true));
+  assert.ok(beige.some((box) => Math.abs(box[4] - map.point(0, 138.34).z) < 1e-8 && box[8] === true));
+  const red = facade("@canyon-red-brick");
+  assert.equal(red.length, 18);
+  assert.ok(red.every((box) => box[2] === 0 && box[3] === 4.1 && box[8] === false));
+  const bands = [
+    ["@canyon-white-brick*#ed3034", 0, 1.15],
+    ["@canyon-white-brick*#1b1b1b", 1.15, 1.65],
+    ["@canyon-white-brick", 1.65, 4.1]
+  ];
+  for (const [material, y0, y1] of bands)
+    assert.ok(facade(material).some((box) => box[2] === y0 && box[3] === y1 && box[8] === true));
+  assert.ok(beige.some((box) => Math.abs(box[4] - map.point(0, 331 - .35).z) < 1e-8 && box[8] === false));
+  for (const name of ["red", "beige", "white"]) {
+    assert.ok(fs.existsSync(`assets/tex/canyon-${name}-brick.png`));
+    assert.match(fs.readFileSync("index.html", "utf8"), new RegExp(`canyon-${name}-brick\\.png`));
+  }
+});
+
+test("hallway cover is rotated and L and U cover avoids permanent obstacles", () => {
+  for (const [i, x, z] of [[0, 110, 146], [1, 155, 157], [2, 215, 146], [3, 255, 157],
+    [4, 315, 146], [5, 355, 157], [6, 415, 146], [7, 455, 157],
+    [8, 100, 33.5], [9, 360, 33.5], [10, 115, 83], [11, 380, 103.5]]) {
+    const center = map.point(x, z), panel = map.cover[i];
+    assert.equal(panel.ax, 0);
+    assert.ok(Math.abs(panel.n - center.x) < 1e-8);
+    assert.ok(Math.abs((panel.a0 + panel.a1) / 2 - center.z) < 1e-8);
+  }
+  const obstacles = mapColliders(false);
+  for (const panel of map.cover) {
+    const box = panel.ax === 0
+      ? { x0: panel.n - .06, x1: panel.n + .06, z0: panel.a0, z1: panel.a1 }
+      : { x0: panel.a0, x1: panel.a1, z0: panel.n - .06, z1: panel.n + .06 };
+    assert.ok(!obstacles.some((c) => c.y0 < panel.y1 && c.y1 > .7 &&
+      box.x0 < c.x1 && box.x1 > c.x0 && box.z0 < c.z1 && box.z1 > c.z0), "cover intersects permanent geometry");
+  }
+  const connected = (a, b) => a.ax !== b.ax && a.n >= b.a0 - 1e-8 && a.n <= b.a1 + 1e-8 &&
+    b.n >= a.a0 - 1e-8 && b.n <= a.a1 + 1e-8;
+  const seen = new Set(), groups = [];
+  map.cover.forEach((_, i) => {
+    if (seen.has(i)) return;
+    const group = [i]; seen.add(i);
+    for (let j = 0; j < group.length; j++) map.cover.forEach((panel, k) => {
+      if (!seen.has(k) && connected(map.cover[group[j]], panel)) { seen.add(k); group.push(k); }
+    });
+    groups.push(group);
+  });
+  assert.ok(groups.filter((group) => group.length === 2).length >= 4, "expected L-shaped cover");
+  assert.ok(groups.filter((group) => group.length === 3).length >= 2, "expected U-shaped cover");
+});
+
+test("seeded wooden cover is breakable, synchronized, and restored on reset", () => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const slice = (start, end) => {
+    const a = html.indexOf(start), b = html.indexOf(end, a);
+    assert.ok(a >= 0 && b > a);
+    return html.slice(a, b);
+  };
+  const context = { GrandCanyon: map, isCanyon: () => true, barricades: [], colliders: [], BAR_TH: .12,
+    CELL: .2, CELL_HP: 50, STEEL_HP: 150, WOODS: ["#8b5e34"], qb: () => {}, spawnDebris: () => {},
+    multiplayer: { match: {} } };
+  vm.runInNewContext(
+    slice("      function barBox(", "      function spawnDebris(") +
+    slice("      const barById =", "      function aimedBarricade(") +
+    slice("      function makeBarricade(", "      function resetBarricades()") +
+    slice("      function seedBarricades()", "      const pickups ="), context);
+  context.seedBarricades();
+  assert.equal(context.barricades.length, map.cover.length);
+  const first = context.barricades[0], hit = [0, 1, 0];
+  hit[first.ax] = first.n;
+  hit[first.ta] = (first.a0 + first.a1) / 2;
+  context.remoteBarricade({ op: "hit", id: first.id, p: hit, radius: 5, power: 100, chip: false, src: "frag" });
+  assert.ok(first.hp.every((hp) => hp === 0));
+  context.rebuildBarricade(first);
+  assert.ok(!context.barricades.includes(first));
+  assert.ok(!context.colliders.some((collider) => collider.bar === first));
+  context.clearBarricades();
+  assert.equal(context.colliders.length, 0);
+  context.seedBarricades();
+  assert.equal(context.barricades[0].id, first.id);
+  assert.ok(context.barricades[0].hp.every((hp) => hp === 50));
 });
 
 test("classroom boards face away from entrances and signs read from the hallway", () => {
@@ -299,6 +393,18 @@ async function startCanyonMatch(t, mode, prepSeconds, operatorId) {
   const place = (i, x, z) => send(i, { type: "state", state: { x, y: 1.8, z, yaw: 0, pitch: 0 } });
   return { found, messages, defender, attacker, latest, send, place };
 }
+
+test("seeded cover damage is relayed to the other player", async (t) => {
+  const match = await startCanyonMatch(t, "defuse", 0);
+  const cover = map.cover[0], hit = [0, 1, 0];
+  hit[cover.ax] = cover.n;
+  hit[cover.ta] = (cover.a0 + cover.a1) / 2;
+  match.send(0, { type: "bar", op: "hit", id: "canyon-cover-0", p: hit, radius: .3, power: 50, chip: false, src: "shot" });
+  const event = await waitFor(() => match.messages[1].find((message) =>
+    message.type === "bar" && message.op === "hit" && message.id === "canyon-cover-0"), "Cover damage was not relayed");
+  assert.deepEqual(event.p, hit);
+  assert.equal(event.power, 50);
+});
 
 test("scaled-map player, drone, companion and projectile coordinates synchronize at the west edge", async (t) => {
   const match = await startCanyonMatch(t, "defuse", 0, "mr-m");

@@ -18,7 +18,8 @@ function client() {
     currentKeybinds: { sprint: "shift" }, EYE: 1.8, CROUCH_EYE: 1.05,
     colliders: [], dummies: [], sent, sendMatch: (message) => sent.push(message),
     multiplayer: { match: { team: 1 }, round: { phase: "live" }, remotePlayers: new Map() },
-    recordHit() {}, mark() {}, say() {}, showShieldImpact() {} };
+    curSlot: "primary", recordHit() {}, mark() {}, say() {}, showShieldImpact() {}, paintHit() {},
+    hurtDummy(dummy, damage) { dummy.hp -= damage; } };
   vm.runInNewContext(section("      const rayBox =", "      const hudMsg =") +
     section("      function trace(", "      function hurtDummy("), context);
   return context;
@@ -43,6 +44,39 @@ test("shots target enemy companion or camera drones before players and stop at c
   sim.colliders.push({ x0: -1, x1: 1, y0: 0, y1: 3, z0: 3, z1: 3.2 });
   sim.trace(weapon, 30, 1);
   assert.equal(sim.sent.length, 0);
+});
+
+test("practice headshots eliminate with primaries and the magnum, but not other sidearms", () => {
+  for (const [slot, id, expected] of [["primary", "mk18", 0], ["primary", "hammer", 0],
+    ["secondary", "magnum", 0], ["secondary", "p45", 60]]) {
+    const sim = client();
+    sim.curSlot = slot;
+    sim.dummies.push({ x: 0, z: 10, hp: 100 });
+    sim.trace({ item: { id }, kind: { mult: 4 }, stats: { dmg: 5 } }, 30, 1);
+    assert.equal(sim.dummies[0].hp, expected, id);
+  }
+});
+
+test("barricade shots send cell paint without creating a floating splash", () => {
+  const sim = client(), hits = [], splashes = [];
+  sim.paintColor = () => "#32a6ef";
+  sim.paintHit = (...args) => splashes.push(args);
+  sim.hitBarricade = (...args) => hits.push(args);
+  sim.colliders.push({ x0: -1, x1: 1, y0: 0, y1: 3, z0: 3, z1: 3.2, bar: { id: "cover" } });
+  sim.trace({ item: { id: "mk18" }, kind: { mult: 4 }, stats: { dmg: 5 } }, 30, 1);
+  assert.equal(hits[0].at(-1), "#32a6ef");
+  assert.equal(sim.sent[0].paint, "#32a6ef");
+  assert.equal(splashes.length, 0);
+});
+
+test("player paint is sent before damage can end the match", () => {
+  const sim = client();
+  sim.multiplayer.socket = { send: (message) => sim.sent.push(JSON.parse(message)) };
+  sim.multiplayer.remotePlayers.set("target", { id: "target", team: 2, health: 100,
+    state: { x: 0, y: 1.8, z: 10, yaw: 0 } });
+  sim.paintHit = () => sim.sent.push({ type: "paint" });
+  sim.trace({ item: { id: "mk18" }, kind: { mult: 4 }, stats: { dmg: 5 } }, 30, 1);
+  assert.deepEqual(sim.sent.map((message) => message.type), ["paint", "shoot"]);
 });
 
 test("destroyed owned drones are removed and piloted cameras return control", () => {

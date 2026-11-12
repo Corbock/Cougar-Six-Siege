@@ -107,7 +107,7 @@ test("rescue: escorting the hostage past midfield wins; killing it loses the rou
   assert.match(end.reason, /rescued/);
 });
 
-test("rescue: the team that kills the hostage loses immediately", async (t) => {
+test("rescue: the team that eliminates the hostage loses immediately", async (t) => {
   const m = await startMatch(t, "rescue");
   const o = m.objective;
   await waitFor(() => m.latest(0)?.phase === "live", "Round did not go live");
@@ -116,7 +116,7 @@ test("rescue: the team that kills the hostage loses immediately", async (t) => {
   t.after(() => clearInterval(timer));
   await sleep(300);
   for (let i = 0; i < 4; i++) { m.send(m.defender, { type: "shoot", targetId: "hostage", damage: 55, direction: { x: 0, y: 0, z: 1 } }); await sleep(120); }
-  const end = await waitFor(() => m.messages[0].find((message) => message.type === "round_end"), "Hostage kill did not end the round");
+  const end = await waitFor(() => m.messages[0].find((message) => message.type === "round_end"), "Hostage elimination did not end the round");
   assert.equal(end.winner, 2);
-  assert.match(end.reason, /killed the hostage/);
+  assert.match(end.reason, /eliminated the hostage/);
 });

@@ -170,7 +170,7 @@ test("multiplayer shields block frontal shots but not Longwatch or grenade blast
   const target = match.players.find((p) => p.id !== self).id;
   await waitFor(() => messages[0].some((m) => m.type === "snapshot" && m.phase === "live"), "Round did not go live");
   const state = (i, slot) => send(i, { type: "state", state: i === 0
-    ? { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: slot }
+    ? { x: 0, y: 1.3, z: 0, yaw: 0, pitch: 0, activeSlot: slot }
     : { x: 0, y: 1.8, z: 10, yaw: Math.PI, pitch: 0, activeSlot: slot } });
   state(0, "secondary"); state(1, "gadget");
   await waitFor(() => messages[0].some((m) => m.type === "snapshot" && m.players.find((p) => p.id === target)?.state.shieldActive), "Shield not synchronized");
@@ -193,7 +193,7 @@ test("multiplayer shields block frontal shots but not Longwatch or grenade blast
   send(0, { type: "explode", id: "blast", x: 4, y: .8, z: 10 });
   await waitFor(() => damages().length === 2, "Grenade damage missing");
   assert.equal(damages()[1].health, 80 - Math.round(130 * (1 - 4 / 6)));
-  send(0, { type: "state", state: { x: 0, y: 1.8, z: 20, yaw: Math.PI, pitch: 0, activeSlot: "secondary" } });
+  send(0, { type: "state", state: { x: 0, y: 1.3, z: 20, yaw: Math.PI, pitch: 0, activeSlot: "secondary" } });
   await sleep(100);
   send(0, { type: "shoot", targetId: target, damage: 20, direction: { x: 0, y: 0, z: -1 } });
   await waitFor(() => damages().length === 3, "Shot from behind shield did not land");
