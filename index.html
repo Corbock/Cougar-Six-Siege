@@ -2061,6 +2061,27 @@
           if (probe(position.x, position.z + mz / steps, feet) >= 0) position.z += mz / steps;
         }
       }
+      function probeDrone(x, z, feet) {
+        for (const c of colliders) {
+          if (x + DRONE_RADIUS <= c.x0 || x - DRONE_RADIUS >= c.x1 ||
+              z + DRONE_RADIUS <= c.z0 || z - DRONE_RADIUS >= c.z1) continue;
+          if (feet + DRONE_HEIGHT > c.y0 && feet < c.y1) return -1;
+        }
+        return 0;
+      }
+      function droneVerticalBlocked(x, z, fromY, toY) {
+        const bottom = Math.min(fromY, toY) - DRONE_HEIGHT / 2;
+        const top = Math.max(fromY, toY) + DRONE_HEIGHT / 2;
+        return colliders.some((c) => x + DRONE_RADIUS > c.x0 && x - DRONE_RADIUS < c.x1 &&
+          z + DRONE_RADIUS > c.z0 && z - DRONE_RADIUS < c.z1 && top > c.y0 && bottom < c.y1);
+      }
+      function moveDroneWithCollision(position, mx, mz, feet) {
+        const steps = Math.max(1, Math.ceil(Math.max(Math.abs(mx), Math.abs(mz)) / .08));
+        for (let i = 0; i < steps; i++) {
+          if (probeDrone(position.x + mx / steps, position.z, feet) >= 0) position.x += mx / steps;
+          if (probeDrone(position.x, position.z + mz / steps, feet) >= 0) position.z += mz / steps;
+        }
+      }
       function clampLean(position, yaw, amount, feet, height = eyeHeight) {
         const distance = Math.abs(amount) * .7, direction = Math.sign(amount);
         const steps = Math.max(1, Math.ceil(distance / .08));
@@ -2443,6 +2464,16 @@
         const state = player.state, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
         const height = state.crouched ? CROUCH_EYE : EYE, base = state.y - height, leanAngle = -(state.lean || 0) * .24;
         const lc = Math.cos(leanAngle), ls = Math.sin(leanAngle);
+        const buildStartedAt = remoteBarricadeActions.get(player.id);
+        const buildElapsed = buildStartedAt === undefined ? Infinity : tNow - buildStartedAt;
+        if (buildElapsed >= barricadeBuildDuration) remoteBarricadeActions.delete(player.id);
+        const building = buildElapsed >= 0 && buildElapsed < barricadeBuildDuration;
+        const strikeCycle = buildElapsed - .08;
+        const strikePhase = strikeCycle < 0 ? 0 : (strikeCycle % .42) / .42;
+        const strike = !building || strikeCycle < 0 ? 0 :
+          Math.pow(Math.max(0, Math.sin(strikeCycle * Math.PI * 2 / .42)), 2);
+        const windup = building && strikeCycle >= 0 && strikePhase < .25 ? Math.pow(1 - strikePhase / .25, 2) : 0;
+        const reach = building ? .24 : 0, lift = building ? .12 : 0, strikeDrop = .1 * strike;
         const look = {
           "mr-m": ["#34516c", "#343b4b", "#c89170", "#392922"],
           "mr-l": ["#725d43", "#39424a", "#ad7956", "#29211e"],
@@ -2461,22 +2492,57 @@
         const crouched = state.crouched;
         const torsoY = crouched ? 1 : 1.32, headY = crouched ? 1.43 : 1.8;
         const sleeveY = crouched ? .93 : 1.29, forearmY = crouched ? .73 : 1.02, handY = crouched ? .6 : .88;
+        const holdingTablet = Boolean(state.droneState);
         if (state.crouched) {
           box(-.16, .15, .26, .25, .22, .48, "#292b2e"); box(.16, .15, .26, .25, .22, .48, "#292b2e");
           box(-.16, .42, -.02, .28, .39, .38, pants); box(.16, .42, -.02, .28, .39, .38, pants);
           box(0, .62, -.01, .46, .28, .38, pants);
           box(0, torsoY, -.02, .6, .62, .36, shirt);
-          box(-.43, sleeveY, .04, .2, .32, .24, shirt); box(.43, sleeveY, .04, .2, .32, .24, shirt);
-          box(-.43, forearmY, .04, .15, .19, .2, skin); box(.43, forearmY, .04, .15, .19, .2, skin);
-          box(-.43, handY, .12, .14, .14, .18, skin); box(.43, handY, .12, .14, .14, .18, skin);
+          if (holdingTablet) {
+            box(-.43, 1.04, .02, .2, .32, .24, shirt); box(.43, 1.04, .02, .2, .32, .24, shirt);
+            box(-.29, 1.02, .2, .24, .17, .24, skin); box(.29, 1.02, .2, .24, .17, .24, skin);
+          } else {
+            box(-.43, sleeveY + lift * .3, .04 + reach * .35, .2, .32, .24, shirt);
+            box(.43, sleeveY + lift * .3, .04 + reach * .35, .2, .32, .24, shirt);
+            box(-.43, forearmY + lift - .025 * strike, .04 + reach - .045 * strike, .15, .19, .2, skin);
+            box(.43, forearmY + lift + .04 * windup - strikeDrop * .5, .04 + reach, .15, .19, .2, skin);
+            box(-.43, handY + lift - .05 * strike, .12 + reach - .08 * strike, .14, .14, .18, skin);
+            box(.43, handY + lift + .08 * windup - strikeDrop, .12 + reach, .14, .14, .18, skin);
+          }
         } else {
           box(-.16, .12, .08, .27, .18, .43, "#292b2e"); box(.16, .12, .08, .27, .18, .43, "#292b2e");
           box(-.16, .51, 0, .27, .58, .31, pants); box(.16, .51, 0, .27, .58, .31, pants);
           box(0, .91, 0, .5, .28, .35, pants);
           box(0, torsoY, 0, .59, .66, .37, shirt);
-          box(-.43, sleeveY, .01, .2, .35, .25, shirt); box(.43, sleeveY, .01, .2, .35, .25, shirt);
-          box(-.43, forearmY, .02, .15, .2, .2, skin); box(.43, forearmY, .02, .15, .2, .2, skin);
-          box(-.43, handY, .08, .14, .14, .18, skin); box(.43, handY, .08, .14, .14, .18, skin);
+          if (holdingTablet) {
+            box(-.43, 1.38, .01, .2, .35, .25, shirt); box(.43, 1.38, .01, .2, .35, .25, shirt);
+            box(-.29, 1.34, .2, .24, .18, .24, skin); box(.29, 1.34, .2, .24, .18, .24, skin);
+          } else {
+            box(-.43, sleeveY + lift * .3, .01 + reach * .35, .2, .35, .25, shirt);
+            box(.43, sleeveY + lift * .3, .01 + reach * .35, .2, .35, .25, shirt);
+            box(-.43, forearmY + lift - .025 * strike, .02 + reach - .045 * strike, .15, .2, .2, skin);
+            box(.43, forearmY + lift + .04 * windup - strikeDrop * .5, .02 + reach, .15, .2, .2, skin);
+            box(-.43, handY + lift - .05 * strike, .08 + reach - .08 * strike, .14, .14, .18, skin);
+            box(.43, handY + lift + .08 * windup - strikeDrop, .08 + reach, .14, .14, .18, skin);
+          }
+        }
+        if (holdingTablet) {
+          const tabletY = crouched ? 1.02 : 1.34, tabletZ = .37;
+          box(0, tabletY, tabletZ, .48, .34, .055, "#252d32");
+          box(0, tabletY, tabletZ + .033, .435, .29, .012, "#13232a");
+          box(0, tabletY + .105, tabletZ + .041, .36, .018, .008, "#526b64");
+          box(-.12, tabletY + .04, tabletZ + .042, .12, .012, .008, "#d3ef59");
+          box(.105, tabletY + .04, tabletZ + .042, .12, .012, .008, "#6e8e8d");
+          box(-.21, tabletY, tabletZ + .075, .12, .13, .09, skin);
+          box(.21, tabletY, tabletZ + .075, .12, .13, .09, skin);
+        }
+        if (building) {
+          const hammerHandleY = handY + lift + .1 + .08 * windup - strikeDrop * .6;
+          const hammerHeadY = hammerHandleY + .17 - .08 * strike;
+          box(.43, hammerHandleY, .42 + reach * .5, .055, .34, .075, "#744a2c");
+          box(.43, hammerHeadY, .42 + reach * .5, .29, .1, .105, "#858b8a");
+          box(.29, hammerHeadY, .42 + reach * .5, .055, .115, .112, "#b8bfbd");
+          box(.57, hammerHeadY, .42 + reach * .5, .055, .115, .112, "#596261");
         }
         box(-.43, sleeveY - .1, .01, .205, .045, .26, teamColor);
         box(.43, sleeveY - .1, .01, .205, .045, .26, teamColor);
@@ -2505,7 +2571,7 @@
           panel(.65, .68, bottom, top, "#747d78");
           if (player.operatorId === "ms-c") worldItemQuads(list, "p45", state, .76, state.sidearmPaint,
             { skin: state.sidearmSkin, keychain: state.sidearmKeychain });
-        } else if (item && !state.droneState) {
+        } else if (item && !state.droneState && !building) {
           worldItemQuads(list, item, state, .28, state.equippedPaint,
             { skin: state.equippedSkin, keychain: state.equippedKeychain });
         }
@@ -2655,6 +2721,7 @@
       }
       function beginRound(spawn) {
         objectiveView.clear(); interactState.id = null;
+        cancelDroneDeploy();
         if (drone.active) recallDrone();
         crouched = false; eyeHeight = EYE; lean = 0; spectate.id = null;
         if (spawn) { cam.x = spawn.x; cam.y = EYE; cam.z = spawn.z; cam.yaw = spawn.yaw; cam.pitch = 0; cam.vy = 0; }
@@ -2663,6 +2730,14 @@
       }
       // ---- Barricades: crude wooden panels fitted into openings, built from small cells that bullets chip away ----
       const BAR_TH = .12, CELL = .2, CELL_HP = 50, STEEL_HP = 150, MAX_BARS = 8;
+      const barricadeBuildDuration = 1.35;
+      let barricadeActionStart = -1;
+      const remoteBarricadeActions = new Map();
+      const barricadeActionActive = () => {
+        if (barricadeActionStart < 0) return false;
+        if (tNow - barricadeActionStart >= barricadeBuildDuration) { barricadeActionStart = -1; return false; }
+        return true;
+      };
       const WOODS = ["#8b5e34", "#7a4f2a", "#9a6a3c", "#6e4624"];
       let barricades = [], debris = [], barCount = 6;
       const inCollider = (p) => colliders.some((c) => p[0] > c.x0 && p[0] < c.x1 && p[1] > c.y0 && p[1] < c.y1 && p[2] > c.z0 && p[2] < c.z1);
@@ -2700,13 +2775,20 @@
       function rebuildBarricade(b) {
         b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); });
         b.solids = []; b.quads = []; b.dirty = false;
+        const progress = b.buildStartedAt == null ? 1 : Math.max(0, Math.min(1, (tNow - b.buildStartedAt) / barricadeBuildDuration));
+        const builtRows = Math.floor(progress * b.rows);
         for (let r = 0; r < b.rows; r++) {
           for (let c = 0; c < b.cols;) {
             if (b.hp[r * b.cols + c] <= 0) { c++; continue; }
             let e = c; while (e < b.cols && b.hp[r * b.cols + e] > 0) e++;
-            const s = barBox(b, c, e, r, r + 1); s.bar = b; b.solids.push(s); colliders.push(s);
+            const s = barBox(b, c, e, r, r + 1); s.bar = b; s.buildRow = r; b.solids.push(s);
+            if (r < builtRows) colliders.push(s);
             const shade = WOODS[(r * 2 + (c > 0 ? 1 : 0) + b.seed) % 4];
-            const bx = (box, color) => qb(b.quads, box.x0, box.x1, box.y0, box.y1, box.z0, box.z1, color);
+            const bx = (box, color) => {
+              const first = b.quads.length;
+              qb(b.quads, box.x0, box.x1, box.y0, box.y1, box.z0, box.z1, color);
+              for (let i = first; i < b.quads.length; i++) b.quads[i].buildRow = r;
+            };
             for (let start = c; start < e;) {
               const color = b.paint[r * b.cols + start]?.color || shade;
               let end = start + 1;
@@ -2721,6 +2803,34 @@
           }
         }
         if (!b.solids.length) barricades = barricades.filter((x) => x !== b);
+      }
+      function barricadeQuads(b) {
+        if (b.repairStartedAt != null) {
+          const progress = Math.max(0, Math.min(1, (tNow - b.repairStartedAt) / barricadeBuildDuration));
+          const repairedRows = Math.floor(progress * b.rows);
+          if (repairedRows > b.repairRowsDone) {
+            const cap = b.repairCap;
+            for (let r = b.repairRowsDone; r < repairedRows; r++) {
+              for (let c = 0; c < b.cols; c++) {
+                const index = r * b.cols + c;
+                b.hp[index] = cap;
+                b.paint[index] = null;
+              }
+            }
+            b.repairRowsDone = repairedRows;
+            b.dirty = true;
+          }
+          if (progress >= 1) { b.repairStartedAt = null; b.repairRowsDone = 0; }
+        }
+        const progress = b.buildStartedAt == null ? 1 : Math.max(0, Math.min(1, (tNow - b.buildStartedAt) / barricadeBuildDuration));
+        const builtRows = Math.floor(progress * b.rows);
+        b.solids.forEach((solid) => {
+          const index = colliders.indexOf(solid), shouldCollide = solid.buildRow < builtRows;
+          if (shouldCollide && index < 0) colliders.push(solid);
+          else if (!shouldCollide && index >= 0) colliders.splice(index, 1);
+        });
+        if (progress >= 1) { b.buildStartedAt = null; return b.quads; }
+        return b.quads.filter((quad) => quad.buildRow < builtRows);
       }
       function expireBarricadePaint(b) {
         if (tNow < b.paintExpiry) return;
@@ -2816,21 +2926,35 @@
       }
       let barSeq = 0, projSeq = 0;
       const barById = (id) => barricades.find((b) => b.id === id);
+      function startBarricadeRepair(b) {
+        b.repairStartedAt = tNow;
+        b.repairRowsDone = 0;
+        b.repairCap = b.steel ? STEEL_HP : CELL_HP;
+        b.paint.fill(null);
+        b.paintExpiry = Infinity;
+        b.dirty = true;
+      }
       function remoteBarricade(m) {
         if (!multiplayer.match) return;
         if (m.op === "place") {
           if (!barById(m.id)) {
             const fit = { ...m.fit };
             fit.ta = m.fit.ax === 0 ? 2 : 0;
-            makeBarricade({ ...fit, id: m.id });
+            makeBarricade({ ...fit, id: m.id, building: true });
+            if (m.from) remoteBarricadeActions.set(m.from, tNow);
           }
           return;
         }
         const b = barById(m.id);
         if (!b) return;
         if (m.op === "hit") hitBarricade(b, m.p, m.radius, m.power, m.chip, m.src, m.paint);
-        else if (m.op === "repair") { b.hp.fill(b.steel ? STEEL_HP : CELL_HP); b.paint.fill(null); b.paintExpiry = Infinity; b.dirty = true; }
-        else if (m.op === "steel") { b.steel = true; b.hp.fill(STEEL_HP); b.dirty = true; }
+        else if (m.op === "repair") {
+          startBarricadeRepair(b);
+          if (m.from) remoteBarricadeActions.set(m.from, tNow);
+        } else if (m.op === "steel") {
+          b.steel = true; b.hp.fill(STEEL_HP); b.dirty = true;
+          if (m.from) remoteBarricadeActions.set(m.from, tNow);
+        }
       }
       function hitBarricade(b, p, radius, power, chip, src, paint) {
         const tc = p[b.ta], yy = p[1];
@@ -2877,13 +3001,14 @@
         return best;
       }
       function placeBarricade() {
-        if (isDead()) return;
+        if (isDead() || barricadeActionActive()) return;
         if (barCount <= 0) return say("NO BARRICADES LEFT");
         const ex = aimedBarricade([renderCam.x, renderCam.y, renderCam.z], aimDir(), 4.2);
         if (ex) {
           const cap = ex.steel ? STEEL_HP : CELL_HP;
           if (ex.hp.every((v) => v >= cap)) return say("BARRICADE INTACT");
-          ex.hp.fill(cap); ex.paint.fill(null); ex.paintExpiry = Infinity; ex.dirty = true; barCount--; sendMatch({ type: "bar", op: "repair", id: ex.id }); return say("BARRICADE REPAIRED");
+          startBarricadeRepair(ex); barCount--;
+          barricadeActionStart = tNow; sendMatch({ type: "bar", op: "repair", id: ex.id }); return say("BARRICADE REPAIRED");
         }
         const cp = Math.cos(cam.pitch), sp2 = Math.sin(cam.pitch), cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
         const dr = [sy * cp, sp2, cy * cp], o = [renderCam.x, renderCam.y, renderCam.z];
@@ -2899,17 +3024,18 @@
         if (!fit) return say("NO OPENING TO BARRICADE");
         const h = BAR_TH / 2 + R, pl = [cam.x, 0, cam.z];
         if (Math.abs(pl[fit.ax] - fit.n) < h && pl[fit.ta] > fit.a0 - R && pl[fit.ta] < fit.a1 + R && cam.y - eyeHeight < fit.y1 && cam.y > fit.y0) return say("STEP BACK");
-        const placed = makeBarricade({ ...fit, id: `${multiplayer.playerId}:${++barSeq}` }); barCount--; say("BARRICADE PLACED");
+        const placed = makeBarricade({ ...fit, id: `${multiplayer.playerId}:${++barSeq}`, building: true });
+        barricadeActionStart = tNow; barCount--; say("BARRICADE PLACED");
         sendMatch({ type: "bar", op: "place", id: placed.id, fit: { ax: fit.ax, n: fit.n, a0: fit.a0, a1: fit.a1, y0: fit.y0, y1: fit.y1 } });
       }
       function makeBarricade(fit) {
         const cols = Math.max(2, Math.round((fit.a1 - fit.a0) / CELL)), rows = Math.max(2, Math.round((fit.y1 - fit.y0) / CELL));
-        const b = Object.assign(fit, { cols, rows, cw: (fit.a1 - fit.a0) / cols, ch: (fit.y1 - fit.y0) / rows, hp: new Float32Array(cols * rows).fill(CELL_HP), paint: new Array(cols * rows).fill(null), paintExpiry: Infinity, solids: [], quads: [], dirty: true, seed: 0 });
+        const b = Object.assign(fit, { cols, rows, cw: (fit.a1 - fit.a0) / cols, ch: (fit.y1 - fit.y0) / rows, hp: new Float32Array(cols * rows).fill(CELL_HP), paint: new Array(cols * rows).fill(null), paintExpiry: Infinity, solids: [], quads: [], dirty: true, seed: 0, buildStartedAt: fit.building ? tNow : null });
         barricades.push(b); rebuildBarricade(b);
         return b;
       }
       function clearBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; }
-      function resetBarricades() { clearBarricades(); debris = []; projectiles = []; smokes = []; shieldImpacts = []; paintMarks = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
+      function resetBarricades() { clearBarricades(); remoteBarricadeActions.clear(); barricadeActionStart = -1; grenadeThrowAction = null; debris = []; projectiles = []; smokes = []; shieldImpacts = []; paintMarks = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
       // ---- Pre-built barricades and supply pickups ----
       // ax is the wall normal (0 = x, 2 = z), n the wall plane, a0..a1 the opening along the other axis
       function seedBarricades() {
@@ -3148,10 +3274,14 @@
         if (tNow - medkitActionStart >= medkitActionDuration) { medkitActionStart = -1; return false; }
         return true;
       };
-      const drone = { active: false, returnTo: null, nextScan: 0, uses: 3, companions: [], mode: "scanner", tags: new Map(), cameraDestroyed: false };
+      const droneDeployDuration = 1.2;
+      const drone = { active: false, deploying: null, returnTo: null, nextScan: 0, uses: 3, companions: [], mode: "scanner", tags: new Map(), cameraDestroyed: false };
       const SMOKE_R = 4.5, SMOKE_LIFE = 16;
       const charges = {};
       let nextGrenadeRecharge = 0;
+      const grenadeThrowReleaseAt = .64, grenadeThrowDuration = 1;
+      let grenadeThrowAction = null;
+      const grenadeThrowActionActive = () => grenadeThrowAction !== null;
       let droneAudioContext = null, droneHumNodes = [];
       function getDroneAudioContext() {
         if (!window.AudioContext) return null;
@@ -3296,7 +3426,7 @@
       el.appendChild(flashEl);
       const aimDir = () => { const cp = Math.cos(cam.pitch); return [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp]; };
       function deployDrone() {
-        if (drone.active) return;
+        if (drone.active || drone.deploying) return;
         if (selectedOperatorId === "mr-m") {
           if (drone.uses <= 0) return say("NO DRONES LEFT THIS ROUND");
           const slot = 3 - drone.uses, mode = slot === 1 ? "attacker" : "scanner";
@@ -3306,14 +3436,32 @@
         }
         if (drone.cameraDestroyed) return say("DRONE DESTROYED THIS ROUND");
         drone.mode = selectedOperatorId === "hallway-monitor" ? "camera" : "scanner";
-        drone.returnTo = { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch, vy: cam.vy, lean, crouched };
+        const returnTo = { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch, vy: cam.vy, lean, crouched };
         const direction = aimDir();
-        cam.x += direction[0] * .8; cam.z += direction[2] * .8;
-        cam.y = .42; cam.vy = 0; cam.pitch = 0; lean = 0; mouseDown = false;
+        drone.deploying = {
+          startedAt: tNow,
+          returnTo,
+          destination: { x: cam.x + direction[0] * .8, y: .42, z: cam.z + direction[2] * .8, yaw: cam.yaw, pitch: 0, vy: 0 }
+        };
+        say("DEPLOYING DRONE · HOLD POSITION");
+      }
+      function finishDroneDeploy() {
+        if (!drone.deploying || tNow - drone.deploying.startedAt < droneDeployDuration) return false;
+        const { returnTo, destination } = drone.deploying;
+        drone.returnTo = returnTo;
+        Object.assign(cam, destination);
+        lean = 0; mouseDown = false; pressedAt = -1;
         drone.active = true;
+        drone.deploying = null;
         drone.nextScan = tNow;
         startDroneHum();
-        say(`${drone.mode.toUpperCase()} DRONE DEPLOYED · WASD DRIVE · ${drone.mode === "camera" ? "SPACE ASCEND · C DESCEND · CLICK SCAN" : "SPACE SCAN"} · G RECALL`);
+        say(`${drone.mode.toUpperCase()} DRONE DEPLOYED · WASD DRIVE · ${drone.mode === "camera" ? "SPACE ASCEND · C DESCEND · CLICK SCAN" : "SPACE SCAN"} · ${bindLabel(currentKeybinds.recallDrone)} RECALL`);
+        return true;
+      }
+      function cancelDroneDeploy() {
+        if (!drone.deploying) return;
+        drone.deploying = null;
+        say("DRONE DEPLOYMENT CANCELLED");
       }
       function recallDrone() {
         if (!drone.active || !drone.returnTo) return;
@@ -3347,7 +3495,7 @@
           if (!bar) return say("AIM AT A BARRICADE");
           if (bar.steel) return say("ALREADY REINFORCED");
           bar.steel = true; bar.hp.fill(STEEL_HP); bar.dirty = true; sendMatch({ type: "bar", op: "steel", id: bar.id });
-          charges[id] = left - 1; w.kick = 1; say("BARRICADE REINFORCED");
+          barricadeActionStart = tNow; charges[id] = left - 1; w.kick = 1; say("BARRICADE REINFORCED");
           return;
         }
         if (id === "medkit") {
@@ -3366,6 +3514,15 @@
         }
         if (w.kind.uses === Infinity) return say(id === "medkit" ? "NO INJURIES TO TREAT" : id === "shield" ? "SHIELD READY" : "NOT AVAILABLE YET");
         if (left <= 0) return say("OUT OF " + w.item.name.toUpperCase());
+        if (id === "frag" || id === "flash" || id === "smoke") {
+          if (grenadeThrowAction) return;
+          grenadeThrowAction = {
+            startedAt: tNow, itemId: id, uses: w.kind.uses, paint: paintColor(w.item),
+            tornado: id === "smoke" && selectedOperatorId === "mr-l",
+            markedFlash: id === "flash" && selectedOperatorId === "mr-m", thrown: false
+          };
+          return say(`${w.item.name.toUpperCase()} PIN PULLED`);
+        }
         charges[id] = left - 1; w.kick = 1;
         if (id === "claymore") {
           const g = dr[1] < -.05 ? Math.min(3.5, -o[1] / dr[1]) : 2;
@@ -3373,10 +3530,26 @@
           projectiles.push(mine); sendMatch({ type: "throw", id: mine.pid, kind: id, paint: mine.paint, x: mine.x, y: mine.y, z: mine.z, vx: 0, vy: 0, vz: 0, fuse: 99, mine: true });
           return say("MINE PLACED");
         }
-        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, paint: paintColor(w.item), x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6, own: true,
-          tornado: id === "smoke" && selectedOperatorId === "mr-l", markedFlash: id === "flash" && selectedOperatorId === "mr-m" };
+      }
+      function throwGrenade(action) {
+        const w = weapons[action.itemId], left = charges[action.itemId] ?? action.uses;
+        if (left <= 0) { say("OUT OF " + w.item.name.toUpperCase()); return; }
+        charges[action.itemId] = left - 1;
+        w.kick = 1;
+        const o = [renderCam.x, renderCam.y, renderCam.z], dr = aimDir(), id = action.itemId;
+        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, paint: action.paint, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6, own: true,
+          tornado: action.tornado, markedFlash: action.markedFlash };
         projectiles.push(thrown);
         sendMatch({ type: "throw", id: thrown.pid, kind: id, paint: thrown.paint, x: thrown.x, y: thrown.y, z: thrown.z, vx: thrown.vx, vy: thrown.vy, vz: thrown.vz, fuse: thrown.fuse });
+      }
+      function advanceGrenadeThrow() {
+        if (!grenadeThrowAction) return;
+        const elapsed = tNow - grenadeThrowAction.startedAt;
+        if (!grenadeThrowAction.thrown && elapsed >= grenadeThrowReleaseAt) {
+          grenadeThrowAction.thrown = true;
+          throwGrenade(grenadeThrowAction);
+        }
+        if (elapsed >= grenadeThrowDuration) grenadeThrowAction = null;
       }
       const smokeFade = (sm) => { const a = tNow - sm.t0; return Math.max(0, Math.min(1, a / 1.5, (SMOKE_LIFE - a) / 4)); };
       function tornadoCurrent(sm, x, z) {
@@ -3571,7 +3744,7 @@
         }
         const sprinting = !crouched && isSprinting();
         if (sprinting) pressedAt = -1;
-        const wantsFire = !medkitActionActive() && !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
+        const wantsFire = !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
         if (wantsFire && !w.reloadEnd && tNow >= w.next && w.swingStart < 0) { fire(w); pressedAt = -1; }
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
@@ -3760,14 +3933,22 @@
         }
 
         const wrapPose = smooth((elapsed - 2.25) / .5);
-        const leftStart = [mix(-.78, -.82, wrapPose), mix(-.86, -.36, wrapPose)];
+        const leftStart = [mix(-.78, -.45, wrapPose), mix(-.86, -.28, wrapPose)];
         const leftEnd = elapsed > 2.25
-          ? [mix(-.5, .44, wrapPose), mix(-.72, -.15, wrapPose)]
+          ? [mix(caseX - .17, -.19, wrapPose), mix(caseY - .02, -.15, wrapPose)]
           : [caseX - .17, caseY - .02];
         arm(leftStart, leftEnd, .58, "#394a5d");
 
-        const wrapProgress = clamp((elapsed - 2.55) / 1.45);
-        let rightEnd, rightStart = [.78, -.86];
+        const armDx = leftEnd[0] - leftStart[0], armDy = leftEnd[1] - leftStart[1];
+        const armLength = Math.hypot(armDx, armDy);
+        const perpendicular = [-armDy / armLength, armDx / armLength];
+        const wrapHandAt = (fraction) => [
+          leftStart[0] + armDx * fraction - perpendicular[0] * .045,
+          leftStart[1] + armDy * fraction - perpendicular[1] * .045
+        ];
+        const wrapProgress = clamp((elapsed - 2.75) / 1.05);
+        const rightStart = [mix(.78, .28, wrapPose), mix(-.86, -.28, wrapPose)];
+        let rightEnd;
         if (elapsed < .55) rightEnd = [.82, -.82];
         else if (elapsed < 1.12) {
           const progress = smooth((elapsed - .55) / .57);
@@ -3775,32 +3956,28 @@
         } else if (elapsed < 1.72) {
           const progress = smooth((elapsed - 1.12) / .6);
           rightEnd = [mix(caseX + .12, caseX + .18, progress), mix(caseY + .15, caseY + .2, progress)];
-        } else if (elapsed < 2.52) {
-          const progress = smooth((elapsed - 1.72) / .8);
-          rightEnd = [mix(caseX + .18, .48, progress), mix(caseY + .2, -.66, progress)];
+        } else if (elapsed < 2.75) {
+          const progress = smooth((elapsed - 1.72) / 1.03);
+          const wrapStart = wrapHandAt(.92);
+          rightEnd = [mix(caseX + .18, wrapStart[0], progress), mix(caseY + .2, wrapStart[1], progress)];
         } else {
-          const x = .39 - wrapProgress * .34;
-          const armY = -.36 + ((x + .82) / 1.26) * .21;
-          rightEnd = [x, armY + .09 + Math.sin(wrapProgress * Math.PI * 10) * .012];
-          rightStart = [.78, mix(-.86, -.6, smooth((elapsed - 2.52) / .35))];
+          rightEnd = wrapHandAt(.92 - .28 * wrapProgress);
         }
         arm(rightStart, rightEnd, .48, "#394a5d");
 
-        if (elapsed >= 1.18 && elapsed < 2.55) {
+        if (elapsed >= 1.18 && elapsed < 2.75) {
           box([rightEnd[0] - .035, rightEnd[1] - .045, .405], [.13, .055, .045], "#f7f5ea");
         }
-        if (elapsed >= 2.55) {
-          const fullWrapAngle = 4.5 * Math.PI * 2;
-          const turns = wrapProgress * 4.5, segments = Math.ceil(turns * 16);
-          const armDx = rightEnd[0] - rightStart[0], armDy = rightEnd[1] - rightStart[1];
-          const armLength = Math.hypot(armDx, armDy);
-          const perpendicular = [-armDy / armLength, armDx / armLength];
+        if (elapsed >= 2.75) {
+          const fullWrapTurns = 3.75;
+          const fullWrapAngle = fullWrapTurns * Math.PI * 2;
+          const turns = wrapProgress * fullWrapTurns, segments = Math.ceil(turns * 16);
           const ribbonPoint = (angle, edge) => {
-            const fraction = .94 - angle / fullWrapAngle * .26 + edge * .018 / armLength;
+            const fraction = .92 - angle / fullWrapAngle * .2 + edge * .026 / armLength;
             const armRadius = Math.cos(angle) * .065;
-            return [rightStart[0] + armDx * fraction + perpendicular[0] * armRadius,
-              rightStart[1] + armDy * fraction + perpendicular[1] * armRadius,
-              .48 - Math.sin(angle) * .06];
+            return [leftStart[0] + armDx * fraction + perpendicular[0] * armRadius,
+              leftStart[1] + armDy * fraction + perpendicular[1] * armRadius,
+              .49 - Math.sin(angle) * .004];
           };
           for (let segment = 0; segment < segments; segment++) {
             const start = turns * Math.PI * 2 * segment / segments;
@@ -3809,8 +3986,131 @@
               ribbonPoint(end, 1), ribbonPoint(start, 1)], color: "#f7f5ea" });
           }
 
-          box([rightEnd[0] + .035, rightEnd[1] - .015, .38], [.018, .035, .008], "#c42a30");
         }
+        return list;
+      }
+      function barricadeActionQuads() {
+        const elapsed = tNow - barricadeActionStart;
+        if (elapsed >= barricadeBuildDuration) { barricadeActionStart = -1; return []; }
+        const list = [];
+        const box = (center, size, color, angle = 0) => {
+          const rotate = (point) => {
+            const x = point[0] - center[0], y = point[1] - center[1];
+            return [center[0] + x * Math.cos(angle) - y * Math.sin(angle),
+              center[1] + x * Math.sin(angle) + y * Math.cos(angle), point[2]];
+          };
+          qb(list, center[0] - size[0] / 2, center[0] + size[0] / 2,
+            center[1] - size[1] / 2, center[1] + size[1] / 2,
+            center[2] - size[2] / 2, center[2] + size[2] / 2, color, rotate);
+        };
+        const arm = (start, end, z) => {
+          const dx = end[0] - start[0], dy = end[1] - start[1], length = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx), at = (fraction) => [start[0] + dx * fraction, start[1] + dy * fraction, z];
+          box(at(.34), [length * .7, .14, .12], "#394a5d", angle);
+          box(at(.81), [length * .32, .12, .11], "#c89170", angle);
+        };
+        const cycle = elapsed - .08;
+        const cyclePhase = cycle < 0 ? 0 : (cycle % .42) / .42;
+        const strike = cycle < 0 ? 0 : Math.pow(Math.max(0, Math.sin(cycle * Math.PI * 2 / .42)), 2);
+        const windup = cycle < 0 || cyclePhase >= .25 ? 0 : Math.pow(1 - cyclePhase / .25, 2);
+        const rightEnd = [.22 + .035 * windup, -.27 + .08 * windup - .03 * strike];
+        const leftEnd = [-.17 - .045 * strike, -.21 + .025 * windup - .035 * strike];
+        arm([.42, -.24], rightEnd, .48);
+        arm([-.54, -.24], leftEnd, .58);
+        const hammerAngle = -.45 - .35 * windup + strike * .85;
+        const hammerHead = [rightEnd[0] - .055, rightEnd[1] + .23 - .08 * strike, .39];
+        box([rightEnd[0] - .015, rightEnd[1] + .15 - .03 * strike, .39], [.055, .34, .06], "#744a2c", hammerAngle);
+        box(hammerHead, [.29, .095, .1], "#858b8a", hammerAngle);
+        box([hammerHead[0] - .125, hammerHead[1], hammerHead[2]], [.06, .11, .105], "#b8bfbd", hammerAngle);
+        box([hammerHead[0] + .125, hammerHead[1], hammerHead[2]], [.06, .11, .105], "#596261", hammerAngle);
+        box([leftEnd[0], leftEnd[1], .49], [.09, .12, .04], "#b9a17c", -.2);
+        return list;
+      }
+      function grenadeThrowActionQuads() {
+        const action = grenadeThrowAction;
+        if (!action) return [];
+        const elapsed = tNow - action.startedAt, clamp = (value) => Math.max(0, Math.min(1, value));
+        const smooth = (value) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+        const mix = (from, to, amount) => from + (to - from) * amount;
+        const pull = smooth((elapsed - .19) / .16), reach = smooth(elapsed / .24);
+        const retract = smooth((elapsed - .4) / .18);
+        const cock = smooth((elapsed - .42) / .16), release = smooth((elapsed - .58) / .24);
+        const gx = .23 - .08 * cock + .62 * release, gy = -.39 - .04 * cock + .42 * release, gz = .55 - .12 * release;
+        const list = [];
+        const box = (center, size, color, angle = 0) => {
+          const rotate = (point) => {
+            const x = point[0] - center[0], y = point[1] - center[1];
+            return [center[0] + x * Math.cos(angle) - y * Math.sin(angle),
+              center[1] + x * Math.sin(angle) + y * Math.cos(angle), point[2]];
+          };
+          qb(list, center[0] - size[0] / 2, center[0] + size[0] / 2,
+            center[1] - size[1] / 2, center[1] + size[1] / 2,
+            center[2] - size[2] / 2, center[2] + size[2] / 2, color, rotate);
+        };
+        const arm = (start, end, z) => {
+          const dx = end[0] - start[0], dy = end[1] - start[1], length = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx), at = (fraction) => [start[0] + dx * fraction, start[1] + dy * fraction, z];
+          box(at(.34), [length * .7, .14, .12], "#394a5d", angle);
+          box(at(.81), [length * .32, .12, .11], "#c89170", angle);
+          box([end[0], end[1], z], [.17, .14, .15], "#c89170", angle);
+        };
+        const pinStart = [gx + .1, gy + .13], pinEnd = [gx - .2, gy + .24];
+        const pin = [mix(pinStart[0], pinEnd[0], pull), mix(pinStart[1], pinEnd[1], pull)];
+        const contact = [gx + .1, gy + .13], initialHand = [-.57, -.82];
+        const reachedHand = [mix(initialHand[0], contact[0], reach), mix(initialHand[1], contact[1], reach)];
+        const leftEnd = [mix(reachedHand[0], pin[0] - .015, pull), mix(reachedHand[1], pin[1], pull)]
+          .map((value, i) => mix(value, [-.66, -.84][i], retract));
+        const rightEnd = [gx, gy];
+        arm([-.56, -.72], leftEnd, .58);
+        arm([.57, -.72], rightEnd, .48);
+
+        const body = { frag: "#3d4a2a", flash: "#cfd3d6", smoke: "#8a9096" }[action.itemId] || "#3d4a2a";
+        box([gx, gy - .015, gz], [.16, .16, .13], body);
+        box([gx, gy - .105, gz], [.13, .035, .12], "#293326");
+        box([gx, gy + .075, gz], [.12, .045, .11], body);
+        box([gx, gy + .12, gz], [.075, .045, .075], "#626d55");
+        box([gx + .065, gy + .045, gz - .035], [.035, .15, .035], "#858b8a");
+        if (elapsed < .52) {
+          box([pin[0] - .025, pin[1] - .03, gz + .055], [.055, .025, .025], "#cbd0cc", -.45);
+          const sides = 10, inner = .023, outer = .038, ringZ = gz + .065;
+          for (let side = 0; side < sides; side++) {
+            const a0 = side / sides * Math.PI * 2, a1 = (side + 1) / sides * Math.PI * 2;
+            const point = (angle, radius) => [pin[0] + Math.cos(angle) * radius, pin[1] + Math.sin(angle) * radius, ringZ];
+            list.push({ pts: [point(a0, outer), point(a1, outer), point(a1, inner), point(a0, inner)], color: "#cbd0cc" });
+          }
+        }
+        box([rightEnd[0] - .025, rightEnd[1], .48], [.15, .12, .12], "#c89170");
+        box([leftEnd[0], leftEnd[1], .58], [.14, .11, .11], "#c89170");
+        box([leftEnd[0] + .045, leftEnd[1] - .025, .57], [.035, .07, .065], "#c89170", -.35);
+        return list;
+      }
+      function tabletActionQuads() {
+        const elapsed = Math.max(0, tNow - drone.deploying.startedAt);
+        const progress = Math.min(1, elapsed / droneDeployDuration), eased = progress * progress * (3 - 2 * progress);
+        const scale = 1 + eased * 4.6, z = 1.18 - eased * .82;
+        const centerY = -.32 + eased * .32 + Math.sin(progress * Math.PI) * .045;
+        const angle = -.28 * (1 - eased) + Math.sin(progress * Math.PI) * .06;
+        const ca = Math.cos(angle), sa = Math.sin(angle), list = [];
+        const transform = ([x, y, depth]) => {
+          const sx = x * scale, sy = y * scale;
+          return [sx * ca - sy * sa, centerY + sx * sa + sy * ca, z + depth * .35];
+        };
+        const box = (x, y, depth, width, height, thickness, color) =>
+          qb(list, x - width / 2, x + width / 2, y - height / 2, y + height / 2,
+            depth - thickness / 2, depth + thickness / 2, color, transform);
+        box(0, 0, 0, .76, .58, .055, "#252d32");
+        box(0, 0, .032, .71, .53, .012, "#13232a");
+        box(0, .2, .041, .6, .018, .008, "#53665f");
+        box(-.2, .12, .042, .18, .012, .008, "#d3ef59");
+        box(.17, .12, .042, .18, .012, .008, "#6e8e8d");
+        box(0, -.015, .043, .035, .035, .008, "#d3ef59");
+        box(-.12, -.015, .043, .012, .08, .008, "#d3ef59");
+        box(.12, -.015, .043, .012, .08, .008, "#d3ef59");
+        box(0, -.16, .043, .42, .012, .008, "#526b64");
+        box(-.48, -.4, -.015, .2, .48, .16, "#394a5d");
+        box(.48, -.4, -.015, .2, .48, .16, "#394a5d");
+        box(-.38, -.2, .08, .16, .15, .12, "#c89170");
+        box(.38, -.2, .08, .16, .15, .12, "#c89170");
         return list;
       }
       function droneViewmodelQuads() {
@@ -4065,27 +4365,32 @@
         const dt = Math.min(.05, (now - last) / 1000); last = now;
         lastRender = now;
         const k = (n) => keys.has(n);
-        cam.yaw += (k("arrowright") - k("arrowleft")) * 1.8 * dt;
-        const sprinting = !drone.active && !crouched && isSprinting();
-        ads += (((mouseAim || k(currentKeybinds.ads)) && !sprinting ? 1 : 0) - ads) * Math.min(1, dt * 12);
+        cam.yaw += (drone.deploying ? 0 : k("arrowright") - k("arrowleft")) * 1.8 * dt;
+        const sprinting = !drone.active && !drone.deploying && !crouched && isSprinting();
+        const wantsAds = !drone.deploying && (mouseAim || k(currentKeybinds.ads)) && !sprinting;
+        ads += ((wantsAds ? 1 : 0) - ads) * Math.min(1, dt * 12);
         sprintPose += ((sprinting ? 1 : 0) - sprintPose) * Math.min(1, dt * 8);
-        lean += (((!drone.active && k(currentKeybinds.leanRight) ? 1 : 0) - (!drone.active && k(currentKeybinds.leanLeft) ? 1 : 0)) - lean) * Math.min(1, dt * 10);
-        viewScale = 1.8 * (1 + ads * .2);
+        lean += (((!drone.active && !drone.deploying && k(currentKeybinds.leanRight) ? 1 : 0) -
+          (!drone.active && !drone.deploying && k(currentKeybinds.leanLeft) ? 1 : 0)) - lean) * Math.min(1, dt * 10);
+        viewScale = 1.8 * (1 + (drone.deploying ? 0 : ads) * .2);
         tNow = now / 1000;
         if (!lastT) lastT = tNow;
         dummies.forEach((d, i) => { d.hit = Math.max(0, d.hit - (tNow - lastT)); if (d.move && d.hp > 0) d.z = d.z0 + Math.sin(tNow * .7 + i) * 4; });
         const dead = isDead();
-        if (dead) { if (drone.active) recallDrone(); followSpectate(); }
+        if (dead) { grenadeThrowAction = null; cancelDroneDeploy(); if (drone.active) recallDrone(); followSpectate(); }
+        else { advanceGrenadeThrow(); finishDroneDeploy(); }
         collectPickups();
         if (multiplayer.match) updateInteract();
         const cw = wpn();
         const speedBonus = selectedOperatorId === "hallway-monitor" ? 1.3 : 1;
         const droneSpeed = drone.mode === "camera" ? 12 : 8;
         const sp = drone.active ? droneSpeed * dt : (sprinting ? 8.5 : 5.5) * speedBonus * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
-        const fwd = (k(currentKeybinds.moveForward) || k("arrowup")) - (k(currentKeybinds.moveBackward) || k("arrowdown")), str = k(currentKeybinds.moveRight) - k(currentKeybinds.moveLeft);
-        let mx = dead ? 0 : (Math.sin(cam.yaw) * fwd + Math.cos(cam.yaw) * str) * sp, mz = dead ? 0 : (Math.cos(cam.yaw) * fwd - Math.sin(cam.yaw) * str) * sp;
+        const fwd = drone.deploying ? 0 : (k(currentKeybinds.moveForward) || k("arrowup")) - (k(currentKeybinds.moveBackward) || k("arrowdown"));
+        const str = drone.deploying ? 0 : k(currentKeybinds.moveRight) - k(currentKeybinds.moveLeft);
+        let mx = dead || drone.deploying ? 0 : (Math.sin(cam.yaw) * fwd + Math.cos(cam.yaw) * str) * sp;
+        let mz = dead || drone.deploying ? 0 : (Math.cos(cam.yaw) * fwd - Math.sin(cam.yaw) * str) * sp;
         let tornadoMoving = false;
-        if (!dead && !drone.active) {
+        if (!dead && !drone.active && !drone.deploying) {
           for (const sm of smokes) {
             const [vx, vz] = tornadoCurrent(sm, cam.x, cam.z);
             mx += vx * dt; mz += vz * dt;
@@ -4097,19 +4402,18 @@
           const vertical = (k(" ") ? 1 : 0) - (k("c") ? 1 : 0);
           if (vertical) {
             const nextY = Math.max(.42, Math.min(30, cam.y + vertical * droneSpeed * dt));
-            const blocked = colliders.some((c) => cam.x + DRONE_RADIUS > c.x0 && cam.x - DRONE_RADIUS < c.x1 &&
-              cam.z + DRONE_RADIUS > c.z0 && cam.z - DRONE_RADIUS < c.z1 &&
-              nextY + DRONE_HEIGHT / 2 > c.y0 && nextY - DRONE_HEIGHT / 2 < c.y1);
-            if (!blocked) cam.y = nextY;
+            if (!droneVerticalBlocked(cam.x, cam.z, cam.y, nextY)) cam.y = nextY;
           }
         }
         let feet = drone.active ? cam.y - DRONE_HEIGHT / 2 : cam.y - eyeHeight;
         if (drone.active) cam.vy = 0;
-        if (tornadoMoving) moveWithCollision(cam, mx, mz, feet);
+        if (drone.active) moveDroneWithCollision(cam, mx, mz, feet);
+        else if (tornadoMoving) moveWithCollision(cam, mx, mz, feet);
         else {
           const height = drone.active ? DRONE_HEIGHT : eyeHeight;
-          if (probe(cam.x + mx, cam.z, feet, height) >= 0) cam.x += mx;
-          if (probe(cam.x, cam.z + mz, feet, height) >= 0) cam.z += mz;
+          const canMove = drone.active ? (x, z) => probeDrone(x, z, feet) : (x, z) => probe(x, z, feet, height);
+          if (canMove(cam.x + mx, cam.z) >= 0) cam.x += mx;
+          if (canMove(cam.x, cam.z + mz) >= 0) cam.z += mz;
         }
         if (isCanyon()) {
           cam.x = Math.max(GrandCanyon.bounds.x0, Math.min(GrandCanyon.bounds.x1, cam.x));
@@ -4134,7 +4438,7 @@
           if (nf <= g) { nf = g; cam.vy = 0; grounded = true; }
           cam.y = nf + eyeHeight;
         }
-        if (!dead && !drone.active) lean = clampLean(cam, cam.yaw, lean, cam.y - eyeHeight, eyeHeight);
+        if (!dead && !drone.active && !drone.deploying) lean = clampLean(cam, cam.yaw, lean, cam.y - eyeHeight, eyeHeight);
         renderCam = { x: cam.x + Math.cos(cam.yaw) * lean * .7, y: cam.y - Math.abs(lean) * .12, z: cam.z - Math.sin(cam.yaw) * lean * .7 };
         if (dead) renderCam = { x: cam.x, y: cam.y, z: cam.z };
         else if (barrierOn() && !drone.active) clampBarrier(renderCam, BARRIER_HALF + .05);
@@ -4195,8 +4499,12 @@
         shieldImpacts = shieldImpacts.filter((impact) => impact.until > tNow);
         shieldImpacts.forEach(({ origin, point }) => droneLaserQuads(dq,
           { x: origin[0], y: origin[1], z: origin[2] }, { x: point[0], y: point[1], z: point[2] }, "#ffd96b"));
-        if (drone.active) operatorMeshQuads(dq, { state: operatorState() }, "#667653");
-        barricades.slice().forEach((b) => { expireBarricadePaint(b); if (b.dirty) rebuildBarricade(b); dq.push(...b.quads); });
+        if (drone.active) operatorMeshQuads(dq, { state: { ...operatorState(), droneState: { mode: drone.mode } } }, "#667653");
+        barricades.slice().forEach((b) => {
+          expireBarricadePaint(b);
+          if (b.dirty) rebuildBarricade(b);
+          dq.push(...barricadeQuads(b));
+        });
         pickupQuads(dq);
         objectiveQuads(dq);
         const bdt = tNow - lastT;
@@ -4227,15 +4535,15 @@
         gl.uniform3f(u("cam"), 0, 0, 0);
         gl.uniform4f(u("rot"), 1, 0, 1, 0);
         setSmoke(prog, false);
-        const optic = !dead && !drone.active && !medkitActionActive() && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
+        const optic = !dead && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
           (mouseAim || k(currentKeybinds.ads)) && ads > .5 && modelDefs[cw.item.id].mounts.optic &&
           (cw.cfg.optic === "dot" || cw.cfg.optic === "scope") ? cw.cfg.optic : null;
         if (optic) el.dataset.optic = optic;
         else delete el.dataset.optic;
         const moving = fwd !== 0 || str !== 0;
-        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : medkitActionActive()
-          ? medkitActionQuads() : viewmodelQuads(cw, moving);
-        if (!dead && !drone.active && !medkitActionActive() && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
+        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : drone.deploying ? tabletActionQuads() : grenadeThrowActionActive()
+          ? grenadeThrowActionQuads() : medkitActionActive() ? medkitActionQuads() : barricadeActionActive() ? barricadeActionQuads() : viewmodelQuads(cw, moving);
+        if (!dead && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
         drawDynamic(vm.filter((q) => !q.skin && !q.shieldGlass), true);
         drawSkinned(vm.filter((q) => q.skin));
         const glass = vm.filter((q) => q.shieldGlass);
@@ -4249,7 +4557,7 @@
           updateDroneTags();
           updateHud();
           updateMinimap();
-          fieldPos.textContent = drone.active ? `DRONE · SCAN ${Math.max(0, Math.ceil(drone.nextScan - tNow))}s · ${drone.tags.size} TAGGED` : `${isCanyon() ? "GRAND CANYON" : `YARD ${Math.max(0, Math.round(50 - Math.abs(cam.x)))}`} · ${Math.round(((cam.yaw * 180 / Math.PI) % 360 + 360) % 360)}°${crouched ? " · CROUCH" : ""}${ads > .5 ? " · ADS" : ""}${lean > .5 ? " · LEAN RIGHT" : lean < -.5 ? " · LEAN LEFT" : ""}`;
+          fieldPos.textContent = drone.deploying ? `DEPLOYING DRONE · ${bindLabel(currentKeybinds.recallDrone)} TO CANCEL` : drone.active ? `DRONE · SCAN ${Math.max(0, Math.ceil(drone.nextScan - tNow))}s · ${drone.tags.size} TAGGED` : `${isCanyon() ? "GRAND CANYON" : `YARD ${Math.max(0, Math.round(50 - Math.abs(cam.x)))}`} · ${Math.round(((cam.yaw * 180 / Math.PI) % 360 + 360) % 360)}°${crouched ? " · CROUCH" : ""}${ads > .5 ? " · ADS" : ""}${lean > .5 ? " · LEAN RIGHT" : lean < -.5 ? " · LEAN LEFT" : ""}`;
           lastHudAt = now;
         }
         requestAnimationFrame(frame);
@@ -4261,21 +4569,22 @@
       document.addEventListener("mousedown", (e) => { if (running && locked() && isDead() && (e.button === 0 || e.button === 2)) { spectateTarget(e.button === 0 ? 1 : -1); return; } });
       document.addEventListener("mousedown", (e) => {
         if (!running || !locked() || e.button !== 0) return;
+        if (drone.deploying) { e.preventDefault(); return; }
         if (drone.active && drone.mode === "camera") {
           e.preventDefault(); mouseDown = false; pressedAt = -1; scanDrone();
           return;
         }
         mouseDown = true; pressedAt = tNow;
-        if (wpn().item.id === "drone") getDroneAudioContext();
+        if (wpn().item.id === "drone" || wpn().item.id === "camera-drone") getDroneAudioContext();
       });
-      document.addEventListener("mousedown", (e) => { if (running && locked() && `mouse${e.button}` === currentKeybinds.ads) { e.preventDefault(); mouseAim = true; } });
+      document.addEventListener("mousedown", (e) => { if (running && locked() && !drone.deploying && `mouse${e.button}` === currentKeybinds.ads) { e.preventDefault(); mouseAim = true; } });
       document.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; if (`mouse${e.button}` === currentKeybinds.ads) mouseAim = false; });
       document.addEventListener("pointerlockchange", () => {
         hint.style.display = running && !locked() ? "grid" : "none";
         if (!locked()) { mouseDown = false; mouseAim = false; }
       });
       document.addEventListener("mousemove", (e) => {
-        if (!running || !locked() || isDead()) return;
+        if (!running || !locked() || isDead() || drone.deploying) return;
         cam.yaw += e.movementX * .0025 * (1 - ads * .45);
         cam.pitch = Math.max(-1.4, Math.min(1.4, cam.pitch - e.movementY * .0025 * (1 - ads * .45)));
       });
@@ -4283,8 +4592,10 @@
         if (!running) return;
         const key = inputKey(e);
         if (key === "escape") return close();
+        if (key === currentKeybinds.recallDrone && drone.deploying) { e.preventDefault(); cancelDroneDeploy(); return; }
         if (key === currentKeybinds.recallDrone && drone.active) { recallDrone(); return; }
         if (key === currentKeybinds.scan && drone.active && drone.mode !== "camera") { e.preventDefault(); if (!e.repeat) scanDrone(); return; }
+        if (drone.deploying) { if (key.startsWith("arrow") || key === " ") e.preventDefault(); return; }
         if (isDead()) { if (key === "tab") { e.preventDefault(); if (!e.repeat) spectateTarget(1); } keys.add(key); return; }
         if (!drone.active) {
           if (key === currentKeybinds.crouch && !e.repeat) {
@@ -4310,6 +4621,7 @@
       function close() {
         running = false; mouseDown = false; mouseAim = false; el.classList.remove("open"); keys.clear(); heldCodes.clear();
         delete el.dataset.optic;
+        cancelDroneDeploy();
         if (drone.active) recallDrone();
         drone.companions = [];
         if (multiplayer.match && multiplayer.connected) multiplayer.socket.send(JSON.stringify({ type: "leave_match" }));
@@ -4322,6 +4634,7 @@
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);
         document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
+        cancelDroneDeploy();
         if (drone.active) recallDrone();
         clearBarricades();
         const nextMap = (practice ? selection.TRAINING.map.id : multiplayer.match?.map) === "harbor" ? "harbor" : "field";

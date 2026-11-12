@@ -12,7 +12,8 @@ function section(start, end) {
 
 function simulation() {
   const testSkin = { id: "test-skin" };
-  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, paintColors: [{ c: "#f6df35" }], materials: {
+  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, tNow: 0, barricadeBuildDuration: 1.35,
+    remoteBarricadeActions: new Map(), paintColors: [{ c: "#f6df35" }], materials: {
     body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
     medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b"
   }, keychains: [

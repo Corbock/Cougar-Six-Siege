@@ -11,10 +11,13 @@ function createSimulation() {
   const deployEnd = html.indexOf("      function recallDrone()", deployStart);
   assert.ok(start >= 0 && end > start && deployStart > end && deployEnd > deployStart);
   const context = {
-    drone: { active: false, uses: 3, companions: [], tags: new Map() },
+    drone: { active: false, deploying: null, uses: 3, companions: [], tags: new Map() },
+    droneDeployDuration: 1.2,
     cam: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, vy: 0 },
+    currentKeybinds: { recallDrone: "g" },
+    bindLabel: (key) => key,
     selectedOperatorId: "mr-m",
-    lean: 0, crouched: false, mouseDown: false,
+    lean: 0, crouched: false, mouseDown: false, pressedAt: -1,
     multiplayer: { match: null, round: null },
     colliders: [], smokes: [], SMOKE_LIFE: 16, SMOKE_R: 4.5,
     tNow: 0, targets: [], dummies: [{ hp: 100, x: 5, z: 0 }], shots: [], messages: [], pings: 0,
@@ -34,6 +37,55 @@ function createSimulation() {
   vm.runInNewContext(html.slice(start, end) + html.slice(deployStart, deployEnd), context);
   return context;
 }
+
+test("first-person tablet rises into view and fills the screen before drone handoff", () => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const start = html.indexOf("      function tabletActionQuads()");
+  const end = html.indexOf("      function droneViewmodelQuads()", start);
+  assert.ok(start >= 0 && end > start);
+  const context = {
+    drone: { deploying: { startedAt: 0 } }, droneDeployDuration: 1.2, tNow: 0, Math,
+    qb(list, x0, x1, y0, y1, z0, z1, color, transform) {
+      const points = [x0, x1].flatMap((x) => [y0, y1].flatMap((y) => [z0, z1].map((z) => transform([x, y, z]))));
+      list.push({ points, color });
+    }
+  };
+  vm.runInNewContext(html.slice(start, end), context);
+  const bounds = (quads) => quads.flatMap((quad) => quad.points).reduce((result, [x, y, z]) => ({
+    x: Math.max(result.x, Math.abs(x / z)), y: Math.max(result.y, Math.abs(y / z))
+  }), { x: 0, y: 0 });
+  const startingBounds = bounds(context.tabletActionQuads());
+  context.tNow = 1.15;
+  const finalBounds = bounds(context.tabletActionQuads());
+  assert.ok(finalBounds.x > startingBounds.x * 4);
+  assert.ok(finalBounds.y > startingBounds.y * 4);
+});
+
+test("operator model shows a tablet held against the chest while piloting", () => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const start = html.indexOf("      function operatorMeshQuads(");
+  const end = html.indexOf("      function droneWorldQuads(", start);
+  assert.ok(start >= 0 && end > start);
+  const context = {
+    CROUCH_EYE: 1.2, EYE: 1.8, tNow: 0, barricadeBuildDuration: 1.35,
+    remoteBarricadeActions: new Map(), Math,
+    remoteEquippedItem: () => null,
+    qb(list, _x0, _x1, _y0, _y1, _z0, _z1, color) { list.push({ color }); },
+    worldItemQuads() {}
+  };
+  vm.runInNewContext(html.slice(start, end), context);
+  const render = (droneState) => {
+    const list = [];
+    context.operatorMeshQuads(list, {
+      id: "operator",
+      operatorId: "custom",
+      state: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, crouched: false, lean: 0, droneState }
+    }, "#667653");
+    return list.map((quad) => quad.color);
+  };
+  assert.ok(render({ mode: "camera" }).includes("#13232a"));
+  assert.ok(!render(null).includes("#13232a"));
+});
 
 test("Mr M deploys scanner, attacker, scanner together without controlling a camera", () => {
   const sim = createSimulation();
@@ -118,17 +170,36 @@ test("smoke breaks targeting and a dead owner loses companions", () => {
   assert.equal(sim.drone.companions.length, 0);
 });
 
-test("Hallway Monitor and Custom retain controllable drones", () => {
+test("tablet deployment finishes before Hallway Monitor and Custom take drone control", () => {
   for (const [operator, mode] of [["hallway-monitor", "camera"], ["custom", "scanner"]]) {
     const sim = createSimulation();
     sim.selectedOperatorId = operator;
     sim.deployDrone();
-    assert.equal(sim.drone.active, true);
+    assert.equal(sim.drone.active, false);
+    assert.ok(sim.drone.deploying);
     assert.equal(sim.drone.mode, mode);
     assert.equal(sim.drone.companions.length, 0);
+    assert.equal(sim.cam.y, 1.8);
+    assert.equal(sim.drone.deploying.returnTo.y, 1.8);
+    sim.tNow = 1.19;
+    assert.equal(sim.finishDroneDeploy(), false);
+    sim.tNow = 1.2;
+    assert.equal(sim.finishDroneDeploy(), true);
+    assert.equal(sim.drone.active, true);
+    assert.equal(sim.drone.deploying, null);
     assert.equal(sim.cam.y, .42);
     assert.equal(sim.drone.returnTo.y, 1.8);
   }
+});
+
+test("recall cancels tablet deployment without moving or launching the drone", () => {
+  const sim = createSimulation();
+  sim.selectedOperatorId = "hallway-monitor";
+  sim.deployDrone();
+  sim.cancelDroneDeploy();
+  assert.equal(sim.drone.deploying, null);
+  assert.equal(sim.drone.active, false);
+  assert.equal(sim.cam.y, 1.8);
 });
 
 test("multiplayer attacker targets a real player and sends shots after two seconds", () => {
