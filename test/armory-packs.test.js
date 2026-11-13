@@ -65,10 +65,10 @@ test("packs include every paint, finish, and keychain reward but exclude factory
   ]);
 });
 
-test("1,000 packs are granted once to existing and new Armory saves", () => {
+test("existing Armory saves are reset once without granting packs", () => {
   const initialization = section("    let armorySave =", "    const karambitUnlocked =");
-  const save = section("    function saveArmory() {", "    function renderArmory()");
-  let stored = JSON.stringify({ packs: 2, wraps: [], rewardedMatches: [], starterPackGranted: true });
+  const save = section("    function saveArmory() {", "    if (armoryJustReset)");
+  let stored = JSON.stringify({ packs: 24, wraps: ["weapon:karambit"], rewardedMatches: ["match-1"] });
   const createArmory = () => {
     const context = {
       packPairs: ["weapon:karambit"], customLoadout: { secondary: "p45" }, loadout: { secondary: "p45" },
@@ -76,18 +76,28 @@ test("1,000 packs are granted once to existing and new Armory saves", () => {
       console, showToast() {}
     };
     vm.runInNewContext(`${initialization}\n${save}
-      if (thousandPacksJustGranted) saveArmory();
-      globalThis.state = () => ({ packs, thousandPacksJustGranted });`, context);
+      if (armoryJustReset) saveArmory();
+      globalThis.state = () => ({ packs, armoryJustReset, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches] });`, context);
     return context;
   };
-  const firstLoad = createArmory();
-  assert.deepEqual({ ...firstLoad.state() }, { packs: 1002, thousandPacksJustGranted: true });
-  assert.equal(JSON.parse(stored).thousandPacksGranted, true);
+  const firstLoad = createArmory(), firstState = firstLoad.state();
+  assert.equal(firstState.packs, 0);
+  assert.equal(firstState.armoryJustReset, true);
+  assert.deepEqual([...firstState.wraps], []);
+  assert.deepEqual([...firstState.rewardedMatches], ["match-1"]);
+  assert.deepEqual(JSON.parse(stored), {
+    packs: 0, wraps: [], rewardedMatches: ["match-1"], armoryResetVersion: 1
+  });
   const secondLoad = createArmory();
-  assert.deepEqual({ ...secondLoad.state() }, { packs: 1002, thousandPacksJustGranted: false });
-  stored = "{}";
+  assert.equal(secondLoad.state().armoryJustReset, false);
+  stored = JSON.stringify({ packs: 3, wraps: ["weapon:karambit"], rewardedMatches: [], armoryResetVersion: 1 });
+  const currentSave = createArmory();
+  assert.equal(currentSave.state().packs, 3);
+  assert.deepEqual([...currentSave.state().wraps], ["weapon:karambit"]);
+  stored = null;
   const newSave = createArmory();
-  assert.deepEqual({ ...newSave.state() }, { packs: 1000, thousandPacksJustGranted: true });
+  assert.equal(newSave.state().packs, 0);
+  assert.deepEqual([...newSave.state().wraps], []);
 });
 
 test("Karambit is hidden until unlocked and can drop at a rare 2% rate", () => {

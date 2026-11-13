@@ -1378,22 +1378,22 @@
       ...keychains.filter((keychain) => keychain.id !== "none").map((keychain) => `keychain:${keychain.id}`),
       karambitRewardKey
     ];
-    let armorySave = { packs: 1000, wraps: [], rewardedMatches: [], starterPackGranted: true, thousandPacksGranted: true };
-    let thousandPacksJustGranted = false;
+    let armorySave = { packs: 0, wraps: [], rewardedMatches: [], armoryResetVersion: 1 };
+    let armoryJustReset = false;
     try {
-      const saved = JSON.parse(localStorage.getItem("c6-armory") || "{}");
-      thousandPacksJustGranted = saved.thousandPacksGranted !== true;
+      const savedValue = localStorage.getItem("c6-armory");
+      const saved = JSON.parse(savedValue || "{}");
+      armoryJustReset = savedValue !== null && saved.armoryResetVersion !== 1;
       armorySave = {
-        packs: (Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0) + (thousandPacksJustGranted ? 1000 : 0),
-        wraps: Array.isArray(saved.wraps) ? saved.wraps.filter((key) => packPairs.includes(key)) : [],
+        packs: armoryJustReset ? 0 : Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0,
+        wraps: armoryJustReset ? [] : Array.isArray(saved.wraps) ? saved.wraps.filter((key) => packPairs.includes(key)) : [],
         rewardedMatches: Array.isArray(saved.rewardedMatches) ? saved.rewardedMatches.filter((id) => typeof id === "string") : [],
-        starterPackGranted: true,
-        thousandPacksGranted: true
+        armoryResetVersion: 1
       };
     } catch (error) {
       console.warn("Could not load Armory progress:", error);
-      thousandPacksJustGranted = true;
-      armorySave = { packs: 1000, wraps: [], rewardedMatches: [], starterPackGranted: true, thousandPacksGranted: true };
+      armoryJustReset = true;
+      armorySave = { packs: 0, wraps: [], rewardedMatches: [], armoryResetVersion: 1 };
     }
     let packs = armorySave.packs;
     const ownedWraps = new Set(armorySave.wraps);
@@ -1825,15 +1825,15 @@
       try {
         localStorage.setItem("c6-armory", JSON.stringify({
           packs, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches].slice(-80),
-          starterPackGranted: true, thousandPacksGranted: true
+          armoryResetVersion: 1
         }));
       } catch (error) {
         console.warn("Could not save Armory progress:", error);
         showToast("Could not save Armory progress in this browser.");
       }
     }
-    if (thousandPacksJustGranted) {
-      packStatusText = "WELCOME REWARD: 1,000 Armory Packs added to your collection.";
+    if (armoryJustReset) {
+      packStatusText = "Armory reset: packs and unlocked skins cleared.";
       saveArmory();
     }
     function renderArmory() {
