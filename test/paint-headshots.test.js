@@ -148,13 +148,22 @@ test("operator paint skins are not unlocked by eliminations", () => {
 });
 
 test("piloted drones move faster, with Hallway Monitor's camera fastest", () => {
-  const movement = section(html, '        const speedBonus = selectedOperatorId === "hallway-monitor"', "        const fwd =");
+  const movement = section(html, "        const speedBonus = (", "        const fwd =");
   const speed = (mode, operator) => vm.runInNewContext(`${movement}\nsp`, {
     selectedOperatorId: operator, drone: { active: true, mode }, sprinting: false, crouched: false,
-    cw: { stats: { mob: 1 } }, dt: 1
+    cw: { item: { id: "p45" }, stats: { mob: 1 } }, dt: 1
   });
   assert.ok(speed("scanner", "custom") > 3.5);
   assert.ok(speed("camera", "hallway-monitor") > speed("scanner", "custom"));
+});
+
+test("holding the karambit increases movement speed by 15 percent", () => {
+  const movement = section(html, "        const speedBonus = (", "        const fwd =");
+  const speed = (weapon) => vm.runInNewContext(`${movement}\nsp`, {
+    selectedOperatorId: "custom", drone: { active: false }, sprinting: true, crouched: false,
+    cw: { item: { id: weapon }, stats: { mob: 10 } }, dt: 1
+  });
+  assert.equal(speed("karambit") / speed("p45"), 1.15);
 });
 
 test("frag and mine blasts leave larger paint splashes on nearby surfaces and targets", () => {

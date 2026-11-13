@@ -51,6 +51,10 @@ test("paint colors and impacts synchronize, and invalid paint is rejected", asyn
   send(0, { type: "paint", point: [0, 1, 2], normal: [0, 0, -1], size: .22, color: "invalid" });
   await sleep(120);
   assert.equal(messages[1].filter((m) => m.type === "paint").length, 1);
+  send(0, { type: "paint", point: [0, 1, 2], normal: [0, 0, -1], size: .22, color: "#d6dad2" });
+  const factoryPaint = await waitFor(() => messages[1].find((m) => m.type === "paint" && m.color === "#d6dad2"),
+    "Factory paint color was rejected");
+  assert.equal(factoryPaint.color, "#d6dad2");
   send(0, { type: "bar", op: "hit", id: "cover", p: [0, 1, 2], radius: .03, power: 20, chip: true, src: "bullet", paint: "#32a6ef", paintSkin: "circuit" });
   const barHit = await waitFor(() => messages[1].find((m) => m.type === "bar" && m.id === "cover"), "Barricade hit was not relayed");
   assert.equal(barHit.paint, "#32a6ef");

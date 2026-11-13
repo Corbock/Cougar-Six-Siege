@@ -211,7 +211,7 @@ test("multiplayer shields block frontal shots but not Longwatch or grenade blast
   sockets.forEach((socket, i) => socket.on("message", (data) => messages[i].push(JSON.parse(data))));
   await Promise.all(sockets.map((socket) => new Promise((resolve, reject) => { socket.once("open", resolve); socket.once("error", reject); })));
   const send = (i, message) => sockets[i].send(JSON.stringify(message));
-  send(0, { type: "select_operator", operatorId: "custom", loadout: { primary: "longwatch", secondary: "magnum", gadget: "drone", equipment: "flash" } });
+  send(0, { type: "select_operator", operatorId: "custom", loadout: { primary: "longwatch", secondary: "karambit", gadget: "drone", equipment: "flash" } });
   send(1, { type: "select_operator", operatorId: "custom", loadout: { primary: "mk18", secondary: "rattler", gadget: "shield", equipment: "smoke" } });
   sockets.forEach((_socket, i) => send(i, { type: "queue", mode: "duel" }));
   const match = await waitFor(() => messages[0].find((m) => m.type === "match_found"), "Match did not start");
@@ -223,7 +223,7 @@ test("multiplayer shields block frontal shots but not Longwatch or grenade blast
     : { x: 0, y: 1.8, z: 10, yaw: Math.PI, pitch: 0, activeSlot: slot } });
   state(0, "secondary"); state(1, "gadget");
   await waitFor(() => messages[0].some((m) => m.type === "snapshot" && m.players.find((p) => p.id === target)?.state.shieldActive), "Shield not synchronized");
-  await waitFor(() => messages[1].some((m) => m.type === "snapshot" && m.players.find((p) => p.id === self)?.state.equippedItem === "magnum"), "Custom secondary not synchronized");
+  await waitFor(() => messages[1].some((m) => m.type === "snapshot" && m.players.find((p) => p.id === self)?.state.equippedItem === "karambit"), "Custom secondary not synchronized");
   assert.ok(messages[0].some((m) => m.type === "snapshot" && m.players.find((p) => p.id === target)?.state.equippedItem === "shield"));
   const damages = () => messages[0].filter((m) => m.type === "player_damaged" && m.playerId === target);
   const shoot = () => send(0, { type: "shoot", targetId: target, damage: 20, direction: { x: 0, y: 0, z: 1 } });

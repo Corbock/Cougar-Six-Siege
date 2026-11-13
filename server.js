@@ -36,11 +36,11 @@ const operatorKits = {
 };
 const customItems = {
   primary: ["mk18", "vector", "hammer", "longwatch"],
-  secondary: ["p45", "rattler", "magnum", "sledgehammer"],
+  secondary: ["p45", "rattler", "magnum", "sledgehammer", "karambit"],
   gadget: ["shield", "drone", "camera-drone", "steel-bars", "medkit"],
   equipment: ["frag", "flash", "smoke", "claymore"]
 };
-const paintColors = ["#f6df35", "#f04c9b", "#32a6ef", "#70df45", "#f78a30", "#a765e9"];
+const paintColors = ["#f6df35", "#f04c9b", "#32a6ef", "#70df45", "#f78a30", "#a765e9", "#d6dad2"];
 const weaponSkins = new Set(["none", "night-digital", "tiger-stripe", "circuit", "ember"]);
 const weaponKeychains = new Set(["none", "cougar-tag", "lucky-star", "lucky-dice", "mini-drone"]);
 const validPaint = (color) => paintColors.includes(color) ? color : paintColors[0];

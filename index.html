@@ -312,7 +312,7 @@
     .packs-count { color: var(--acid); font: 800 54px/.85 "Barlow Condensed", sans-serif; }
     .packs-summary span { display: block; margin-top: 6px; color: #a9ada2; font-size: 9px; font-weight: 700; letter-spacing: 1.4px; }
     .packs-collection-count { color: #d3ef59; font: 700 12px/1 "Barlow Condensed", sans-serif; letter-spacing: 1px; }
-    .pack-stage { --pack-glow: rgba(211,239,89,.22); position: relative; display: grid; height: 268px; place-items: center; overflow: hidden; margin: 18px 0 12px; border: 1px solid rgba(230,235,220,.2); background: radial-gradient(ellipse at 50% 68%, var(--pack-glow), transparent 42%), linear-gradient(145deg, #111713, #080a09 70%); box-shadow: inset 0 0 38px #000a; }
+    .pack-stage { --pack-glow: rgba(211,239,89,.22); position: relative; display: grid; height: 280px; place-items: center; overflow: hidden; margin: 18px 0 12px; border: 1px solid rgba(230,235,220,.24); background-image: radial-gradient(ellipse at 50% 68%, var(--pack-glow), transparent 42%), linear-gradient(rgba(230,235,220,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(230,235,220,.035) 1px, transparent 1px), linear-gradient(145deg, #111713, #080a09 70%); background-size: auto, 32px 32px, 32px 32px, auto; box-shadow: inset 0 0 48px #000b, 0 12px 28px #0006; }
     .pack-stage::before { position: absolute; width: 210px; height: 210px; border: 1px solid rgba(211,239,89,.16); border-radius: 50%; content: ""; box-shadow: 0 0 0 22px rgba(211,239,89,.025), 0 0 0 48px rgba(211,239,89,.018); transform: scale(.72); }
     .pack-stage::after { position: absolute; z-index: 3; inset: 0; background: linear-gradient(180deg, transparent 48%, rgba(211,239,89,.13) 50%, transparent 52%); content: ""; opacity: 0; pointer-events: none; }
     .pack-stage-mark, .pack-stage-footer { position: absolute; z-index: 4; right: 11px; left: 11px; display: flex; justify-content: space-between; color: #858d7e; font: 700 8px/1 "DM Sans", sans-serif; letter-spacing: 1.5px; }
@@ -321,15 +321,18 @@
     .pack-stage-footer { bottom: 12px; align-items: center; gap: 10px; }
     .pack-stage-meter { width: 104px; height: 3px; overflow: hidden; background: #ffffff19; }
     .pack-stage-meter i { display: block; width: 0; height: 100%; background: var(--acid); box-shadow: 0 0 8px var(--acid); }
-    .pack-crate { position: relative; z-index: 2; width: 146px; height: 112px; transform: perspective(420px) rotateX(-8deg); }
-    .pack-crate::after { position: absolute; right: -9px; bottom: -12px; left: -9px; height: 20px; border-radius: 50%; background: #000a; content: ""; filter: blur(6px); }
-    .pack-crate-front { position: absolute; inset: 24px 0 0; display: grid; place-items: center; border: 2px solid #75815c; background: repeating-linear-gradient(90deg, transparent 0 26px, #ffffff08 27px 29px), linear-gradient(135deg, #343d33, #202823 66%, #151a17); box-shadow: inset 0 0 0 5px #111914, inset 0 0 24px #0009, 0 12px 26px #0009; color: var(--acid); clip-path: polygon(8% 0, 100% 0, 100% 86%, 91% 100%, 0 100%, 0 14%); }
-    .pack-crate-front::before, .pack-crate-front::after { position: absolute; top: 0; bottom: 0; width: 5px; background: #89996a; content: ""; opacity: .8; }
-    .pack-crate-front::before { left: 17px; }
-    .pack-crate-front::after { right: 17px; }
-    .pack-crate-front strong { z-index: 1; font: 800 22px/1 "Barlow Condensed", sans-serif; letter-spacing: 5px; text-shadow: 0 0 16px #d3ef5966; }
-    .pack-crate-lid { position: absolute; z-index: 2; top: 6px; left: 5px; width: 136px; height: 27px; border: 1px solid #bac78b; background: repeating-linear-gradient(90deg, transparent 0 25px, #1d271b 26px 29px), linear-gradient(90deg, #69794c, #b0bf79 48%, #647449); box-shadow: 0 3px 8px #0009; clip-path: polygon(7% 0, 100% 0, 94% 100%, 0 100%); transform-origin: 50% 0; }
-    .pack-crate-latch { position: absolute; z-index: 3; bottom: 21px; left: calc(50% - 8px); width: 16px; height: 21px; border: 1px solid #aeb986; background: linear-gradient(90deg, #374130, #89966a, #374130); box-shadow: 0 0 0 3px #111914; }
+    .pack-wrapper { position: relative; z-index: 2; width: 158px; height: 180px; filter: drop-shadow(0 14px 20px #000b); transform: rotate(-3deg); }
+    .pack-wrapper::after { position: absolute; right: -12px; bottom: -12px; left: -12px; height: 23px; border-radius: 50%; background: #000b; content: ""; filter: blur(7px); }
+    .pack-sachet { position: absolute; inset: 8px 4px 0; overflow: hidden; border: 1px solid #d0df8a; background: linear-gradient(115deg, #5c673e 0%, #39452f 20%, #212a23 53%, #101713 100%); box-shadow: inset 0 0 0 4px #101611aa, inset 16px 0 24px #d9e7ad12, inset -12px 0 22px #0009; clip-path: polygon(3% 0, 97% 0, 100% 95%, 94% 100%, 6% 100%, 0 95%); }
+    .pack-sachet::before { position: absolute; inset: 24px 0 auto; height: 1px; background: #d7e7a477; content: ""; }
+    .pack-sachet-seal { position: absolute; top: 0; right: 0; left: 0; height: 20px; border-bottom: 1px solid #d8e6a988; background: repeating-linear-gradient(90deg, #a2b36b 0 2px, #617144 2px 5px, #849552 5px 7px); box-shadow: 0 3px 8px #0007; }
+    .pack-sachet-brand, .pack-sachet-copy { position: absolute; right: 8px; left: 8px; color: #d8e5bb; font: 700 7px/1 "DM Sans", sans-serif; letter-spacing: 1.8px; text-align: center; }
+    .pack-sachet-brand { top: 49px; }
+    .pack-sachet-copy { bottom: 20px; color: #a8b28e; font-size: 6px; letter-spacing: 1.3px; }
+    .pack-sachet strong { position: absolute; top: 69px; left: calc(50% - 28px); display: grid; width: 56px; height: 56px; place-items: center; border: 2px solid #d0df8a; border-radius: 50%; background: radial-gradient(circle, #52603b 0, #293427 66%, #111713 68%); box-shadow: 0 0 0 5px #101611aa, 0 0 24px #d3ef5955; color: #e8f6ad; font: 800 23px/1 "Barlow Condensed", sans-serif; letter-spacing: 3px; text-shadow: 0 0 16px #d3ef5977; }
+    .pack-sachet-ripline { position: absolute; top: 32px; right: 12px; left: 12px; border-top: 1px dashed #e2edbc99; }
+    .pack-sachet-mouth { position: absolute; z-index: 1; top: 39px; right: 13px; left: 13px; height: 17px; border: 1px solid #d8ee8b; background: linear-gradient(90deg, #b5d65d, #e4f78a 50%, #9dbc4e); box-shadow: 0 0 20px #d3ef59aa; clip-path: polygon(0 0, 12% 18%, 24% 0, 36% 20%, 48% 0, 60% 19%, 72% 0, 84% 20%, 100% 0, 96% 100%, 4% 100%); opacity: 0; transform: scaleX(.15); }
+    .pack-tear-strip { position: absolute; z-index: 3; top: 38px; right: 15px; left: 15px; height: 16px; border: 1px solid #d2e794; background: repeating-linear-gradient(90deg, #20291d 0 5px, #a7ba6c 5px 8px); box-shadow: 0 3px 8px #000b; clip-path: polygon(0 0, 100% 0, 98% 82%, 92% 100%, 86% 82%, 80% 100%, 74% 82%, 68% 100%, 62% 82%, 56% 100%, 50% 82%, 44% 100%, 38% 82%, 32% 100%, 26% 82%, 20% 100%, 14% 82%, 8% 100%, 2% 82%); transform-origin: 10% 50%; }
     .pack-reward { position: absolute; z-index: 2; display: grid; width: min(360px, 92%); min-height: 154px; grid-template-columns: 102px 1fr; align-items: center; gap: 14px; padding: 13px; border: 1px solid #e0ef9b; background: linear-gradient(135deg, rgba(48,57,38,.99), rgba(12,16,13,.99) 72%); box-shadow: 0 0 16px #d3ef5980, 0 0 52px #d3ef5945, 0 20px 46px #000e; text-align: left; }
     .pack-reward-swatch { display: grid; width: 102px; height: 126px; place-items: end start; padding: 8px; border: 1px solid #ffffff55; background-color: #222820; background-position: center; background-size: cover; box-shadow: inset 0 0 24px #0008; }
     .pack-reward-swatch span { padding: 4px 5px; background: #080b09d9; color: #d3ef59; font: 700 7px/1 "DM Sans", sans-serif; letter-spacing: 1px; }
@@ -341,15 +344,22 @@
     .pack-stage.opening { --pack-glow: rgba(211,239,89,.38); }
     .pack-stage.opening::before { animation: pack-charge 2.2s ease-out both; }
     .pack-stage.opening::after { animation: pack-scan 1.5s linear 2; }
-    .pack-stage.opening .pack-crate { animation: pack-rattle 2.2s cubic-bezier(.4,0,.2,1) both; }
-    .pack-stage.opening .pack-crate-lid { animation: pack-lid-release 2.2s cubic-bezier(.2,.8,.2,1) both; }
+    .pack-stage.opening .pack-wrapper { animation: pack-crinkle 2.2s cubic-bezier(.3,.75,.2,1) both; }
+    .pack-stage.opening .pack-tear-strip { animation: pack-tear 2.2s cubic-bezier(.15,.7,.25,1) both; }
+    .pack-stage.opening .pack-sachet-mouth { animation: pack-mouth-open 2.2s ease-out both; }
+    .pack-stage.opening .pack-sachet { animation: pack-sachet-flash 2.2s ease-out both; }
     .pack-stage.opening .pack-stage-meter i { animation: pack-progress 2.2s cubic-bezier(.12,.76,.22,1) both; }
     .pack-stage.revealed { --pack-glow: rgba(211,239,89,.48); }
     .pack-stage.revealed::before { opacity: .7; transform: scale(1.22); transition: opacity .5s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
-    .pack-stage.revealed .pack-crate { opacity: .18; transform: perspective(420px) rotateX(-8deg) scale(.72) translateY(24px); transition: opacity .4s ease, transform .5s ease; }
+    .pack-stage.revealed .pack-wrapper { opacity: .22; transform: rotate(9deg) scale(.76,.55) translateY(40px); transition: opacity .4s ease, transform .55s cubic-bezier(.2,.8,.2,1); }
     .pack-stage.revealed .pack-reward { animation: pack-reveal .7s cubic-bezier(.16,1.25,.35,1) both; }
+    .pack-stage.rare { --pack-glow: rgba(174,123,255,.52); border-color: #bd9be8; }
+    .pack-stage.rare::before { border-color: #c9a9f3; box-shadow: 0 0 0 22px #b58ad51a, 0 0 0 48px #b58ad511, 0 0 38px #b58ad555; }
+    .pack-stage.rare .pack-reward { border-color: #d3b6ff; background: linear-gradient(135deg, rgba(54,39,73,.99), rgba(12,13,18,.99) 72%); box-shadow: 0 0 18px #bc8eff99, 0 0 56px #bc8eff55, 0 20px 46px #000e; }
+    .pack-stage.rare .pack-reward small, .pack-stage.rare .pack-reward-swatch span { color: #d9bdff; }
     .pack-status { min-height: 32px; margin: 0 0 12px; color: #b7bab1; font-size: 10px; line-height: 1.5; }
     .pack-open { width: 100%; min-height: 48px; border: 1px solid var(--acid); background: linear-gradient(110deg, #d3ef59, #b9d749); box-shadow: 0 5px 18px #d3ef5926; color: #151812; cursor: pointer; font: 700 14px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.6px; transition: box-shadow .2s ease, transform .2s ease, background .2s ease; }
+    .pack-open:not(:disabled) { animation: pack-ready-pulse 2.8s ease-in-out infinite; }
     .pack-open:hover:not(:disabled) { background: #e1fa76; box-shadow: 0 0 22px #d3ef595c; transform: translateY(-1px); }
     .pack-open:disabled { cursor: not-allowed; opacity: .45; }
     .pack-inventory { margin-top: 17px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -360,12 +370,15 @@
     .pack-equip { padding: 3px 6px; border: 1px solid rgba(211,239,89,.35); background: transparent; color: var(--acid); cursor: pointer; font: 700 8px/1 "DM Sans", sans-serif; letter-spacing: .7px; }
     .pack-equip:hover { border-color: var(--acid); }
     .pack-equip:disabled { cursor: default; opacity: .6; }
-    @keyframes pack-rattle { 0%, 100% { transform: perspective(420px) rotateX(-8deg) translateX(0) rotateZ(0) scale(1); } 8%, 24%, 40%, 56% { transform: perspective(420px) rotateX(-8deg) translateX(-7px) rotateZ(-3deg) scale(1.02); } 16%, 32%, 48%, 64% { transform: perspective(420px) rotateX(-8deg) translateX(7px) rotateZ(3deg) scale(1.02); } 76% { transform: perspective(420px) rotateX(-8deg) scale(1.12); } 88% { transform: perspective(420px) rotateX(-8deg) scale(1.2) translateY(-12px); } }
-    @keyframes pack-lid-release { 0%, 72% { transform: rotateX(0); } 86%, 100% { transform: rotateX(72deg) translateY(-4px); } }
+    @keyframes pack-crinkle { 0%, 100% { transform: rotate(-3deg) scale(1); } 8%, 21%, 34%, 46% { transform: rotate(-8deg) translateX(-6px) scale(.98,1.02); } 14%, 28%, 40%, 52% { transform: rotate(4deg) translateX(6px) scale(1.02,.98); } 62% { transform: rotate(-5deg) scale(1.08,.94); } 72% { transform: rotate(5deg) translateY(-13px) scale(.92,1.08); } 84% { transform: rotate(-2deg) translateY(5px) scale(1.04,.96); } }
+    @keyframes pack-tear { 0%, 56% { opacity: 1; transform: translate(0,0) rotate(0) skewX(0); } 63% { transform: translate(4px,2px) rotate(4deg) skewX(8deg); } 73% { opacity: 1; transform: translate(18px,-20px) rotate(20deg) skewX(12deg); } 88%, 100% { opacity: 0; transform: translate(70px,-90px) rotate(48deg) skewX(18deg); } }
+    @keyframes pack-mouth-open { 0%, 55% { opacity: 0; transform: scaleX(.15); } 68% { opacity: 1; transform: scaleX(1.08); } 78%, 100% { opacity: 1; transform: scaleX(1); } }
+    @keyframes pack-sachet-flash { 0%, 54% { filter: brightness(1); } 64%, 78% { filter: brightness(1.6) saturate(1.35); } 100% { filter: brightness(.9); } }
     @keyframes pack-charge { 0% { opacity: 0; transform: scale(.55); } 52% { opacity: .7; transform: scale(.9); } 78% { opacity: .9; transform: scale(1.05); } 100% { opacity: .55; transform: scale(1.22); } }
     @keyframes pack-scan { 0% { opacity: 0; transform: translateY(-100%); } 15%, 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(100%); } }
     @keyframes pack-progress { 0% { width: 0; } 70% { width: 72%; } 88%, 100% { width: 100%; } }
-    @keyframes pack-reveal { 0% { opacity: 0; filter: brightness(2.2); transform: translateY(34px) scale(.48) rotateX(18deg); } 72% { opacity: 1; filter: brightness(1.3); transform: translateY(-5px) scale(1.04) rotateX(0); } 100% { opacity: 1; filter: brightness(1); transform: translateY(0) scale(1) rotateX(0); } }
+    @keyframes pack-reveal { 0% { opacity: 0; filter: brightness(2.4) blur(4px); transform: translateY(66px) scale(.42) rotate(-8deg); } 58% { opacity: 1; filter: brightness(1.5) blur(0); transform: translateY(-13px) scale(1.08) rotate(2deg); } 76% { transform: translateY(5px) scale(.98) rotate(-1deg); } 100% { opacity: 1; filter: brightness(1); transform: translateY(0) scale(1) rotate(0); } }
+    @keyframes pack-ready-pulse { 50% { box-shadow: 0 0 24px #d3ef5966, 0 5px 18px #d3ef5926; } }
     .slot-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
     .slot-tab { padding: 8px 4px 7px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); cursor: pointer; text-align: left; }
     .slot-tab.active { border-color: var(--acid); background: rgba(47,53,34,.78); }
@@ -554,24 +567,31 @@
       <aside class="right-column" id="right-column" aria-label="Mission and operator selection">
         <section class="packs-panel" id="packs-panel" aria-labelledby="packs-heading">
           <div class="packs-summary">
-            <div><h2 id="packs-heading" style="margin:0;color:#e7e8e1;font:700 23px/1 'Barlow Condensed',sans-serif;letter-spacing:1px">ARMORY PACKS</h2><span>ONE RANDOM WEAPON OR OPERATOR CAMO PER PACK</span></div>
+            <div><h2 id="packs-heading" style="margin:0;color:#e7e8e1;font:700 23px/1 'Barlow Condensed',sans-serif;letter-spacing:1px">ARMORY PACKS</h2><span id="pack-subtitle">ONE RANDOM COSMETIC · 2% RARE KARAMBIT DROP</span></div>
             <div style="text-align:right"><strong class="packs-count" id="pack-count">0</strong><span>READY</span></div>
           </div>
           <div class="pack-stage" id="pack-stage" aria-hidden="true">
             <div class="pack-stage-mark"><span>FIELD SUPPLY // C6</span><span id="pack-stage-state">SEALED</span></div>
-            <div class="pack-crate">
-              <div class="pack-crate-lid"></div>
-              <div class="pack-crate-front"><strong>C6</strong><i class="pack-crate-latch"></i></div>
+            <div class="pack-wrapper">
+              <div class="pack-sachet">
+                <span class="pack-sachet-seal"></span>
+                <span class="pack-sachet-ripline"></span>
+                <span class="pack-sachet-brand">COUGAR // FIELD ISSUE</span>
+                <strong>C6</strong>
+                <span class="pack-sachet-copy">ARMORY PACK · 006</span>
+              </div>
+              <div class="pack-sachet-mouth"></div>
+              <div class="pack-tear-strip"></div>
             </div>
             <div class="pack-reward" id="pack-reward" hidden>
               <div class="pack-reward-swatch" id="pack-reward-swatch"><span>FIELD ISSUE</span></div>
               <div class="pack-reward-copy"><small id="pack-reward-type">CAMO UNLOCKED</small><strong id="pack-reward-name"></strong><span id="pack-reward-detail"></span></div>
             </div>
-            <div class="pack-stage-footer"><span>SECURE CONTAINER</span><div class="pack-stage-meter"><i></i></div></div>
+            <div class="pack-stage-footer"><span>PINCH // RIP // REVEAL</span><div class="pack-stage-meter"><i></i></div></div>
           </div>
-          <p class="pack-status" id="pack-status" role="status" aria-live="polite">Win a match to earn one pack. Packs contain a random weapon or operator camo.</p>
+          <p class="pack-status" id="pack-status" role="status" aria-live="polite">Your starter pack is waiting. Earn more by winning matches.</p>
           <button class="pack-open" id="pack-open" disabled>WIN A MATCH TO EARN A PACK</button>
-          <div class="pack-inventory"><div class="pack-inventory-title"><span>UNLOCKED CAMOS</span> · <span id="pack-collection-count">0 / 36</span></div><div class="pack-inventory-list" id="pack-inventory-list"></div></div>
+          <div class="pack-inventory"><div class="pack-inventory-title"><span>UNLOCKED COSMETICS</span> · <span id="pack-collection-count">0 / 52</span></div><div class="pack-inventory-list" id="pack-inventory-list"></div></div>
         </section>
         <section class="settings-panel" id="settings-panel" aria-labelledby="keybind-heading">
           <h2 id="keybind-heading">KEYBINDS</h2>
@@ -741,7 +761,7 @@
         eyebrow: "ARMORY · EARN YOUR CAMOS",
         title: "PACKS",
         season: "ONE WIN · ONE PACK",
-        copy: "Win a match to earn an Armory Pack. Every pack unlocks a random weapon or operator camo for your collection.",
+        copy: "Win a match to earn an Armory Pack. Every pack unlocks a random weapon camo, paint color, keychain, or finish.",
         mission: "NO PURCHASES · MATCH WINS ONLY",
         action: "OPEN A PACK",
         mode: "ARMORY",
@@ -1111,7 +1131,8 @@
         { id: "p45", name: "P45 Sidearm", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
         { id: "rattler", name: "Rattler", type: "MACHINE PISTOL", desc: "Automatic fire in a compact frame.", dmg: 3, rng: 3, mob: 9 },
         { id: "magnum", name: "Magnum .44", type: "REVOLVER", desc: "Heavy hitting, slow to reload.", dmg: 8, rng: 6, mob: 7 },
-        { id: "sledgehammer", name: "Sledgehammer", type: "MELEE", desc: "Heavy close-range tool for smashing barriers.", dmg: 8, rng: 1, mob: 4 }
+        { id: "sledgehammer", name: "Sledgehammer", type: "MELEE", desc: "Heavy close-range tool for smashing barriers.", dmg: 8, rng: 1, mob: 4 },
+        { id: "karambit", name: "Karambit", type: "KARAMBIT", desc: "Rare curved blade with a fast, close-range strike.", dmg: 5, rng: 2, mob: 10, packCamos: false }
       ] },
       { id: "gadget", label: "GADGET", items: [
         { id: "shield", name: "Ballistic Shield", type: "DEFENSE", desc: "Deployable cover that absorbs incoming fire." },
@@ -1165,7 +1186,7 @@
         tab.addEventListener("click", () => { activeSlot = slot; inspector.item = chosen(slot); renderLoadout(); });
         tabs.appendChild(tab);
       });
-      activeSlot.items.forEach((item) => {
+      loadoutItemsFor(activeSlot).forEach((item) => {
         const button = document.createElement("button");
         const selected = loadout[activeSlot.id] === item.id;
         button.className = "item" + (selected ? " selected" : "");
@@ -1196,7 +1217,7 @@
     }
 
     /* ---- Procedural 3D item models (software-rendered, no external assets) ---- */
-    const box = (cx, cy, cz, w, h, d, m) => ({ k: "box", c: [cx, cy, cz], s: [w, h, d], m });
+    const box = (cx, cy, cz, w, h, d, m, rz = 0) => ({ k: "box", c: [cx, cy, cz], s: [w, h, d], m, rz });
     const cyl = (axis, cx, cy, cz, len, r, m, r2 = r) => ({ k: "cyl", axis, c: [cx, cy, cz], len, r, r2, m });
     const ball = (cx, cy, cz, r, m, sy = 1) => ({ k: "ball", c: [cx, cy, cz], r, m, sy });
 
@@ -1227,6 +1248,16 @@
       sledgehammer: { mounts: {}, parts: [
         cyl("x", 0, 0, 0, 6, .18, "dark"), cyl("x", -2, 0, 0, 2, .23, "accent"), box(3.2, 0, 0, 1.6, 1.3, 1.1, "body"),
         box(3.2, 0, 0, 1.7, .6, 1.2, "metal"), box(-3.1, 0, 0, .25, .5, .5, "dark") ] },
+      karambit: { mounts: {}, parts: [
+        box(1.58, -.4, 0, .52, .13, .32, "accent", .16), box(1.88, -.28, 0, .34, .13, .32, "dark", .9),
+        box(1.83, .12, 0, .48, .13, .32, "accent", -.28), box(1.48, -.04, 0, .3, .14, .34, "dark", .8),
+        box(.96, -.06, 0, .95, .34, .38, "dark", -.08), box(.91, -.1, .2, .62, .1, .035, "accent", -.08),
+        box(.43, -.04, 0, .18, .58, .48, "metal"),
+        box(.12, -.12, 0, .72, .29, .2, "blade", .38), box(-.31, -.48, 0, .84, .25, .17, "blade", .88),
+        box(-.59, -.92, 0, .78, .22, .15, "blade", 1.42), box(-.46, -1.34, 0, .62, .17, .13, "blade", 2.18),
+        box(-.12, -.3, .105, .52, .035, .018, "edge", .38), box(-.5, -.72, .09, .54, .03, .016, "edge", .88),
+        box(1.57, -.32, .18, .12, .12, .035, "edge"), box(1.83, .2, .18, .12, .12, .035, "edge")
+      ] },
       shield: { mounts: {}, parts: [
         box(0, -.875, 0, .4, 3.25, 3.2, "body"), box(0, 2.075, 0, .4, .85, 3.2, "body"),
         box(0, 1.2, -1.25, .4, .9, .7, "body"), box(0, 1.2, 1.25, .4, .9, .7, "body"),
@@ -1263,13 +1294,15 @@
     modelDefs["camera-drone"] = modelDefs.drone;
 
     const finishes = [
-      { name: "Blackout", c: "#4b504a" }, { name: "Desert", c: "#b49c68" }, { name: "Olive", c: "#69783f" },
-      { name: "Arctic", c: "#d6dad2" }, { name: "Crimson", c: "#b04430" }, { name: "Acid", c: "#c4de4c" }
+      { id: "blackout", name: "Blackout", c: "#4b504a", free: true }, { id: "desert", name: "Desert", c: "#b49c68" },
+      { id: "olive", name: "Olive", c: "#69783f" }, { id: "arctic", name: "Arctic", c: "#d6dad2" },
+      { id: "crimson", name: "Crimson", c: "#b04430" }, { id: "acid", name: "Acid", c: "#c4de4c" }
     ];
     const paintColors = [
-      { name: "Yellow", c: "#f6df35" }, { name: "Pink", c: "#f04c9b" },
-      { name: "Blue", c: "#32a6ef" }, { name: "Green", c: "#70df45" },
-      { name: "Orange", c: "#f78a30" }, { name: "Purple", c: "#a765e9" }
+      { id: "standard", name: "Factory", c: "#d6dad2", free: true }, { id: "yellow", name: "Yellow", c: "#f6df35" },
+      { id: "pink", name: "Pink", c: "#f04c9b" }, { id: "blue", name: "Blue", c: "#32a6ef" },
+      { id: "green", name: "Green", c: "#70df45" }, { id: "orange", name: "Orange", c: "#f78a30" },
+      { id: "purple", name: "Purple", c: "#a765e9" }
     ];
     const paintColor = (item) => paintColors.find((color) => color.c === customOf(item).paint)?.c || paintColors[0].c;
     const paintable = (item) => Boolean(item.dmg) || ["drone", "frag", "claymore"].includes(item.id);
@@ -1279,9 +1312,9 @@
       { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg" },
       { id: "ember", name: "Ember", src: "assets/skin-ember.jpg" }
     ];
-    const faceSkin = { id: "operator-face", img: new Image() };
-    faceSkin.img.onerror = () => console.error("Failed to load operator face texture");
-    faceSkin.img.src = "assets/operator-face.png";
+    const faceSkin = { id: "operator-face", img: null };
+    const faceSkinPhoto = new Image();
+    faceSkinPhoto.onerror = () => console.error("Failed to load operator face texture");
     const hats = [
       { id: "none", name: "None", need: 0 },
       { id: "cap", name: "Field Cap", need: 10 },
@@ -1316,30 +1349,65 @@
       { id: "mini-drone", name: "Mini Drone", color: "#54c7d9", shape: "drone" }
     ];
     skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); if (activeSection === "LOADOUT" && inspectTarget === null) drawOperatorKit(); else if (activeSection === "LOADOUT" && inspectTarget === "player") drawOperatorModel(document.querySelector("#player-inspect-canvas")); }; skin.img.onerror = () => console.error(`Failed to load skin: ${skin.src}`); skin.img.src = skin.src; });
-    faceSkin.img.onload = () => { if (activeSection === "LOADOUT") { if (inspectTarget === "player") renderPlayerInspect(); else if (inspectTarget === null) drawOperatorKit(); } };
+    faceSkinPhoto.onload = () => {
+      const faceCanvas = document.createElement("canvas");
+      faceCanvas.width = 256;
+      faceCanvas.height = 256;
+      const faceContext = faceCanvas.getContext("2d");
+      if (!faceContext) { console.error("Could not create operator face texture canvas."); return; }
+      faceContext.drawImage(faceSkinPhoto, 0, 0, faceCanvas.width, faceCanvas.height);
+      faceSkin.img = faceCanvas;
+      if (activeSection === "LOADOUT") {
+        if (inspectTarget === "player") renderPlayerInspect();
+        else if (inspectTarget === null) drawOperatorKit();
+      }
+    };
+    faceSkinPhoto.src = "assets/operator-face.png";
     const usage = {};
     try { Object.assign(usage, JSON.parse(localStorage.getItem("c6-usage") || "{}")); } catch (error) {}
     const hitsWith = (id) => usage[id] || 0;
-    const packWeapons = loadoutSlots.flatMap((slot) => slot.items.filter((item) => item.dmg));
+    const packWeapons = loadoutSlots.flatMap((slot) => slot.items.filter((item) => item.dmg && item.packCamos !== false));
     const skinUnlockKey = (weaponId, skinId) => `${weaponId}:${skinId}`;
     const playerPaintUnlockKey = (skinId) => `operator:${skinId}`;
+    const karambitRewardKey = "weapon:karambit";
     const packPairs = [
       ...packWeapons.flatMap((item) => skins.map((skin) => skinUnlockKey(item.id, skin.id))),
-      ...skins.map((skin) => playerPaintUnlockKey(skin.id))
+      ...skins.map((skin) => playerPaintUnlockKey(skin.id)),
+      ...paintColors.filter((color) => !color.free).map((color) => `paint:${color.id}`),
+      ...finishes.filter((finish) => !finish.free).map((finish) => `finish:${finish.id}`),
+      ...keychains.filter((keychain) => keychain.id !== "none").map((keychain) => `keychain:${keychain.id}`),
+      karambitRewardKey
     ];
-    let armorySave = { packs: 0, wraps: [], rewardedMatches: [] };
+    let armorySave = { packs: 1000, wraps: [], rewardedMatches: [], starterPackGranted: true, thousandPacksGranted: true };
+    let thousandPacksJustGranted = false;
     try {
       const saved = JSON.parse(localStorage.getItem("c6-armory") || "{}");
+      thousandPacksJustGranted = saved.thousandPacksGranted !== true;
       armorySave = {
-        packs: Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0,
+        packs: (Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0) + (thousandPacksJustGranted ? 1000 : 0),
         wraps: Array.isArray(saved.wraps) ? saved.wraps.filter((key) => packPairs.includes(key)) : [],
-        rewardedMatches: Array.isArray(saved.rewardedMatches) ? saved.rewardedMatches.filter((id) => typeof id === "string") : []
+        rewardedMatches: Array.isArray(saved.rewardedMatches) ? saved.rewardedMatches.filter((id) => typeof id === "string") : [],
+        starterPackGranted: true,
+        thousandPacksGranted: true
       };
-    } catch (error) { console.warn("Could not load Armory progress:", error); }
+    } catch (error) {
+      console.warn("Could not load Armory progress:", error);
+      thousandPacksJustGranted = true;
+      armorySave = { packs: 1000, wraps: [], rewardedMatches: [], starterPackGranted: true, thousandPacksGranted: true };
+    }
     let packs = armorySave.packs;
     const ownedWraps = new Set(armorySave.wraps);
     const rewardedMatches = new Set(armorySave.rewardedMatches);
+    const karambitUnlocked = () => ownedWraps.has(karambitRewardKey);
+    const loadoutItemsFor = (slot) => slot.items.filter((item) => item.id !== "karambit" || karambitUnlocked());
+    if (!karambitUnlocked()) {
+      if (customLoadout.secondary === "karambit") customLoadout.secondary = "p45";
+      if (loadout.secondary === "karambit") loadout.secondary = "p45";
+    }
     const paintSkinUnlocked = (skin) => ownedWraps.has(playerPaintUnlockKey(skin.id));
+    const paintColorUnlocked = (color) => color.free || ownedWraps.has(`paint:${color.id}`);
+    const finishUnlocked = (finish) => finish.free || ownedWraps.has(`finish:${finish.id}`);
+    const keychainUnlocked = (keychain) => keychain.id === "none" || ownedWraps.has(`keychain:${keychain.id}`);
     if (skins.some((skin) => skin.id === savedPaintSkin && paintSkinUnlocked(skin))) appearance.paintSkin = savedPaintSkin;
     const skinUnlocked = (skin, id) => ownedWraps.has(id === "operator" ?
       playerPaintUnlockKey(skin.id) : skinUnlockKey(id, skin.id));
@@ -1364,7 +1432,7 @@
         { id: "none", name: "Stock", mod: {} },
         { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
     };
-    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
+    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
       medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b" };
 
     const custom = {};
@@ -1373,7 +1441,12 @@
       const cfg = custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", keychain: "none", optic: "none", muzzle: "none", grip: "none" });
       const selectedSkin = skins.find((skin) => skin.id === cfg.skin);
       if (cfg.skin !== "none" && (!selectedSkin || !skinUnlocked(selectedSkin, item.id))) cfg.skin = "none";
-      if (!keychains.some((keychain) => keychain.id === cfg.keychain)) cfg.keychain = "none";
+      const selectedPaint = paintColors.find((color) => color.c === cfg.paint);
+      if (cfg.paint && (!selectedPaint || !paintColorUnlocked(selectedPaint))) cfg.paint = paintColors[0].c;
+      const selectedFinish = finishes[cfg.finish];
+      if (!selectedFinish || !finishUnlocked(selectedFinish)) cfg.finish = 0;
+      const selectedKeychain = keychains.find((keychain) => keychain.id === cfg.keychain);
+      if (!selectedKeychain || !keychainUnlocked(selectedKeychain)) cfg.keychain = "none";
       return cfg;
     };
     const saveCustom = () => {
@@ -1410,7 +1483,7 @@
     const keychainMounts = {
       mk18: [-2.2, -.55, .4], vector: [-1.25, -.55, .46], hammer: [-1.5, -.52, .4],
       longwatch: [-2.8, -.5, .34], p45: [-1, -1.05, .32], rattler: [-.85, -.95, .38],
-      magnum: [-1.25, -1.08, .3], sledgehammer: [-2, -.25, .28]
+      magnum: [-1.25, -1.08, .3], sledgehammer: [-2, -.25, .28], karambit: [.95, -.2, .28]
     };
     function weaponKeychainParts(item, cfg) {
       if (!item.dmg) return [];
@@ -1457,7 +1530,9 @@
       parts.forEach((p) => {
         if (p.k === "box") {
           const [cx, cy, cz] = p.c, [x0, y0, z0, x1, y1, z1] = [cx - p.s[0] / 2, cy - p.s[1] / 2, cz - p.s[2] / 2, cx + p.s[0] / 2, cy + p.s[1] / 2, cz + p.s[2] / 2];
-          const V = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+          const ca = Math.cos(p.rz || 0), sa = Math.sin(p.rz || 0);
+          const V = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]
+            .map(([x, y, z]) => [cx + (x - cx) * ca - (y - cy) * sa, cy + (x - cx) * sa + (y - cy) * ca, z]);
           [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [3, 2, 6, 7], [0, 3, 7, 4], [1, 2, 6, 5]].forEach((f) => add(f.map((i) => V[i]), p.m, p.c));
         } else if (p.k === "cyl") {
           const seg = 14, h = p.len / 2;
@@ -1691,13 +1766,20 @@
       document.querySelector("#inspect-stats").innerHTML = slot.stats ? `<div class="item-stats">${stat("DAMAGE", item.dmg, mods.dmg)}${stat("RANGE", item.rng, mods.rng)}${stat("MOBILITY", item.mob, mods.mob)}</div>` : "";
       const box_ = document.querySelector("#inspect-custom");
       const unlockedSkins = unlockedWeaponSkins(item.id);
+      const unlockedPaintColors = paintColors.filter(paintColorUnlocked);
+      const unlockedFinishes = finishes.filter(finishUnlocked);
+      const unlockedKeychains = keychains.filter(keychainUnlocked);
       const wrapGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON CAMOS · ${unlockedSkins.length} UNLOCKED</div><div class="choices"><button class="choice wrap${cfg.skin === "none" ? " selected" : ""}" data-skin="none">Factory</button>${unlockedSkins.map((k) =>
         `<button class="choice wrap${cfg.skin === k.id ? " selected" : ""}" data-skin="${k.id}">${k.name}</button>`).join("")}</div><small class="skin-hint">${unlockedSkins.length ? "Open packs to discover more camos." : "Open an Armory Pack to unlock your first weapon camo."}</small></div>` : "";
-      const keychainGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON KEYCHAIN</div><div class="choices">${keychains.map((keychain) =>
-        `<button class="choice keychain-choice${cfg.keychain === keychain.id ? " selected" : ""}" data-keychain="${keychain.id}" aria-pressed="${cfg.keychain === keychain.id}">${keychain.name}</button>`).join("")}</div></div>` : "";
-      box_.innerHTML = wrapGroup + keychainGroup + (paintable(item) ? `<div class="custom-group"><div class="custom-label">PAINT COLOR · ${paintColors.find((color) => color.c === paintColor(item)).name.toUpperCase()}</div><div class="swatches">${paintColors.map((color) =>
-        `<button class="swatch paint-swatch${color.c === paintColor(item) ? " selected" : ""}" data-paint="${color.c}" style="background:${color.c}" title="${color.name} paint" aria-label="${color.name} paint" aria-pressed="${color.c === paintColor(item)}"></button>`).join("")}</div></div>` : "") + `<div class="custom-group"><div class="custom-label">COLOR · ${(finishes[cfg.finish] || finishes[0]).name.toUpperCase()}</div><div class="swatches">${finishes.map((f, i) =>
-        `<button class="swatch${i === cfg.finish ? " selected" : ""}" data-finish="${i}" style="background:${f.c}" title="${f.name}" aria-label="${f.name}"></button>`).join("")}</div></div>` +
+      const keychainGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON KEYCHAIN · ${unlockedKeychains.length - 1} UNLOCKED</div><div class="choices"><button class="choice keychain-choice${cfg.keychain === "none" ? " selected" : ""}" data-keychain="none" aria-pressed="${cfg.keychain === "none"}">None</button>${unlockedKeychains.filter((keychain) => keychain.id !== "none").map((keychain) =>
+        `<button class="choice keychain-choice${cfg.keychain === keychain.id ? " selected" : ""}" data-keychain="${keychain.id}" aria-pressed="${cfg.keychain === keychain.id}">${keychain.name}</button>`).join("")}</div><small class="skin-hint">Open packs to discover keychains.</small></div>` : "";
+      const paintGroup = paintable(item) ? `<div class="custom-group"><div class="custom-label">PAINT COLOR · ${paintColors.find((color) => color.c === paintColor(item)).name.toUpperCase()}</div><div class="swatches">${unlockedPaintColors.map((color) =>
+        `<button class="swatch paint-swatch${color.c === paintColor(item) ? " selected" : ""}" data-paint="${color.c}" style="background:${color.c}" title="${color.name} paint" aria-label="${color.name} paint" aria-pressed="${color.c === paintColor(item)}"></button>`).join("")}</div><small class="skin-hint">Open packs to discover more paint colors.</small></div>` : "";
+      const finishGroup = `<div class="custom-group"><div class="custom-label">COLOR · ${(finishes[cfg.finish] || finishes[0]).name.toUpperCase()}</div><div class="swatches">${unlockedFinishes.map((finish) => {
+        const index = finishes.indexOf(finish);
+        return `<button class="swatch${index === cfg.finish ? " selected" : ""}" data-finish="${index}" style="background:${finish.c}" title="${finish.name}" aria-label="${finish.name}"></button>`;
+      }).join("")}</div><small class="skin-hint">Open packs to discover more weapon colors.</small></div>`;
+      box_.innerHTML = wrapGroup + keychainGroup + paintGroup + finishGroup +
         Object.entries(attachmentOptions).filter(([kind]) => slot.stats && modelDefs[item.id].mounts[kind]).map(([kind, group]) =>
           `<div class="custom-group"><div class="custom-label">${group.label}</div><div class="choices">${group.options.map((o) => `<button class="choice${o.id === cfg[kind] ? " selected" : ""}" data-kind="${kind}" data-id="${o.id}">${o.name}</button>`).join("")}</div></div>`).join("") +
         `<button class="reset-custom" id="reset-custom">RESET CUSTOMIZATION</button>`;
@@ -1726,6 +1808,7 @@
     }
 
     const packCountEl = document.querySelector("#pack-count");
+    const packSubtitle = document.querySelector("#pack-subtitle");
     const packOpenButton = document.querySelector("#pack-open");
     const packStatusEl = document.querySelector("#pack-status");
     const packStage = document.querySelector("#pack-stage");
@@ -1737,21 +1820,27 @@
     let packOpening = false;
     let packAudioContext = null;
     let packStatusText = packs > 0 ? `You have ${packs} earned pack${packs === 1 ? "" : "s"} ready.` :
-      "Win a match to earn one pack. Packs contain a random weapon or operator camo.";
+      "Win a match to earn a pack. Unopened cases have a 2% chance to drop the rare Karambit.";
     function saveArmory() {
       try {
         localStorage.setItem("c6-armory", JSON.stringify({
-          packs, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches].slice(-80)
+          packs, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches].slice(-80),
+          starterPackGranted: true, thousandPacksGranted: true
         }));
       } catch (error) {
         console.warn("Could not save Armory progress:", error);
         showToast("Could not save Armory progress in this browser.");
       }
     }
+    if (thousandPacksJustGranted) {
+      packStatusText = "WELCOME REWARD: 1,000 Armory Packs added to your collection.";
+      saveArmory();
+    }
     function renderArmory() {
       packCountEl.textContent = String(packs);
+      packSubtitle.textContent = karambitUnlocked() ? "KARAMBIT SECURED · DUPLICATES DISABLED" : "ONE RANDOM COSMETIC · 2% RARE KARAMBIT DROP";
       packOpenButton.disabled = packs <= 0 || packOpening;
-      packOpenButton.textContent = packOpening ? "OPENING PACK..." : packs > 0 ? "OPEN ARMORY PACK" : "WIN A MATCH TO EARN A PACK";
+      packOpenButton.textContent = packOpening ? "RIPPING PACK..." : packs > 0 ? "RIP OPEN PACK" : "WIN A MATCH TO EARN A PACK";
       packStatusEl.textContent = packStatusText;
       const unlocked = packPairs.filter((key) => ownedWraps.has(key));
       packCollectionCount.textContent = `${unlocked.length} / ${packPairs.length}`;
@@ -1759,52 +1848,84 @@
       if (!unlocked.length) {
         const empty = document.createElement("div");
         empty.className = "pack-inventory-item";
-        empty.textContent = "No pack camo unlocks yet";
+        empty.textContent = "No pack cosmetics unlocked yet";
         packInventory.appendChild(empty);
         return;
       }
       unlocked.forEach((key) => {
-        const [weaponId, skinId] = key.split(":");
-        const operatorCamo = weaponId === "operator";
-        const item = operatorCamo ? null : packWeapons.find((entry) => entry.id === weaponId);
-        const skin = skins.find((entry) => entry.id === skinId);
+        const [category, rewardId] = key.split(":");
+        const specialCategory = ["operator", "paint", "finish", "keychain", "weapon"].includes(category);
+        const item = specialCategory ? null : packWeapons.find((entry) => entry.id === category);
+        const cosmetic = category === "weapon" ? loadoutSlots.find((slot) => slot.id === "secondary").items.find((entry) => entry.id === rewardId) :
+          category === "paint" ? paintColors.find((entry) => entry.id === rewardId) :
+          category === "finish" ? finishes.find((entry) => entry.id === rewardId) :
+          category === "keychain" ? keychains.find((entry) => entry.id === rewardId) : skins.find((entry) => entry.id === rewardId);
         const row = document.createElement("div");
         row.className = "pack-inventory-item";
         const name = document.createElement("span");
-        name.textContent = skin.name;
+        name.textContent = cosmetic.name;
         const weapon = document.createElement("span");
-        weapon.textContent = operatorCamo ? "OPERATOR CAMO" : weaponName(item.id);
-        const equip = document.createElement("button");
-        equip.className = "pack-equip";
-        const equipped = operatorCamo ? appearance.paintSkin === skin.id : customOf(item).skin === skin.id;
-        equip.textContent = equipped ? "EQUIPPED" : "EQUIP";
-        equip.disabled = equipped;
-        equip.setAttribute("aria-label", `${equipped ? "Equipped" : "Equip"} ${skin.name} on ${operatorCamo ? "operator" : weaponName(item.id)}`);
-        equip.addEventListener("click", () => {
-          if (operatorCamo) {
-            appearance.paintSkin = skin.id;
-            saveAppearance();
-            if (activeSection === "LOADOUT") {
-              if (inspectTarget === "player") renderPlayerInspect();
-              else drawOperatorKit();
+        weapon.textContent = category === "weapon" ? "RARE SECONDARY" : category === "operator" ? "OPERATOR CAMO" : category === "paint" ? "PAINT COLOR" :
+          category === "finish" ? "WEAPON COLOR" : category === "keychain" ? "KEYCHAIN" : weaponName(item.id);
+        if (category === "operator" || category === "weapon" || !specialCategory) {
+          const equip = document.createElement("button");
+          equip.className = "pack-equip";
+          const equipped = category === "weapon" ? customLoadout.secondary === cosmetic.id :
+            category === "operator" ? appearance.paintSkin === cosmetic.id : customOf(item).skin === cosmetic.id;
+          equip.textContent = category === "weapon" && !equipped ? "EQUIP SECONDARY" : equipped ? "EQUIPPED" : "EQUIP";
+          equip.disabled = equipped;
+          equip.setAttribute("aria-label", `${equipped ? "Equipped" : "Equip"} ${cosmetic.name} ${category === "weapon" ? "as your secondary" : `on ${category === "operator" ? "operator" : weaponName(item.id)}`}`);
+          equip.addEventListener("click", () => {
+            if (category === "weapon") {
+              customLoadout.secondary = cosmetic.id;
+              try { localStorage.setItem("c6-loadout", JSON.stringify(customLoadout)); }
+              catch (error) { console.warn("Could not save loadout:", error); showToast("Could not save your loadout in this browser."); }
+              if (selectedOperatorId === "custom") {
+                loadout.secondary = cosmetic.id;
+                if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "select_operator", operatorId: selectedOperatorId, loadout }));
+                renderLoadout();
+              }
+            } else if (category === "operator") {
+              appearance.paintSkin = cosmetic.id;
+              saveAppearance();
+              if (activeSection === "LOADOUT") {
+                if (inspectTarget === "player") renderPlayerInspect();
+                else drawOperatorKit();
+              }
+            } else {
+              customOf(item).skin = cosmetic.id;
+              saveCustom();
+              refreshWeapons();
             }
-          } else {
-            customOf(item).skin = skin.id;
-            saveCustom();
-            refreshWeapons();
-          }
-          renderArmory();
-          showToast(`${skin.name} equipped on ${operatorCamo ? "operator" : weaponName(item.id)}.`);
-        });
-        row.append(name, weapon, equip);
+            renderArmory();
+            showToast(category === "weapon" ? `${cosmetic.name} equipped to your Custom secondary.` :
+              `${cosmetic.name} equipped on ${category === "operator" ? "operator" : weaponName(item.id)}.`);
+          });
+          row.append(name, weapon, equip);
+        } else {
+          const unlockedLabel = document.createElement("span");
+          unlockedLabel.textContent = "UNLOCKED";
+          row.append(name, weapon, unlockedLabel);
+        }
         packInventory.appendChild(row);
       });
     }
     function packRewardPool() {
       return packPairs.filter((key) => {
-        const [weaponId, skinId] = key.split(":");
-        return !skinUnlocked(skins.find((entry) => entry.id === skinId), weaponId);
+        const [category, rewardId] = key.split(":");
+        if (category === "weapon") return !karambitUnlocked();
+        if (category === "paint") return !paintColorUnlocked(paintColors.find((entry) => entry.id === rewardId));
+        if (category === "finish") return !finishUnlocked(finishes.find((entry) => entry.id === rewardId));
+        if (category === "keychain") return !keychainUnlocked(keychains.find((entry) => entry.id === rewardId));
+        const skin = skins.find((entry) => entry.id === rewardId);
+        return !skinUnlocked(skin, category);
       });
+    }
+    function choosePackReward(pool) {
+      if (!pool.includes(karambitRewardKey)) return pool[Math.floor(Math.random() * pool.length)];
+      if (Math.random() < .02) return karambitRewardKey;
+      const commonPool = pool.filter((key) => key !== karambitRewardKey);
+      return commonPool.length ? commonPool[Math.floor(Math.random() * commonPool.length)] : karambitRewardKey;
     }
     function playPackSound(reveal = false) {
       if (!window.AudioContext) return;
@@ -1813,8 +1934,24 @@
       const context = packAudioContext;
       if (context.state === "suspended") context.resume().catch((error) => console.warn("Pack opening audio could not resume:", error));
       const start = context.currentTime + .02;
-      const tones = reveal ? [[660, 990, .55, .045, 0], [990, 1320, .72, .025, .08]] :
-        [[110, 54, .5, .04, 0], [360, 540, .22, .018, .22], [420, 680, .24, .018, .72], [520, 820, .24, .018, 1.28]];
+      if (!reveal) {
+        const duration = .68, frameCount = Math.floor(context.sampleRate * duration);
+        const buffer = context.createBuffer(1, frameCount, context.sampleRate), data = buffer.getChannelData(0);
+        for (let i = 0; i < frameCount; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / frameCount) ** .55;
+        const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
+        source.buffer = buffer;
+        filter.type = "bandpass";
+        filter.frequency.setValueAtTime(1900, start + 1.25);
+        filter.frequency.exponentialRampToValueAtTime(650, start + 1.95);
+        filter.Q.value = .7;
+        gain.gain.setValueAtTime(.0001, start + 1.25);
+        gain.gain.linearRampToValueAtTime(.055, start + 1.42);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + 1.98);
+        source.connect(filter); filter.connect(gain); gain.connect(context.destination);
+        source.start(start + 1.25); source.stop(start + 2.02);
+        return;
+      }
+      const tones = [[660, 990, .55, .045, 0], [990, 1320, .72, .025, .08]];
       tones.forEach(([from, to, duration, volume, offset]) => {
         const oscillator = context.createOscillator(), gain = context.createGain(), toneStart = start + offset;
         oscillator.type = from < 200 ? "triangle" : "sine";
@@ -1831,14 +1968,28 @@
       const pool = packRewardPool();
       let reward;
       if (pool.length) {
-        const [weaponId, skinId] = pool[Math.floor(Math.random() * pool.length)].split(":");
-        const skin = skins.find((entry) => entry.id === skinId);
-        ownedWraps.add(weaponId === "operator" ? playerPaintUnlockKey(skinId) : skinUnlockKey(weaponId, skinId));
-        if (weaponId === "operator") {
-          reward = { title: skin.name, detail: "Operator camo · Equip it in LOADOUT", type: "OPERATOR CAMO UNLOCKED", skin };
+        const key = choosePackReward(pool);
+        const [category, rewardId] = key.split(":");
+        ownedWraps.add(key);
+        if (category === "weapon") {
+          const item = loadoutSlots.find((slot) => slot.id === "secondary").items.find((entry) => entry.id === rewardId);
+          reward = { title: item.name, detail: "Rare secondary melee · Equip it in LOADOUT", type: "RARE WEAPON UNLOCKED", previewLabel: "RARE // KARAMBIT", color: "#b78be5", rarity: "rare" };
+        } else if (category === "operator") {
+          const skin = skins.find((entry) => entry.id === rewardId);
+          reward = { title: skin.name, detail: "Operator camo · Equip it in LOADOUT", type: "OPERATOR CAMO UNLOCKED", previewLabel: "OPERATOR CAMO", skin };
+        } else if (category === "paint") {
+          const color = paintColors.find((entry) => entry.id === rewardId);
+          reward = { title: color.name, detail: "Paint color · Equip it in LOADOUT", type: "PAINT COLOR UNLOCKED", color: color.c, previewLabel: "PAINT COLOR" };
+        } else if (category === "finish") {
+          const finish = finishes.find((entry) => entry.id === rewardId);
+          reward = { title: finish.name, detail: "Weapon finish · Equip it in LOADOUT", type: "WEAPON COLOR UNLOCKED", color: finish.c, previewLabel: "WEAPON FINISH" };
+        } else if (category === "keychain") {
+          const keychain = keychains.find((entry) => entry.id === rewardId);
+          reward = { title: keychain.name, detail: "Weapon keychain · Equip it in LOADOUT", type: "KEYCHAIN UNLOCKED", color: keychain.color, previewLabel: "KEYCHAIN" };
         } else {
-          const item = packWeapons.find((entry) => entry.id === weaponId);
-          reward = { title: skin.name, detail: `${weaponName(item.id)} · Equip it in LOADOUT`, type: "WEAPON CAMO UNLOCKED", skin };
+          const skin = skins.find((entry) => entry.id === rewardId);
+          const item = packWeapons.find((entry) => entry.id === category);
+          reward = { title: skin.name, detail: `${weaponName(item.id)} · Equip it in LOADOUT`, type: "WEAPON CAMO UNLOCKED", previewLabel: "WEAPON CAMO", skin };
         }
       } else {
         const item = packWeapons[Math.floor(Math.random() * packWeapons.length)];
@@ -1852,26 +2003,26 @@
       packOpening = true;
       packReward.hidden = true;
       packStage.className = "pack-stage opening";
-      packStageState.textContent = "AUTHENTICATING";
-      packStatusText = "Container secured. Verifying your field reward...";
+      packStageState.textContent = "GRIP THE SEAL";
+      packStatusText = "Tear the foil to reveal your reward...";
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       playPackSound(reducedMotion);
       renderArmory();
       const revealDelay = reducedMotion ? 80 : 2250;
       if (!reducedMotion) {
-        setTimeout(() => { packStageState.textContent = "LOCK RELEASED"; }, revealDelay * .42);
-        setTimeout(() => { packStageState.textContent = "REWARD CONFIRMED"; }, revealDelay * .76);
+        setTimeout(() => { packStageState.textContent = "SEAL TORN"; }, revealDelay * .66);
+        setTimeout(() => { packStageState.textContent = "REWARD FOUND"; }, revealDelay * .88);
       }
       setTimeout(() => {
         document.querySelector("#pack-reward-type").textContent = reward.type;
         document.querySelector("#pack-reward-name").textContent = reward.title;
         document.querySelector("#pack-reward-detail").textContent = reward.detail;
-        packRewardSwatch.style.backgroundImage = reward.skin ?
-          `url("${reward.skin.src}")` : "radial-gradient(circle at 50% 42%, #d3ef59 0 3px, transparent 4px), linear-gradient(145deg, #303b2b, #121713)";
-        packRewardSwatch.firstElementChild.textContent = reward.skin ? "WEAPON CAMO" : "ARSENAL CREDIT";
+        packRewardSwatch.style.backgroundImage = reward.skin ? `url("${reward.skin.src}")` :
+          `linear-gradient(145deg, ${reward.color || "#d3ef59"}, #121713)`;
+        packRewardSwatch.firstElementChild.textContent = reward.previewLabel || (reward.skin ? "WEAPON CAMO" : "ARSENAL CREDIT");
         packReward.hidden = false;
-        packStage.className = "pack-stage revealed";
-        packStageState.textContent = "UNLOCKED";
+        packStage.className = `pack-stage revealed${reward.rarity ? ` ${reward.rarity}` : ""}`;
+        packStageState.textContent = "REVEALED";
         if (!reducedMotion) playPackSound(true);
         packStatusText = `${reward.title} added to your collection.`;
         packOpening = false;
@@ -2738,7 +2889,8 @@
         "PISTOL": { rate: 4.5, auto: false, mag: 12, reload: 1.3, mult: 4 },
         "MACHINE PISTOL": { rate: 14, auto: true, mag: 20, reload: 1.5, mult: 4 },
         "REVOLVER": { rate: 1.8, auto: false, mag: 6, reload: 2.4, mult: 5 },
-        "MELEE": { rate: 1.4, auto: false, mag: Infinity, reload: 0, mult: 6, melee: true }
+        "MELEE": { rate: 1.4, auto: false, mag: Infinity, reload: 0, mult: 6, melee: true },
+        "KARAMBIT": { rate: 2, auto: false, mag: Infinity, reload: 0, mult: 4.8, melee: true }
       };
       // Gadgets and equipment are held items: vs scales the armory model for the viewmodel, uses is the charges per life
       const held = (vs, uses, at) => ({ rate: 1.6, auto: false, mag: Infinity, reload: 0, mult: 0, held: true, vs, uses, at: at || [.14, -.16, .4] });
@@ -2939,7 +3091,7 @@
         } else if (state.hat === "helmet") {
           box(0, headY + .24, 0, .39, .17, .35, "#606b55");
         }
-        if (typeof faceSkin !== "undefined" && faceSkin.img.complete && faceSkin.img.naturalWidth) {
+        if (typeof faceSkin !== "undefined" && faceSkin.img?.width > 0 && faceSkin.img?.height > 0) {
           list.push({ pts: [[-.16, headY - .17, .151], [.16, headY - .17, .151],
             [.16, headY + .17, .151], [-.16, headY + .17, .151]].map(transform),
             uv: [[0, 512], [512, 512], [512, 0], [0, 0]], color: skin, skin: faceSkin });
@@ -4157,6 +4309,12 @@
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
       let mouseDown = false, mouseAim = false, sprintPose = 0, lastT = 0, pressedAt = -1;
+      function meleeViewmodelPose(w, now) {
+        const t = w.swingStart >= 0 ? Math.min(1, (now - w.swingStart) / .45) : 0;
+        const arc = Math.sin(Math.PI * t);
+        if (w.item.id === "karambit") return { ang: 1.15 - 2.5 * arc, offX: .3, offY: -.12 + .1 * arc, offZ: .5 + .22 * arc };
+        return { ang: .9 - 1.8 * arc, offX: .3, offY: -.12, offZ: .55 + .15 * arc };
+      }
       function viewmodelQuads(w, moving, shieldSidearm = false) {
         const k = w.kick, bob = moving ? Math.sin(tNow * 10) * .014 : Math.sin(tNow * 1.5) * .004;
         let ang = k * .12, offY = -.2 + bob, offX = .17 + Math.cos(tNow * 5) * (moving ? .012 : .003), offZ = .22 + w.rear * K - k * .11;
@@ -4164,8 +4322,8 @@
         const reloadProgress = w.reloadEnd ? Math.max(0, Math.min(1, (tNow - w.reloadStart) / w.kind.reload)) : 1;
         const reloadDip = w.reloadEnd ? Math.sin(Math.PI * reloadProgress) : 0;
         if (w.kind.melee) {
-          ang = .9; offX = .3; offY = -.12; offZ = .55;
-          if (w.swingStart >= 0) { const t = Math.min(1, (tNow - w.swingStart) / .45); ang = .9 - 1.8 * Math.sin(Math.PI * Math.min(1, t)); offZ += .15 * Math.sin(Math.PI * t); }
+          const pose = meleeViewmodelPose(w, tNow);
+          ang = pose.ang; offX = pose.offX; offY = pose.offY; offZ = pose.offZ;
         }
         let vs = 1;
         if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
@@ -4794,7 +4952,7 @@
         collectPickups();
         if (multiplayer.match) updateInteract();
         const cw = wpn();
-        const speedBonus = selectedOperatorId === "hallway-monitor" ? 1.3 : 1;
+        const speedBonus = (selectedOperatorId === "hallway-monitor" ? 1.3 : 1) * (cw.item.id === "karambit" ? 1.15 : 1);
         const droneSpeed = drone.mode === "camera" ? 12 : 8;
         const sp = drone.active ? droneSpeed * dt : (sprinting ? 8.5 : 5.5) * speedBonus * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
         const fwd = drone.deploying ? 0 : (k(currentKeybinds.moveForward) || k("arrowup")) - (k(currentKeybinds.moveBackward) || k("arrowdown"));

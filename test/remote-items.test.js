@@ -14,9 +14,9 @@ function simulation() {
   const testSkin = { id: "test-skin" };
   const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, tNow: 0, barricadeBuildDuration: 1.35,
     remoteBarricadeActions: new Map(), paintColors: [{ c: "#f6df35" }],
-    faceSkin: { id: "face", img: { complete: true, naturalWidth: 512 } },
+    faceSkin: { id: "face", img: { width: 256, height: 256 } },
     skins: [{ id: "circuit", img: { complete: true, naturalWidth: 512 } }], materials: {
-    body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
+    body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
     medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b"
   }, keychains: [
     { id: "none", name: "None", color: "#3d413c", shape: "none" },
@@ -37,7 +37,7 @@ test("all equipped item types produce world geometry at the player", () => {
   const sim = simulation();
   for (const [slot, ids] of Object.entries({
     primary: ["mk18", "vector", "hammer", "longwatch"],
-    secondary: ["p45", "rattler", "magnum", "sledgehammer"],
+    secondary: ["p45", "rattler", "magnum", "sledgehammer", "karambit"],
     gadget: ["drone", "camera-drone", "steel-bars", "medkit"],
     equipment: ["frag", "flash", "smoke", "claymore"]
   })) {
@@ -49,6 +49,37 @@ test("all equipped item types produce world geometry at the player", () => {
       assert.ok(quads.flatMap((q) => q.pts).every((p) => Math.hypot(p[0] - 10, p[1] - 1.3, p[2] - 3) < 1.5), id);
     }
   }
+});
+
+test("karambit blade sits on the handle side and both ends face down", () => {
+  const sim = simulation();
+  const [bladeTipY, guardY, handleTipY, bladeX, handleX, guardX] = vm.runInNewContext(`(() => {
+    const parts = modelDefs.karambit.parts;
+    const blade = buildPolys(parts.filter((part) => part.m === "blade"));
+    const screenY = ([x, y]) => x * Math.sin(.9) + y * Math.cos(.9);
+    const bladeTip = Math.min(...blade.flatMap((poly) => poly.v.map((point) => screenY(point))));
+    const guard = parts.find((part) => part.m === "metal");
+    const handleParts = parts.filter((part) => part.m === "accent");
+    const handleTip = Math.min(...handleParts.map((part) => part.c[1]));
+    const bladeX = parts.filter((part) => part.m === "blade").reduce((sum, part) => sum + part.c[0], 0) / 4;
+    const handleX = handleParts.reduce((sum, part) => sum + part.c[0], 0) / handleParts.length;
+    return [bladeTip, screenY(guard.c), handleTip, bladeX, handleX, guard.c[0]];
+  })()`, sim);
+  assert.ok(bladeTipY < guardY - .25, "Karambit blade should angle down from the hand guard");
+  assert.ok(handleTipY < -.29, "Karambit handle hook should angle down");
+  assert.ok(bladeX < guardX && handleX > guardX, "Blade should be on the former handle side");
+  assert.equal(vm.runInNewContext("modelDefs.karambit.parts.filter((part) => part.m === 'blade').length", sim), 4);
+});
+
+test("karambit is held in reverse grip and swings up through the hit", () => {
+  const context = { Math };
+  vm.runInNewContext(section("      function meleeViewmodelPose(", "      function viewmodelQuads("), context);
+  const pose = (start, now) => vm.runInNewContext(
+    `meleeViewmodelPose({ item: { id: "karambit" }, swingStart: ${start} }, ${now})`, context);
+  const idle = pose(-1, 0), impact = pose(0, .3);
+  assert.ok(idle.ang > .9, "Karambit should rest in a steeper reverse-grip pose");
+  assert.ok(impact.ang < 0, "Blade should rotate upward at the strike");
+  assert.ok(impact.offY > idle.offY && impact.offZ > idle.offZ, "Strike should lift and extend the blade");
 });
 
 test("medkit world model has a light case, medical cross and reinforced trim", () => {
@@ -80,6 +111,23 @@ test("operator faces use the texture and hats are cosmetic geometry", () => {
   assert.ok(plain.some((quad) => quad.skin === sim.faceSkin && quad.uv.length === 4));
   assert.ok(cap.length > plain.length);
   assert.equal(plain.some((quad) => quad.color === "#302722" || quad.color === "#754f45"), false);
+});
+
+test("operator portrait is resized to a power-of-two texture before WebGL upload", () => {
+  const drawn = [], canvas = { width: 0, height: 0,
+    getContext: () => ({ drawImage: (...args) => drawn.push(args) }) };
+  const context = {
+    faceSkin: { id: "operator-face", img: null }, faceSkinPhoto: {},
+    document: { createElement: () => canvas }, console, activeSection: "PLAY", inspectTarget: null
+  };
+  const loader = section("    faceSkinPhoto.onload = () => {", "    const usage = {};");
+  vm.runInNewContext(`${loader}\nglobalThis.loadFace = faceSkinPhoto.onload;`, context);
+  context.loadFace();
+  assert.equal(canvas.width, 256);
+  assert.equal(canvas.height, 256);
+  assert.equal(context.faceSkin.img, canvas);
+  assert.deepEqual(drawn[0].slice(1), [0, 0, 256, 256]);
+  assert.equal(context.faceSkinPhoto.src, "assets/operator-face.png");
 });
 
 test("world textures use the camera transform while viewmodel textures remain camera-relative", () => {
