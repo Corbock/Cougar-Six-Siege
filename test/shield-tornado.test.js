@@ -149,28 +149,37 @@ test("compact medkit opens away from the player, shows remaining bandages, then 
   assert.ok(wrapped.filter((quad) => quad.color === "#f7f5ea").length >= 60,
     "Bandage should form a visible spiral around the forearm");
   const spiralPoints = wrapped.filter((quad) => quad.color === "#f7f5ea" &&
-    quad.pts.reduce((sum, point) => sum + point[0], 0) / quad.pts.length > .15 &&
-    quad.pts.reduce((sum, point) => sum + point[0], 0) / quad.pts.length < .3)
+    quad.pts.reduce((sum, point) => sum + point[0], 0) / quad.pts.length > -.6 &&
+    quad.pts.reduce((sum, point) => sum + point[0], 0) / quad.pts.length < -.2)
     .flatMap((quad) => quad.pts);
-  assert.ok(Math.min(...spiralPoints.map((point) => point[2])) < .43 &&
-    Math.max(...spiralPoints.map((point) => point[2])) > .53,
-  "Bandage should wrap around both the near and far sides of the forearm");
-  const wrapProgress = (3.8 - 2.55) / 1.45;
-  const armStart = [.78, -.6];
-  const armEndX = .39 - wrapProgress * .34;
-  const armEndY = -.36 + ((armEndX + .82) / 1.26) * .21 +
-    .09 + Math.sin(wrapProgress * Math.PI * 10) * .012;
+  assert.ok(Math.min(...spiralPoints.map((point) => point[2])) > .48 &&
+    Math.max(...spiralPoints.map((point) => point[2])) < .525,
+  "Bandage should sit outside the front surface of the arm");
+  const armStart = [-.45, -.28];
+  const armEndX = -.19;
+  const armEndY = -.15;
   const armDx = armEndX - armStart[0], armDy = armEndY - armStart[1];
   const armLength = Math.hypot(armDx, armDy);
   const forearmFractions = spiralPoints.map((point) =>
     ((point[0] - armStart[0]) * armDx + (point[1] - armStart[1]) * armDy) / armLength ** 2);
-  assert.ok(Math.min(...forearmFractions) >= .64 && Math.max(...forearmFractions) <= .98,
-    "Bandage should stay on the exposed forearm instead of drifting onto the hand or sleeve");
+  assert.ok(Math.min(...forearmFractions) >= .63 && Math.max(...forearmFractions) <= 1.01,
+    "Bandage should stay on the exposed left forearm instead of drifting onto the hand or sleeve");
+  assert.ok(Math.max(...spiralPoints.map((point) => point[0])) < 0,
+    "Bandage should wrap the left arm rather than the right");
+  const projectedPoints = spiralPoints.map((point) =>
+    [point[0] * 1.8 * 9 / 16 / point[2], point[1] * 1.8 / point[2]]);
+  assert.ok(projectedPoints.every(([x, y]) => Math.abs(x) < 1 && Math.abs(y) < 1),
+    "Bandage should stay fully in frame");
+  const applyingHand = wrapped.filter((quad) => quad.color === "#c89170")
+    .flatMap((quad) => quad.pts).filter((point) => point[2] <= .405);
+  assert.ok(applyingHand.length > 0 &&
+    Math.max(...applyingHand.map((point) => point[1] * 1.8 / point[2])) < -.4,
+  "Applying hand should stay in the lower half of the screen");
   const wrappedHand = wrapped.filter((quad) => quad.color === "#c89170" &&
     quad.pts.reduce((sum, point) => sum + point[2], 0) / quad.pts.length > .54)
-    .flatMap((quad) => quad.pts);
-  assert.ok(Math.max(...wrappedHand.map((point) => point[0])) > .48 &&
-    Math.max(...wrappedHand.map((point) => point[1])) > -.11, "Wrapped forearm and hand should be prominent on screen");
+    .flatMap((quad) => quad.pts).filter((point) => point[0] < 0);
+  assert.ok(wrappedHand.length > 0 && Math.max(...wrappedHand.map((point) => point[1])) > -.11,
+    "Wrapped left forearm and hand should be prominent on screen");
 });
 
 test("full-health medkits are usable in freeplay but remain blocked in multiplayer", () => {
@@ -224,9 +233,11 @@ function renderViewmodel(operator, item, droneActive = false) {
     blendFunc: () => {}, depthMask: (v) => calls.push(["depth", v]),
     uniform1f: (_location, value) => calls.push(["alpha", value])
   };
-  const context = { fwd: 0, str: 0, dead: false, optic: null, drone: { active: droneActive },
+  const context = { fwd: 0, str: 0, dead: false, optic: null, drone: { active: droneActive, deploying: null },
     cw: { item: { id: item } }, selectedOperatorId: operator, weapons: { p45: { item: { id: "p45" } } },
+    grenadeThrowActionActive: () => false, grenadeThrowActionQuads: () => [],
     medkitActionActive: () => false, medkitActionQuads: () => [{}],
+    barricadeActionActive: () => false, barricadeActionQuads: () => [],
     gl, u: () => "alpha",
     viewmodelQuads: (w, _moving, sidearm) => {
       calls.push(["model", w.item.id, Boolean(sidearm)]);

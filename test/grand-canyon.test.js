@@ -158,7 +158,7 @@ test("all Grand Canyon openings fit barricades from both sides, but not through 
   assert.equal(map.findOpening(origin, direction, 4.2, clearance), null);
 });
 
-test("placing a Grand Canyon barricade creates and relays the doorway fit", () => {
+test("placing and repairing a Grand Canyon barricade triggers its construction action", () => {
   const html = fs.readFileSync("index.html", "utf8");
   const start = html.indexOf("      function placeBarricade()"), end = html.indexOf("      function makeBarricade(", start);
   assert.ok(start >= 0 && end > start);
@@ -169,10 +169,13 @@ test("placing a Grand Canyon barricade creates and relays the doorway fit", () =
   const context = {
     cam, renderCam: cam, GrandCanyon: map, isCanyon: () => true, isDead: () => false,
     aimedBarricade: () => null, aimDir: () => [0, 0, -1], clearance: (_o, _d, max) => max,
-    makeBarricade: (fit) => { placed.push(fit); return fit; }, sendMatch: (message) => sent.push(message),
+    makeBarricade: (fit) => { placed.push(fit); return fit; }, startBarricadeRepair: (bar) => repairs.push(bar),
+    sendMatch: (message) => sent.push(message),
     say: (message) => notices.push(message), barCount: 6, barSeq: 0, multiplayer: { playerId: "test" },
-    BAR_TH: .12, R: .35, eyeHeight: 1.8
+    BAR_TH: .12, CELL_HP: 50, STEEL_HP: 150, R: .35, eyeHeight: 1.8, tNow: 12, barricadeActionStart: -1,
+    barricadeActionActive: () => false
   };
+  const repairs = [];
   vm.runInNewContext(html.slice(start, end), context);
   context.placeBarricade();
   assert.equal(placed.length, 1);
@@ -182,7 +185,17 @@ test("placing a Grand Canyon barricade creates and relays the doorway fit", () =
   assert.equal(sent[0].op, "place");
   assert.equal(sent[0].fit.n, opening.n);
   assert.equal(context.barCount, 5);
+  assert.equal(placed[0].building, true);
+  assert.equal(context.barricadeActionStart, 12);
   assert.equal(notices[0], "BARRICADE PLACED");
+
+  const damaged = { id: "damaged", steel: false, hp: [0, 50] };
+  context.aimedBarricade = () => damaged;
+  context.placeBarricade();
+  assert.deepEqual(repairs, [damaged]);
+  assert.equal(context.barricadeActionStart, 12);
+  assert.equal(sent[1].op, "repair");
+  assert.equal(notices[1], "BARRICADE REPAIRED");
 });
 
 test("Grand Canyon furnishings and hallway posters use the requested assets", () => {

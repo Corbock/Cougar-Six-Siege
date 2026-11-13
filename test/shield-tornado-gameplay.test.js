@@ -53,6 +53,26 @@ test("strong tornado movement cannot skip through thin walls", () => {
   assert.ok(position.x < .4);
 });
 
+test("drone movement blocks barricade panels but fits through openings wider than its body", () => {
+  const context = { Math, colliders: [], DRONE_RADIUS: .2, DRONE_HEIGHT: .3 };
+  vm.runInNewContext(section(html, "      function probeDrone(", "      function clampLean("), context);
+  const wall = (z0, z1) => ({ x0: .45, x1: .55, y0: 0, y1: 2, z0, z1 });
+  const moveAcross = () => {
+    const position = { x: 0, z: 0 };
+    context.moveDroneWithCollision(position, 1, 0, .27);
+    return position.x;
+  };
+  context.colliders = [wall(-1, 1)];
+  assert.ok(moveAcross() < .3, "An intact barricade must stop the drone");
+  context.colliders = [wall(-1, -.1), wall(.1, 1)];
+  assert.ok(moveAcross() < .3, "A gap narrower than the drone must remain blocked");
+  context.colliders = [wall(-1, -.25), wall(.25, 1)];
+  assert.ok(moveAcross() > .9, "A gap wide enough for the drone must be traversable");
+  context.colliders = [{ x0: .45, x1: .55, y0: 1.4, y1: 1.6, z0: -1, z1: 1 }];
+  assert.equal(context.droneVerticalBlocked(.5, 0, 1.2, 1.8), true, "Vertical movement must not tunnel through a board");
+  assert.equal(context.droneVerticalBlocked(.8, 0, 1.2, 1.8), false, "The drone may climb outside the barricade");
+});
+
 test("lean camera stops at walls and never skips through thin collision geometry", () => {
   const context = { Math, colliders: [{ x0: .4, x1: .5, y0: 0, y1: 2.5, z0: -1, z1: 1 }],
     R: .35, STEP: .7, eyeHeight: 1.8 };
@@ -148,7 +168,8 @@ test("client and server shield planes agree for standing, crouching, leaning and
 
 test("remote operator mesh shows a shield only while shield is active", () => {
   const boxes = [];
-  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, remoteEquippedItem: (player) => player.state.shieldActive ? "shield" : null,
+  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, tNow: 0, barricadeBuildDuration: 1.35,
+    remoteBarricadeActions: new Map(), remoteEquippedItem: (player) => player.state.shieldActive ? "shield" : null,
     qb: (_list, x0, x1, y0, y1, z0, z1, color, transform) =>
     boxes.push({ color, point: transform([(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2]) }) };
   vm.runInNewContext(section(html, "      function operatorMeshQuads(", "      function droneWorldQuads("), context);
