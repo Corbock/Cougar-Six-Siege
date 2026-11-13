@@ -561,14 +561,14 @@ function uncoveredHeadHit(state, origin, direction) {
     headDistance < rayBox(origin, direction, box(.45, .35, .05, head[0]));
 }
 
-function isInstantHeadshotWeapon(player, kit) {
-  if (!player?.state?.activeSlot) return false;
-  return player.state.activeSlot === "primary" ||
-    (player.state.activeSlot === "secondary" && kit?.secondary === "magnum");
+function isInstantHeadshotWeapon(player, kit, state = player?.state) {
+  if (!state?.activeSlot) return false;
+  return state.activeSlot === "primary" ||
+    (state.activeSlot === "secondary" && kit?.secondary === "magnum");
 }
 
-function shootHostage(match, player, message, now) {
-  const state = player.state, lean = state.lean || 0, aim = message.direction || {};
+function shootHostage(match, player, message, now, state = player.state) {
+  const lean = state.lean || 0, aim = message.direction || {};
   const length = Math.hypot(aim.x, aim.y, aim.z);
   if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
   const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
@@ -585,7 +585,7 @@ function shootHostage(match, player, message, now) {
   const damage = Number(message.damage);
   if (!best || bestDistance > 100 || !Number.isFinite(damage)) return;
   player.lastShotAt = now;
-  const shieldDistance = hasActiveSniper(player) ? Infinity : nearestShieldHit(match, player, origin, direction, bestDistance);
+  const shieldDistance = hasActiveSniper(player, state) ? Infinity : nearestShieldHit(match, player, origin, direction, bestDistance);
   if (Number.isFinite(shieldDistance)) return relayShieldImpact(match, player, origin, direction, shieldDistance, true);
   hostageHurt(match, player, best, Math.min(55, Math.max(1, damage)));
 }
@@ -636,8 +636,8 @@ function hasActiveShield(player, state) {
     (player.operatorId === "ms-c" || (player.operatorId === "custom" && player.customGadget === "shield"));
 }
 
-function hasActiveSniper(player) {
-  return player.state.activeSlot === "primary" &&
+function hasActiveSniper(player, state = player.state) {
+  return state.activeSlot === "primary" &&
     (player.operatorId === "hallway-monitor" || (player.operatorId === "custom" && player.customPrimary === "longwatch"));
 }
 
@@ -724,31 +724,32 @@ function handleMessage(player, raw) {
     const now = Date.now();
     const match = matches.get(player.matchId);
     if (!match || match.phase !== "live" || player.health <= 0) return;
+    const snapshotAt = Number(message.snapshotAt);
+    const shooterState = stateAt(player, snapshotAt, now);
     const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
     const pelletId = player.state.activeSlot === "primary" && kit.primary === "hammer" &&
       typeof message.shotId === "string" && message.shotId.length > 0 && message.shotId.length <= 48 ? message.shotId : null;
     const volley = pelletId && player.shotgunVolley?.id === pelletId && now - player.shotgunVolley.started < 100;
     if (volley ? player.shotgunVolley.count >= 8 : now - player.lastShotAt < 70) return;
     if (message.targetId === "hostage") {
-      if (!volley) shootHostage(match, player, message, now);
+      if (!volley) shootHostage(match, player, message, now, shooterState);
       return;
     }
     const target = players.get(String(message.targetId || ""));
     if (!target || target.matchId !== player.matchId || target.team === player.team || target.health <= 0) return;
-    const lean = player.state.lean || 0;
+    const lean = shooterState.lean || 0;
     const origin = {
-      x: player.state.x + Math.cos(player.state.yaw) * lean * .7,
-      y: player.state.y - Math.abs(lean) * .12,
-      z: player.state.z - Math.sin(player.state.yaw) * lean * .7
+      x: shooterState.x + Math.cos(shooterState.yaw) * lean * .7,
+      y: shooterState.y - Math.abs(lean) * .12,
+      z: shooterState.z - Math.sin(shooterState.yaw) * lean * .7
     };
-    const cosPitch = Math.cos(player.state.pitch);
-    const forward = { x: Math.sin(player.state.yaw) * cosPitch, y: Math.sin(player.state.pitch), z: Math.cos(player.state.yaw) * cosPitch };
+    const cosPitch = Math.cos(shooterState.pitch);
+    const forward = { x: Math.sin(shooterState.yaw) * cosPitch, y: Math.sin(shooterState.pitch), z: Math.cos(shooterState.yaw) * cosPitch };
     const aim = message.direction || {};
     const length = Math.hypot(aim.x, aim.y, aim.z);
     if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
     const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
     if (direction.x * forward.x + direction.y * forward.y + direction.z * forward.z < Math.cos(.3)) return;
-    const snapshotAt = Number(message.snapshotAt);
     const targetState = stateAt(target, snapshotAt, now);
     const targetLean = targetState.lean || 0;
     const targetBase = targetState.y - Math.abs(targetLean) * .12 - (targetState.crouched ? 1.05 : 1.8);
@@ -764,12 +765,12 @@ function handleMessage(player, raw) {
       else player.shotgunVolley = { id: pelletId, started: now, count: 1 };
     }
     if (!volley) player.lastShotAt = now;
-    const shieldDistance = hasActiveSniper(player) ? Infinity : nearestShieldHit(match, player, origin, direction, distance, snapshotAt, now);
+    const shieldDistance = hasActiveSniper(player, shooterState) ? Infinity : nearestShieldHit(match, player, origin, direction, distance, snapshotAt, now);
     if (Number.isFinite(shieldDistance)) {
       relayShieldImpact(match, player, origin, direction, shieldDistance, true);
       return;
     }
-    const instantHeadshot = isInstantHeadshotWeapon(player, kit) && uncoveredHeadHit(targetState, origin, direction);
+    const instantHeadshot = isInstantHeadshotWeapon(player, kit, shooterState) && uncoveredHeadHit(targetState, origin, direction);
     if (volley && !instantHeadshot) return;
     applyDamage(match, player, target, instantHeadshot ? target.health : Math.min(55, Math.max(1, damage)));
     return;
@@ -949,9 +950,13 @@ function handleMessage(player, raw) {
     const number = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
     const match = matches.get(player.matchId);
     const locked = match?.phase === "prep";
-    const side = (value) => locked ? (player.team === 1 ? Math.min(value, -barrierClampZ) : Math.max(value, barrierClampZ)) : value;
+    const side = (value, reverse = false) => locked
+      ? player.team === 1
+        ? (reverse ? Math.max(value, barrierClampZ) : Math.min(value, -barrierClampZ))
+        : (reverse ? Math.min(value, -barrierClampZ) : Math.max(value, barrierClampZ))
+      : value;
     const positionLimit = match?.map === "harbor" ? 240 : 120;
-    const xPosition = (value) => match?.map === "harbor" ? side(number(value, positionLimit)) : number(value, positionLimit);
+    const xPosition = (value) => match?.map === "harbor" ? side(number(value, positionLimit), true) : number(value, positionLimit);
     const zPosition = (value) => match?.map === "harbor" ? number(value, positionLimit) : side(number(value, positionLimit));
     const body = {
       x: xPosition(state.x),

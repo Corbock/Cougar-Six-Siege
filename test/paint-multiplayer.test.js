@@ -65,14 +65,19 @@ test("paint colors and impacts synchronize, and invalid paint is rejected", asyn
   const target = messages[1].find((m) => m.type === "welcome").playerId;
   await sleep(60);
   send(1, { type: "state", state: { x: 0, y: 1.8, z: 10, yaw: Math.PI, pitch: 0, activeSlot: "primary" } });
-  const aimedSnapshot = await waitFor(() => messages[0].find((m) => m.type === "snapshot" && m.players.find((p) => p.id === target)?.state.z === 10), "Target state not synchronized");
+  await waitFor(() => messages[0].find((m) => m.type === "snapshot" && m.players.find((p) => p.id === target)?.state.z === 10), "Target state not synchronized");
   send(0, { type: "paint", point: [0, 1.8, 9.65], normal: [0, 0, -1], size: .11, color: "#32a6ef",
     targetId: target, targetAnchor: [.1, 1.8, 10] });
   const playerMark = await waitFor(() => messages[1].find((m) => m.type === "paint" && m.targetId === target), "Player paint not relayed");
   assert.deepEqual(playerMark.targetAnchor, [.1, 1.8, 10]);
   send(1, { type: "state", state: { x: 2, y: 1.8, z: 10, yaw: Math.PI, pitch: 0, activeSlot: "primary" } });
   await waitFor(() => messages[0].some((m) => m.type === "snapshot" && m.players.find((p) => p.id === target)?.state.x === 2), "Target movement was not synchronized");
-  send(0, { type: "shoot", targetId: target, damage: 1, snapshotAt: aimedSnapshot.serverTime, direction: { x: 0, y: 0, z: 1 } });
+  send(0, { type: "state", state: { x: 2, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: "primary" } });
+  const alignedSnapshot = await waitFor(() => messages[1].find((m) => m.type === "snapshot" &&
+    m.players.find((p) => p.id === shooter)?.state.x === 2), "Shooter position was not synchronized");
+  await sleep(60);
+  send(0, { type: "state", state: { x: 2, y: 1.8, z: 0, yaw: Math.PI, pitch: 0, activeSlot: "primary" } });
+  send(0, { type: "shoot", targetId: target, damage: 1, snapshotAt: alignedSnapshot.serverTime, direction: { x: 0, y: 0, z: 1 } });
   const hit = await waitFor(() => messages[0].find((m) => m.type === "player_damaged" && m.playerId === target), "Headshot not applied");
   assert.equal(hit.health, 0);
 });

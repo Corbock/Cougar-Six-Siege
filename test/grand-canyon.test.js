@@ -465,13 +465,13 @@ test("voting for Grand Canyon uses its spawns, objective locations and east-west
   assert.deepEqual(match.found[match.attacker].spawn, map.spawns[2][0]);
   const objective = match.found[0].objectives[0];
   assert.deepEqual({ x: objective.x, y: objective.y, z: objective.z }, map.sites[objective.site]);
-  match.place(match.defender, 10, 12);
-  match.place(match.attacker, -10, -12);
+  match.place(match.defender, -10, 12);
+  match.place(match.attacker, 10, -12);
   const snapshot = await waitFor(() => {
     const current = match.latest();
     const defender = current?.players.find((player) => player.team === 1);
     const attacker = current?.players.find((player) => player.team === 2);
-    return defender?.state.x === -.7 && attacker?.state.x === .7 && current;
+    return defender?.state.x === .7 && attacker?.state.x === -.7 && current;
   }, "Server did not apply the Grand Canyon preparation barrier");
   assert.equal(snapshot.players.find((player) => player.team === 1).state.z, 12);
   assert.equal(snapshot.players.find((player) => player.team === 2).state.z, -12);

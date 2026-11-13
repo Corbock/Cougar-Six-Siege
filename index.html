@@ -304,6 +304,68 @@
     .show-loadout .loadout-panel { display: block; }
     .show-loadout .intel-card { display: none; }
     .show-loadout { justify-content: flex-start; }
+    .packs-panel { display: none; width: min(480px, 100%); max-height: 78vh; overflow-y: auto; padding: 18px; border-left: 2px solid var(--acid); background: linear-gradient(100deg, rgba(16,18,16,.94), rgba(16,18,16,.72)); backdrop-filter: blur(7px); }
+    .show-packs .packs-panel { display: block; }
+    .show-packs .intel-card, .show-packs .operator-strip, .show-packs .loadout-panel, .show-packs .inspect { display: none; }
+    .show-packs { justify-content: center; }
+    .packs-summary { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+    .packs-count { color: var(--acid); font: 800 54px/.85 "Barlow Condensed", sans-serif; }
+    .packs-summary span { display: block; margin-top: 6px; color: #a9ada2; font-size: 9px; font-weight: 700; letter-spacing: 1.4px; }
+    .packs-collection-count { color: #d3ef59; font: 700 12px/1 "Barlow Condensed", sans-serif; letter-spacing: 1px; }
+    .pack-stage { --pack-glow: rgba(211,239,89,.22); position: relative; display: grid; height: 268px; place-items: center; overflow: hidden; margin: 18px 0 12px; border: 1px solid rgba(230,235,220,.2); background: radial-gradient(ellipse at 50% 68%, var(--pack-glow), transparent 42%), linear-gradient(145deg, #111713, #080a09 70%); box-shadow: inset 0 0 38px #000a; }
+    .pack-stage::before { position: absolute; width: 210px; height: 210px; border: 1px solid rgba(211,239,89,.16); border-radius: 50%; content: ""; box-shadow: 0 0 0 22px rgba(211,239,89,.025), 0 0 0 48px rgba(211,239,89,.018); transform: scale(.72); }
+    .pack-stage::after { position: absolute; z-index: 3; inset: 0; background: linear-gradient(180deg, transparent 48%, rgba(211,239,89,.13) 50%, transparent 52%); content: ""; opacity: 0; pointer-events: none; }
+    .pack-stage-mark, .pack-stage-footer { position: absolute; z-index: 4; right: 11px; left: 11px; display: flex; justify-content: space-between; color: #858d7e; font: 700 8px/1 "DM Sans", sans-serif; letter-spacing: 1.5px; }
+    .pack-stage-mark { top: 12px; }
+    .pack-stage-mark span:last-child { color: var(--acid); }
+    .pack-stage-footer { bottom: 12px; align-items: center; gap: 10px; }
+    .pack-stage-meter { width: 104px; height: 3px; overflow: hidden; background: #ffffff19; }
+    .pack-stage-meter i { display: block; width: 0; height: 100%; background: var(--acid); box-shadow: 0 0 8px var(--acid); }
+    .pack-crate { position: relative; z-index: 2; width: 146px; height: 112px; transform: perspective(420px) rotateX(-8deg); }
+    .pack-crate::after { position: absolute; right: -9px; bottom: -12px; left: -9px; height: 20px; border-radius: 50%; background: #000a; content: ""; filter: blur(6px); }
+    .pack-crate-front { position: absolute; inset: 24px 0 0; display: grid; place-items: center; border: 2px solid #75815c; background: repeating-linear-gradient(90deg, transparent 0 26px, #ffffff08 27px 29px), linear-gradient(135deg, #343d33, #202823 66%, #151a17); box-shadow: inset 0 0 0 5px #111914, inset 0 0 24px #0009, 0 12px 26px #0009; color: var(--acid); clip-path: polygon(8% 0, 100% 0, 100% 86%, 91% 100%, 0 100%, 0 14%); }
+    .pack-crate-front::before, .pack-crate-front::after { position: absolute; top: 0; bottom: 0; width: 5px; background: #89996a; content: ""; opacity: .8; }
+    .pack-crate-front::before { left: 17px; }
+    .pack-crate-front::after { right: 17px; }
+    .pack-crate-front strong { z-index: 1; font: 800 22px/1 "Barlow Condensed", sans-serif; letter-spacing: 5px; text-shadow: 0 0 16px #d3ef5966; }
+    .pack-crate-lid { position: absolute; z-index: 2; top: 6px; left: 5px; width: 136px; height: 27px; border: 1px solid #bac78b; background: repeating-linear-gradient(90deg, transparent 0 25px, #1d271b 26px 29px), linear-gradient(90deg, #69794c, #b0bf79 48%, #647449); box-shadow: 0 3px 8px #0009; clip-path: polygon(7% 0, 100% 0, 94% 100%, 0 100%); transform-origin: 50% 0; }
+    .pack-crate-latch { position: absolute; z-index: 3; bottom: 21px; left: calc(50% - 8px); width: 16px; height: 21px; border: 1px solid #aeb986; background: linear-gradient(90deg, #374130, #89966a, #374130); box-shadow: 0 0 0 3px #111914; }
+    .pack-reward { position: absolute; z-index: 2; display: grid; width: min(360px, 92%); min-height: 154px; grid-template-columns: 102px 1fr; align-items: center; gap: 14px; padding: 13px; border: 1px solid #e0ef9b; background: linear-gradient(135deg, rgba(48,57,38,.99), rgba(12,16,13,.99) 72%); box-shadow: 0 0 16px #d3ef5980, 0 0 52px #d3ef5945, 0 20px 46px #000e; text-align: left; }
+    .pack-reward-swatch { display: grid; width: 102px; height: 126px; place-items: end start; padding: 8px; border: 1px solid #ffffff55; background-color: #222820; background-position: center; background-size: cover; box-shadow: inset 0 0 24px #0008; }
+    .pack-reward-swatch span { padding: 4px 5px; background: #080b09d9; color: #d3ef59; font: 700 7px/1 "DM Sans", sans-serif; letter-spacing: 1px; }
+    .pack-reward-copy { display: grid; gap: 7px; min-width: 0; }
+    .pack-reward[hidden] { display: none; }
+    .pack-reward small { color: #d3ef59; font-size: 8px; font-weight: 700; letter-spacing: 1.6px; }
+    .pack-reward strong { font: 700 24px/.95 "Barlow Condensed", sans-serif; text-transform: uppercase; }
+    .pack-reward span { color: #bdc3b4; font-size: 9px; line-height: 1.45; }
+    .pack-stage.opening { --pack-glow: rgba(211,239,89,.38); }
+    .pack-stage.opening::before { animation: pack-charge 2.2s ease-out both; }
+    .pack-stage.opening::after { animation: pack-scan 1.5s linear 2; }
+    .pack-stage.opening .pack-crate { animation: pack-rattle 2.2s cubic-bezier(.4,0,.2,1) both; }
+    .pack-stage.opening .pack-crate-lid { animation: pack-lid-release 2.2s cubic-bezier(.2,.8,.2,1) both; }
+    .pack-stage.opening .pack-stage-meter i { animation: pack-progress 2.2s cubic-bezier(.12,.76,.22,1) both; }
+    .pack-stage.revealed { --pack-glow: rgba(211,239,89,.48); }
+    .pack-stage.revealed::before { opacity: .7; transform: scale(1.22); transition: opacity .5s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
+    .pack-stage.revealed .pack-crate { opacity: .18; transform: perspective(420px) rotateX(-8deg) scale(.72) translateY(24px); transition: opacity .4s ease, transform .5s ease; }
+    .pack-stage.revealed .pack-reward { animation: pack-reveal .7s cubic-bezier(.16,1.25,.35,1) both; }
+    .pack-status { min-height: 32px; margin: 0 0 12px; color: #b7bab1; font-size: 10px; line-height: 1.5; }
+    .pack-open { width: 100%; min-height: 48px; border: 1px solid var(--acid); background: linear-gradient(110deg, #d3ef59, #b9d749); box-shadow: 0 5px 18px #d3ef5926; color: #151812; cursor: pointer; font: 700 14px/1 "Barlow Condensed", sans-serif; letter-spacing: 1.6px; transition: box-shadow .2s ease, transform .2s ease, background .2s ease; }
+    .pack-open:hover:not(:disabled) { background: #e1fa76; box-shadow: 0 0 22px #d3ef595c; transform: translateY(-1px); }
+    .pack-open:disabled { cursor: not-allowed; opacity: .45; }
+    .pack-inventory { margin-top: 17px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .pack-inventory-title { margin-bottom: 8px; color: #a9ada2; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; }
+    .pack-inventory-list { display: grid; gap: 5px; }
+    .pack-inventory-item { display: flex; justify-content: space-between; gap: 10px; padding: 7px 9px; border: 1px solid rgba(230,235,220,.1); background: rgba(0,0,0,.2); color: #e7e8e1; font: 600 12px/1 "Barlow Condensed", sans-serif; }
+    .pack-inventory-item span:last-child { color: #a9ada2; font-size: 10px; }
+    .pack-equip { padding: 3px 6px; border: 1px solid rgba(211,239,89,.35); background: transparent; color: var(--acid); cursor: pointer; font: 700 8px/1 "DM Sans", sans-serif; letter-spacing: .7px; }
+    .pack-equip:hover { border-color: var(--acid); }
+    .pack-equip:disabled { cursor: default; opacity: .6; }
+    @keyframes pack-rattle { 0%, 100% { transform: perspective(420px) rotateX(-8deg) translateX(0) rotateZ(0) scale(1); } 8%, 24%, 40%, 56% { transform: perspective(420px) rotateX(-8deg) translateX(-7px) rotateZ(-3deg) scale(1.02); } 16%, 32%, 48%, 64% { transform: perspective(420px) rotateX(-8deg) translateX(7px) rotateZ(3deg) scale(1.02); } 76% { transform: perspective(420px) rotateX(-8deg) scale(1.12); } 88% { transform: perspective(420px) rotateX(-8deg) scale(1.2) translateY(-12px); } }
+    @keyframes pack-lid-release { 0%, 72% { transform: rotateX(0); } 86%, 100% { transform: rotateX(72deg) translateY(-4px); } }
+    @keyframes pack-charge { 0% { opacity: 0; transform: scale(.55); } 52% { opacity: .7; transform: scale(.9); } 78% { opacity: .9; transform: scale(1.05); } 100% { opacity: .55; transform: scale(1.22); } }
+    @keyframes pack-scan { 0% { opacity: 0; transform: translateY(-100%); } 15%, 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(100%); } }
+    @keyframes pack-progress { 0% { width: 0; } 70% { width: 72%; } 88%, 100% { width: 100%; } }
+    @keyframes pack-reveal { 0% { opacity: 0; filter: brightness(2.2); transform: translateY(34px) scale(.48) rotateX(18deg); } 72% { opacity: 1; filter: brightness(1.3); transform: translateY(-5px) scale(1.04) rotateX(0); } 100% { opacity: 1; filter: brightness(1); transform: translateY(0) scale(1) rotateX(0); } }
     .slot-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
     .slot-tab { padding: 8px 4px 7px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); cursor: pointer; text-align: left; }
     .slot-tab.active { border-color: var(--acid); background: rgba(47,53,34,.78); }
@@ -462,6 +524,7 @@
         <button class="nav-button active" data-section="PLAY">PLAY</button>
         <button class="nav-button" data-section="TRAINING">TRAINING</button>
         <button class="nav-button" data-section="LOADOUT">LOADOUT</button>
+        <button class="nav-button" data-section="PACKS">ARMORY</button>
         <button class="nav-button" data-section="SETTINGS">SETTINGS</button>
       </nav>
       <div class="profile" aria-label="Player profile">
@@ -486,6 +549,27 @@
       </section>
 
       <aside class="right-column" id="right-column" aria-label="Mission and operator selection">
+        <section class="packs-panel" id="packs-panel" aria-labelledby="packs-heading">
+          <div class="packs-summary">
+            <div><h2 id="packs-heading" style="margin:0;color:#e7e8e1;font:700 23px/1 'Barlow Condensed',sans-serif;letter-spacing:1px">ARMORY PACKS</h2><span>ONE GUARANTEED WEAPON CAMO PER PACK</span></div>
+            <div style="text-align:right"><strong class="packs-count" id="pack-count">0</strong><span>READY</span></div>
+          </div>
+          <div class="pack-stage" id="pack-stage" aria-hidden="true">
+            <div class="pack-stage-mark"><span>FIELD SUPPLY // C6</span><span id="pack-stage-state">SEALED</span></div>
+            <div class="pack-crate">
+              <div class="pack-crate-lid"></div>
+              <div class="pack-crate-front"><strong>C6</strong><i class="pack-crate-latch"></i></div>
+            </div>
+            <div class="pack-reward" id="pack-reward" hidden>
+              <div class="pack-reward-swatch" id="pack-reward-swatch"><span>FIELD ISSUE</span></div>
+              <div class="pack-reward-copy"><small id="pack-reward-type">CAMO UNLOCKED</small><strong id="pack-reward-name"></strong><span id="pack-reward-detail"></span></div>
+            </div>
+            <div class="pack-stage-footer"><span>SECURE CONTAINER</span><div class="pack-stage-meter"><i></i></div></div>
+          </div>
+          <p class="pack-status" id="pack-status" role="status" aria-live="polite">Win a match to earn one pack. Packs contain a camo for a random weapon.</p>
+          <button class="pack-open" id="pack-open" disabled>WIN A MATCH TO EARN A PACK</button>
+          <div class="pack-inventory"><div class="pack-inventory-title"><span>UNLOCKED CAMOS</span> · <span id="pack-collection-count">0 / 32</span></div><div class="pack-inventory-list" id="pack-inventory-list"></div></div>
+        </section>
         <section class="settings-panel" id="settings-panel" aria-labelledby="keybind-heading">
           <h2 id="keybind-heading">KEYBINDS</h2>
           <p class="settings-note">Choose an action, then press a key. For ADS, you can also press the right or middle mouse button here. Escape cancels. Look, fire, arrow keys and Escape to exit are fixed.</p>
@@ -641,6 +725,16 @@
         action: "SAVE LOADOUT",
         mode: "ACTIVE KIT",
         detail: "Mr M · V-9 Vector"
+      },
+      PACKS: {
+        eyebrow: "ARMORY · EARN YOUR CAMOS",
+        title: "PACKS",
+        season: "ONE WIN · ONE PACK",
+        copy: "Win a match to earn an Armory Pack. Every pack unlocks a random weapon camo for your collection.",
+        mission: "NO PURCHASES · MATCH WINS ONLY",
+        action: "OPEN A PACK",
+        mode: "ARMORY",
+        detail: "CAMOS · REWARDS"
       },
       SETTINGS: {
         eyebrow: "PREFERENCES",
@@ -860,6 +954,7 @@
         }
         if (message.type === "round_end" && multiplayer.round) {
           multiplayer.round = { ...multiplayer.round, phase: message.matchWinner ? "over" : "roundEnd", wins: message.wins, winner: message.winner, reason: message.reason || "", endsAt: performance.now() + message.phaseMs };
+          if (message.matchWinner && multiplayer.match?.team === message.winner) awardMatchPack(multiplayer.match.matchId);
         }
         if (message.type === "snapshot" && message.matchId === multiplayer.match?.matchId) {
           multiplayer.round = { ...roundFrom(message), winner: multiplayer.round?.winner ?? null, reason: multiplayer.round?.reason ?? "" };
@@ -1167,10 +1262,10 @@
     const paintColor = (item) => paintColors.find((color) => color.c === customOf(item).paint)?.c || paintColors[0].c;
     const paintable = (item) => Boolean(item.dmg) || ["drone", "frag", "claymore"].includes(item.id);
     const skins = [
-      { id: "night-digital", name: "Night Digital", src: "assets/skin-night-digital.jpg", need: 10 },
-      { id: "tiger-stripe", name: "Tiger Stripe", src: "assets/skin-tiger-stripe.jpg", need: 30 },
-      { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg", need: 60 },
-      { id: "ember", name: "Ember", src: "assets/skin-ember.jpg", need: 100 }
+      { id: "night-digital", name: "Night Digital", src: "assets/skin-night-digital.jpg" },
+      { id: "tiger-stripe", name: "Tiger Stripe", src: "assets/skin-tiger-stripe.jpg" },
+      { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg" },
+      { id: "ember", name: "Ember", src: "assets/skin-ember.jpg" }
     ];
     const keychains = [
       { id: "none", name: "None", color: "#3d413c", shape: "none" },
@@ -1180,19 +1275,43 @@
       { id: "mini-drone", name: "Mini Drone", color: "#54c7d9", shape: "drone" }
     ];
     skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); if (activeSection === "LOADOUT" && selectedOperatorId !== "custom") drawOperatorKit(); }; skin.img.src = skin.src; });
+    const operatorFaceTexture = { id: "operator-face", img: null };
+    const operatorFacePhoto = new Image();
+    operatorFacePhoto.onload = () => {
+      const faceCanvas = document.createElement("canvas");
+      faceCanvas.width = 256; faceCanvas.height = 256;
+      const faceContext = faceCanvas.getContext("2d");
+      if (!faceContext) { console.error("Could not create operator face texture canvas."); return; }
+      faceContext.drawImage(operatorFacePhoto, 80, 145, 285, 300, 0, 0, faceCanvas.width, faceCanvas.height);
+      operatorFaceTexture.img = faceCanvas;
+    };
+    operatorFacePhoto.onerror = (error) => console.error("Could not load operator face texture:", error);
+    operatorFacePhoto.src = "assets/Poster_4.jpg";
     const usage = {};
     try { Object.assign(usage, JSON.parse(localStorage.getItem("c6-usage") || "{}")); } catch (error) {}
     const hitsWith = (id) => usage[id] || 0;
-    const UNLOCK_ALL_WRAPS = true; // testing switch; unlock toasts still follow the hit thresholds
-    const skinUnlocked = (skin, id) => UNLOCK_ALL_WRAPS || hitsWith(id) >= skin.need;
+    const packWeapons = loadoutSlots.flatMap((slot) => slot.items.filter((item) => item.dmg));
+    const skinUnlockKey = (weaponId, skinId) => `${weaponId}:${skinId}`;
+    const packPairs = packWeapons.flatMap((item) => skins.map((skin) => skinUnlockKey(item.id, skin.id)));
+    let armorySave = { packs: 0, wraps: [], rewardedMatches: [] };
+    try {
+      const saved = JSON.parse(localStorage.getItem("c6-armory") || "{}");
+      armorySave = {
+        packs: Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0,
+        wraps: Array.isArray(saved.wraps) ? saved.wraps.filter((key) => packPairs.includes(key)) : [],
+        rewardedMatches: Array.isArray(saved.rewardedMatches) ? saved.rewardedMatches.filter((id) => typeof id === "string") : []
+      };
+    } catch (error) { console.warn("Could not load Armory progress:", error); }
+    let packs = armorySave.packs;
+    const ownedWraps = new Set(armorySave.wraps);
+    const rewardedMatches = new Set(armorySave.rewardedMatches);
+    const skinUnlocked = (skin, id) => ownedWraps.has(skinUnlockKey(id, skin.id));
+    const unlockedWeaponSkins = (id) => skins.filter((skin) => skinUnlocked(skin, id));
     const weaponSkin = (id, skinId) => skins.find((skin) => skin.id === skinId && skinUnlocked(skin, id) && skin.img.complete && skin.img.naturalWidth) || null;
     const weaponName = (id) => loadoutSlots.flatMap((slot) => slot.items).find((item) => item.id === id)?.name || id;
     function recordHit(id) {
-      const before = hitsWith(id);
-      usage[id] = before + 1;
+      usage[id] = hitsWith(id) + 1;
       try { localStorage.setItem("c6-usage", JSON.stringify(usage)); } catch (error) {}
-      const unlocked = skins.find((skin) => before < skin.need && usage[id] >= skin.need);
-      if (unlocked) showToast(`Unlocked the ${unlocked.name} wrap for ${weaponName(id)}.`);
     }
 
     const attachmentOptions = {
@@ -1215,7 +1334,8 @@
     try { Object.assign(custom, JSON.parse(localStorage.getItem("c6-custom") || "{}")); } catch (error) {}
     const customOf = (item) => {
       const cfg = custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", keychain: "none", optic: "none", muzzle: "none", grip: "none" });
-      if (!skins.some((skin) => skin.id === cfg.skin)) cfg.skin = "none";
+      const selectedSkin = skins.find((skin) => skin.id === cfg.skin);
+      if (cfg.skin !== "none" && (!selectedSkin || !skinUnlocked(selectedSkin, item.id))) cfg.skin = "none";
       if (!keychains.some((keychain) => keychain.id === cfg.keychain)) cfg.keychain = "none";
       return cfg;
     };
@@ -1480,10 +1600,9 @@
       };
       document.querySelector("#inspect-stats").innerHTML = slot.stats ? `<div class="item-stats">${stat("DAMAGE", item.dmg, mods.dmg)}${stat("RANGE", item.rng, mods.rng)}${stat("MOBILITY", item.mob, mods.mob)}</div>` : "";
       const box_ = document.querySelector("#inspect-custom");
-      const wrapGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON SKIN · ${hitsWith(item.id)} HITS</div><div class="choices"><button class="choice wrap${cfg.skin === "none" ? " selected" : ""}" data-skin="none">Factory</button>${skins.map((k) => {
-        const open = skinUnlocked(k, item.id);
-        return `<button class="choice wrap${cfg.skin === k.id ? " selected" : ""}" data-skin="${k.id}"${open ? "" : " disabled"}>${k.name}<small>${open ? "" : `LOCKED · ${k.need} HITS`}</small></button>`;
-      }).join("")}</div></div>` : "";
+      const unlockedSkins = unlockedWeaponSkins(item.id);
+      const wrapGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON CAMOS · ${unlockedSkins.length} UNLOCKED</div><div class="choices"><button class="choice wrap${cfg.skin === "none" ? " selected" : ""}" data-skin="none">Factory</button>${unlockedSkins.map((k) =>
+        `<button class="choice wrap${cfg.skin === k.id ? " selected" : ""}" data-skin="${k.id}">${k.name}</button>`).join("")}</div><small class="skin-hint">${unlockedSkins.length ? "Open packs to discover more camos." : "Open an Armory Pack to unlock your first weapon camo."}</small></div>` : "";
       const keychainGroup = slot.stats ? `<div class="custom-group"><div class="custom-label">WEAPON KEYCHAIN</div><div class="choices">${keychains.map((keychain) =>
         `<button class="choice keychain-choice${cfg.keychain === keychain.id ? " selected" : ""}" data-keychain="${keychain.id}" aria-pressed="${cfg.keychain === keychain.id}">${keychain.name}</button>`).join("")}</div></div>` : "";
       box_.innerHTML = wrapGroup + keychainGroup + (paintable(item) ? `<div class="custom-group"><div class="custom-label">PAINT COLOR · ${paintColors.find((color) => color.c === paintColor(item)).name.toUpperCase()}</div><div class="swatches">${paintColors.map((color) =>
@@ -1515,6 +1634,158 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove("visible"), 2800);
     }
+
+    const packCountEl = document.querySelector("#pack-count");
+    const packOpenButton = document.querySelector("#pack-open");
+    const packStatusEl = document.querySelector("#pack-status");
+    const packStage = document.querySelector("#pack-stage");
+    const packReward = document.querySelector("#pack-reward");
+    const packRewardSwatch = document.querySelector("#pack-reward-swatch");
+    const packStageState = document.querySelector("#pack-stage-state");
+    const packInventory = document.querySelector("#pack-inventory-list");
+    const packCollectionCount = document.querySelector("#pack-collection-count");
+    let packOpening = false;
+    let packAudioContext = null;
+    let packStatusText = packs > 0 ? `You have ${packs} earned pack${packs === 1 ? "" : "s"} ready.` :
+      "Win a match to earn one pack. Packs contain a camo for a random weapon.";
+    function saveArmory() {
+      try {
+        localStorage.setItem("c6-armory", JSON.stringify({
+          packs, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches].slice(-80)
+        }));
+      } catch (error) {
+        console.warn("Could not save Armory progress:", error);
+        showToast("Could not save Armory progress in this browser.");
+      }
+    }
+    function renderArmory() {
+      packCountEl.textContent = String(packs);
+      packOpenButton.disabled = packs <= 0 || packOpening;
+      packOpenButton.textContent = packOpening ? "OPENING PACK..." : packs > 0 ? "OPEN ARMORY PACK" : "WIN A MATCH TO EARN A PACK";
+      packStatusEl.textContent = packStatusText;
+      const unlocked = packPairs.filter((key) => ownedWraps.has(key));
+      packCollectionCount.textContent = `${unlocked.length} / ${packPairs.length}`;
+      packInventory.replaceChildren();
+      if (!unlocked.length) {
+        const empty = document.createElement("div");
+        empty.className = "pack-inventory-item";
+        empty.textContent = "No pack camo unlocks yet";
+        packInventory.appendChild(empty);
+        return;
+      }
+      unlocked.forEach((key) => {
+        const [weaponId, skinId] = key.split(":");
+        const item = packWeapons.find((entry) => entry.id === weaponId);
+        const skin = skins.find((entry) => entry.id === skinId);
+        const row = document.createElement("div");
+        row.className = "pack-inventory-item";
+        const name = document.createElement("span");
+        name.textContent = skin.name;
+        const weapon = document.createElement("span");
+        weapon.textContent = weaponName(item.id);
+        const equip = document.createElement("button");
+        equip.className = "pack-equip";
+        const equipped = customOf(item).skin === skin.id;
+        equip.textContent = equipped ? "EQUIPPED" : "EQUIP";
+        equip.disabled = equipped;
+        equip.setAttribute("aria-label", `${equipped ? "Equipped" : "Equip"} ${skin.name} on ${weaponName(item.id)}`);
+        equip.addEventListener("click", () => {
+          customOf(item).skin = skin.id;
+          saveCustom();
+          refreshWeapons();
+          renderArmory();
+          showToast(`${skin.name} equipped on ${weaponName(item.id)}.`);
+        });
+        row.append(name, weapon, equip);
+        packInventory.appendChild(row);
+      });
+    }
+    function packRewardPool() {
+      return packPairs.filter((key) => {
+        const [weaponId, skinId] = key.split(":");
+        return !skinUnlocked(skins.find((entry) => entry.id === skinId), weaponId);
+      });
+    }
+    function playPackSound(reveal = false) {
+      if (!window.AudioContext) return;
+      try { packAudioContext ||= new window.AudioContext(); }
+      catch (error) { console.warn("Pack opening audio could not start:", error); return; }
+      const context = packAudioContext;
+      if (context.state === "suspended") context.resume().catch((error) => console.warn("Pack opening audio could not resume:", error));
+      const start = context.currentTime + .02;
+      const tones = reveal ? [[660, 990, .55, .045, 0], [990, 1320, .72, .025, .08]] :
+        [[110, 54, .5, .04, 0], [360, 540, .22, .018, .22], [420, 680, .24, .018, .72], [520, 820, .24, .018, 1.28]];
+      tones.forEach(([from, to, duration, volume, offset]) => {
+        const oscillator = context.createOscillator(), gain = context.createGain(), toneStart = start + offset;
+        oscillator.type = from < 200 ? "triangle" : "sine";
+        oscillator.frequency.setValueAtTime(from, toneStart);
+        oscillator.frequency.exponentialRampToValueAtTime(to, toneStart + duration);
+        gain.gain.setValueAtTime(volume, toneStart);
+        gain.gain.exponentialRampToValueAtTime(.0001, toneStart + duration);
+        oscillator.connect(gain); gain.connect(context.destination);
+        oscillator.start(toneStart); oscillator.stop(toneStart + duration + .01);
+      });
+    }
+    function openArmoryPack() {
+      if (packOpening || packs <= 0) return;
+      const pool = packRewardPool();
+      let reward;
+      if (pool.length) {
+        const [weaponId, skinId] = pool[Math.floor(Math.random() * pool.length)].split(":");
+        const item = packWeapons.find((entry) => entry.id === weaponId);
+        const skin = skins.find((entry) => entry.id === skinId);
+        ownedWraps.add(skinUnlockKey(weaponId, skinId));
+        reward = { title: skin.name, detail: `${weaponName(item.id)} · Equip it in LOADOUT`, type: "WEAPON CAMO UNLOCKED", skin };
+      } else {
+        const item = packWeapons[Math.floor(Math.random() * packWeapons.length)];
+        usage[item.id] = hitsWith(item.id) + 25;
+        try { localStorage.setItem("c6-usage", JSON.stringify(usage)); }
+        catch (error) { console.warn("Could not save weapon hit progress:", error); }
+        reward = { title: "+25 WEAPON HITS", detail: `${weaponName(item.id)} · Hit-based camo progress`, type: "DUPLICATE CONVERTED" };
+      }
+      packs--;
+      saveArmory();
+      packOpening = true;
+      packReward.hidden = true;
+      packStage.className = "pack-stage opening";
+      packStageState.textContent = "AUTHENTICATING";
+      packStatusText = "Container secured. Verifying your field reward...";
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      playPackSound(reducedMotion);
+      renderArmory();
+      const revealDelay = reducedMotion ? 80 : 2250;
+      if (!reducedMotion) {
+        setTimeout(() => { packStageState.textContent = "LOCK RELEASED"; }, revealDelay * .42);
+        setTimeout(() => { packStageState.textContent = "REWARD CONFIRMED"; }, revealDelay * .76);
+      }
+      setTimeout(() => {
+        document.querySelector("#pack-reward-type").textContent = reward.type;
+        document.querySelector("#pack-reward-name").textContent = reward.title;
+        document.querySelector("#pack-reward-detail").textContent = reward.detail;
+        packRewardSwatch.style.backgroundImage = reward.skin ?
+          `url("${reward.skin.src}")` : "radial-gradient(circle at 50% 42%, #d3ef59 0 3px, transparent 4px), linear-gradient(145deg, #303b2b, #121713)";
+        packRewardSwatch.firstElementChild.textContent = reward.skin ? "WEAPON CAMO" : "ARSENAL CREDIT";
+        packReward.hidden = false;
+        packStage.className = "pack-stage revealed";
+        packStageState.textContent = "UNLOCKED";
+        if (!reducedMotion) playPackSound(true);
+        packStatusText = `${reward.title} added to your collection.`;
+        packOpening = false;
+        renderArmory();
+      }, revealDelay);
+    }
+    function awardMatchPack(matchId) {
+      if (typeof matchId !== "string" || !matchId || rewardedMatches.has(matchId)) return;
+      rewardedMatches.add(matchId);
+      while (rewardedMatches.size > 80) rewardedMatches.delete(rewardedMatches.values().next().value);
+      packs++;
+      packStatusText = "VICTORY REWARD: one Armory Pack added.";
+      saveArmory();
+      renderArmory();
+      showToast("MATCH WON · 1 ARMORY PACK EARNED");
+    }
+    packOpenButton.addEventListener("click", openArmoryPack);
+    renderArmory();
 
     function selectOperator(id) {
       const operator = operatorRoster.find((entry) => entry.id === id);
@@ -1561,6 +1832,7 @@
       document.querySelector("#mode-button").innerHTML = `${content.mode}<span>${content.detail}</span>`;
       document.querySelector("#right-column").classList.toggle("show-play", isSelectable(section));
       document.querySelector("#right-column").classList.toggle("show-loadout", section === "LOADOUT");
+      document.querySelector("#right-column").classList.toggle("show-packs", section === "PACKS");
       document.querySelector("#right-column").classList.toggle("show-settings", section === "SETTINGS");
       document.querySelector("#main-content").classList.toggle("settings-active", section === "SETTINGS");
       if (recordingKeybind) {
@@ -1570,6 +1842,7 @@
       }
       if (section === "SETTINGS") renderKeybinds();
       if (section === "LOADOUT") renderLoadout();
+      if (section === "PACKS") renderArmory();
       if (isSelectable(section)) {
         renderSelect();
       } else {
@@ -2551,10 +2824,17 @@
         box(0, headY + .17, -.015, .35, .12, .32, hair);
         box(-.16, headY + .08, -.005, .045, .12, .27, hair);
         box(.16, headY + .08, -.005, .045, .12, .27, hair);
-        box(-.07, headY + .025, .155, .045, .035, .025, "#302722");
-        box(.07, headY + .025, .155, .045, .035, .025, "#302722");
-        box(0, headY - .035, .17, .055, .09, .05, skin);
-        box(0, headY - .11, .155, .09, .025, .025, "#754f45");
+        if (typeof operatorFaceTexture !== "undefined" && operatorFaceTexture.img) {
+          list.push({ pts: [
+            transform([-.13, headY - .14, .153]), transform([.13, headY - .14, .153]),
+            transform([.13, headY + .1, .153]), transform([-.13, headY + .1, .153])
+          ], uv: [[0, 512], [512, 512], [512, 0], [0, 0]], skin: operatorFaceTexture });
+        } else {
+          box(-.07, headY + .025, .155, .045, .035, .025, "#302722");
+          box(.07, headY + .025, .155, .045, .035, .025, "#302722");
+          box(0, headY - .035, .17, .055, .09, .05, skin);
+          box(0, headY - .11, .155, .09, .025, .025, "#754f45");
+        }
         box(0, crouched ? .79 : 1.12, .19, .16, .24, .04, "#f1f0eb");
         const item = remoteEquippedItem(player);
         if (!state.droneState && (state.shieldActive || item === "shield")) {
@@ -2662,9 +2942,11 @@
       const canFire = (w) => !isDead() && true;
       const objectiveMatch = () => ["defuse", "rescue"].includes(multiplayer.match?.mode);
       const defending = () => objectiveMatch() && multiplayer.match.team === 1;
-      const clampToSide = (value, margin) => multiplayer.match?.team === 1 ? Math.min(value, -margin) : Math.max(value, margin);
+      const clampToSide = (value, margin, reverse = false) => multiplayer.match?.team === 1
+        ? (reverse ? Math.max(value, margin) : Math.min(value, -margin))
+        : (reverse ? Math.min(value, -margin) : Math.max(value, margin));
       function clampBarrier(position, margin) {
-        if (isCanyon()) position.x = clampToSide(position.x, margin);
+        if (isCanyon()) position.x = clampToSide(position.x, margin, true);
         else position.z = clampToSide(position.z, margin);
       }
       const angleStep = (from, to, rate) => from + (((to - from + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * rate;
@@ -4675,8 +4957,13 @@
       const messages = {
         PLAY: `Deploying to ${selection.PLAY.map.name} · ${selection.PLAY.mode.name}. Your squad is being assembled.`,
         LOADOUT: `Loadout saved: ${loadoutSlots.map((slot) => chosen(slot).name).join(" · ")}.`,
+        PACKS: "Win a match to earn one Armory Pack.",
         SETTINGS: "Settings applied."
       };
+      if (activeSection === "PACKS") {
+        if (packs > 0) return openArmoryPack();
+        return showToast("Win a match to earn one Armory Pack.");
+      }
       if (activeSection === "TRAINING") return openFreeplay();
       if (activeSection === "PLAY") return openMatchLobby();
       showToast(messages[activeSection]);
@@ -4695,6 +4982,7 @@
         showToast(`Editing ${activeSlot.label.toLowerCase()} slot.`);
         return;
       }
+      if (activeSection === "PACKS") return showToast(`${packs} Armory Pack${packs === 1 ? "" : "s"} ready to open.`);
       showToast(`Playlist selected: ${sectionContent[activeSection].mode}.`);
     });
   </script>

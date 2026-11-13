@@ -13,7 +13,8 @@ function section(start, end) {
 function simulation() {
   const testSkin = { id: "test-skin" };
   const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, tNow: 0, barricadeBuildDuration: 1.35,
-    remoteBarricadeActions: new Map(), paintColors: [{ c: "#f6df35" }], materials: {
+    remoteBarricadeActions: new Map(), operatorFaceTexture: { id: "test-face", img: null },
+    paintColors: [{ c: "#f6df35" }], materials: {
     body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
     medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b"
   }, keychains: [
@@ -87,6 +88,19 @@ test("casual third-person models retain equipped shields and Ms C's pistol", () 
   assert.ok(customBody.some((quad) => quad.color === "#58656a"), "Custom should wear casual clothes");
   assert.equal(customBody.some((quad) => quad.color === "#414a3d" || quad.color === "#303831"), false, "The body should not have tactical armor");
   assert.notDeepEqual(customBody.map((quad) => quad.color), msC.map((quad) => quad.color));
+});
+
+test("operator heads render the loaded portrait as a face texture", () => {
+  const sim = simulation();
+  sim.operatorFaceTexture = { id: "test-face", img: {} };
+  const quads = [];
+  sim.operatorMeshQuads(quads, { operatorId: "custom", state: {
+    x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, crouched: false, lean: 0, activeSlot: "primary"
+  } }, "#ffffff");
+  const face = quads.find((quad) => quad.skin === sim.operatorFaceTexture);
+  assert.ok(face, "Operator head should use its photo texture");
+  assert.equal(face.pts.length, 4);
+  assert.match(html, /operatorFacePhoto\.src = "assets\/Poster_4\.jpg"/);
 });
 
 test("equipped item uses synchronized Custom state and preset fallback", () => {
