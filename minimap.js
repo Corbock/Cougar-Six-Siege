@@ -13,7 +13,7 @@
       (canvas.height - 2 * padding) / (bounds.z1 - bounds.z0));
     const left = (canvas.width - (bounds.x1 - bounds.x0) * scale) / 2;
     const top = (canvas.height - (bounds.z1 - bounds.z0) * scale) / 2;
-    const project = (point) => [left + (point.x - bounds.x0) * scale, top + (point.z - bounds.z0) * scale];
+    const project = (point) => [left + (bounds.x1 - point.x) * scale, top + (point.z - bounds.z0) * scale];
     base.fillStyle = "#141a18";
     base.fillRect(0, 0, canvas.width, canvas.height);
     base.fillStyle = "#555d56";
@@ -24,7 +24,7 @@
       const x0 = Math.max(bounds.x0, box.x0), x1 = Math.min(bounds.x1, box.x1);
       const z0 = Math.max(bounds.z0, box.z0), z1 = Math.min(bounds.z1, box.z1);
       if (x1 <= x0 || z1 <= z0) return;
-      const [x, z] = project({ x: x0, z: z0 });
+      const [x, z] = project({ x: x1, z: z0 });
       base.fillRect(x, z, Math.max(1, (x1 - x0) * scale), Math.max(1, (z1 - z0) * scale));
     });
 
@@ -39,7 +39,7 @@
       ctx.lineWidth = 2;
       ctx.beginPath();
       if (shape === "arrow") {
-        ctx.rotate(-(Number.isFinite(point.yaw) ? point.yaw : 0));
+        ctx.rotate(Number.isFinite(point.yaw) ? point.yaw : 0);
         ctx.moveTo(0, 8); ctx.lineTo(-5, -6); ctx.lineTo(0, -3); ctx.lineTo(5, -6);
       } else if (shape === "objective") {
         ctx.moveTo(0, -7); ctx.lineTo(7, 0); ctx.lineTo(0, 7); ctx.lineTo(-7, 0);

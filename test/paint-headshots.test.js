@@ -79,13 +79,15 @@ test("paint impacts use item color, orient to surfaces, follow players, and excl
   const sent = [], target = { state: { x: 0, y: 1.8, z: 10 } };
   const context = { Math, Number, tNow: 1, dummies: [], multiplayer: { playerId: "self", match: {},
     remotePlayers: new Map([["target", target]]) }, ownEntry: () => null,
-    paintColors: [{ c: "#32a6ef" }], paintColor: () => "#32a6ef", sendMatch: (m) => sent.push(m) };
+    paintColors: [{ c: "#32a6ef" }], paintColor: () => "#32a6ef", appearance: { paintSkin: "circuit" },
+    paintSkinById: (id) => id === "circuit" ? { id } : null, sendMatch: (m) => sent.push(m) };
   vm.runInNewContext(section(html, "      let paintMarks = [];", "      function remoteBarricade("), context);
   const box = { x0: -1, x1: 1, y0: 0, y1: 2, z0: 10, z1: 11 };
   const gun = { item: { id: "mk18" }, kind: {} };
   context.paintHit(gun, [0, 1, 0], [0, 0, 1], 10, box, "target");
   assert.equal(sent[0].color, "#32a6ef");
   assert.equal(sent[0].size, .11);
+  assert.equal(sent[0].paintSkin, "circuit");
   assert.deepEqual(Array.from(sent[0].normal), [0, 0, -1]);
   context.paintHit({ item: { id: "hammer" }, kind: { pellets: 8 } }, [0, 1, 0], [0, 0, 1], 10, box);
   assert.ok(sent[1].size > sent[0].size);
@@ -93,6 +95,8 @@ test("paint impacts use item color, orient to surfaces, follow players, and excl
   assert.equal(sent.length, 2);
   const before = [];
   context.paintQuads(before);
+  assert.equal(before[0].skin.id, "circuit");
+  assert.equal(before[0].uv.length, before[0].pts.length);
   target.state.x = 2;
   const after = [];
   context.paintQuads(after);
@@ -106,7 +110,7 @@ test("paint impacts use item color, orient to surfaces, follow players, and excl
 test("remote player paint renders before snapshots and follows the sender's target anchor", () => {
   const context = { Math, Number, tNow: 1, dummies: [], multiplayer: { playerId: "self", match: {},
     remotePlayers: new Map() }, ownEntry: () => null,
-    paintColors: [{ c: "#32a6ef" }], sendMatch() {} };
+    paintColors: [{ c: "#32a6ef" }], paintSkinById: () => null, sendMatch() {} };
   vm.runInNewContext(section(html, "      let paintMarks = [];", "      function remoteBarricade("), context);
   context.remotePaint({ point: [0, 1, 10], normal: [0, 0, -1], color: "#32a6ef", size: .11,
     targetId: "target", targetAnchor: [0, 1.8, 10] });
@@ -129,6 +133,21 @@ test("inspect models retain their paint-colored magazine geometry", () => {
     assert.ok(model.polys.some((poly) => poly.m === "paint"), id);
   }
   assert.equal(context.buildInspectModel({ id: "magnum" }).polys.some((poly) => poly.m === "paint"), false);
+});
+
+test("paint skins unlock every twenty multiplayer eliminations and persist independently of hats", () => {
+  const saved = new Map([["c6-appearance", JSON.stringify({ kills: 19, hat: "cap", paintSkin: "circuit" })]]);
+  const context = { Number, JSON, console, skins: ["night", "tiger", "circuit", "ember"].map((id) => ({ id, name: id })),
+    localStorage: { getItem: (key) => saved.get(key), setItem: (key, value) => saved.set(key, value) }, showToast() {} };
+  vm.runInNewContext(section(html, "    const hats = [", "    const keychains ="), context);
+  assert.equal(vm.runInNewContext("appearance.paintSkin", context), "none");
+  assert.equal(vm.runInNewContext("appearance.hat", context), "cap");
+  assert.deepEqual(Array.from(vm.runInNewContext("skins.map(paintSkinUnlocked)", context)), [false, false, false, false]);
+  context.recordElimination();
+  assert.deepEqual(Array.from(vm.runInNewContext("skins.map(paintSkinUnlocked)", context)), [true, false, false, false]);
+  assert.equal(JSON.parse(saved.get("c6-appearance")).kills, 20);
+  vm.runInNewContext("appearance.kills = 80", context);
+  assert.deepEqual(Array.from(vm.runInNewContext("skins.map(paintSkinUnlocked)", context)), [true, true, true, true]);
 });
 
 test("piloted drones move faster, with Hallway Monitor's camera fastest", () => {

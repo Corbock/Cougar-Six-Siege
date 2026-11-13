@@ -12,7 +12,9 @@ function section(start, end) {
 
 function simulation() {
   const testSkin = { id: "test-skin" };
-  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, paintColors: [{ c: "#f6df35" }], materials: {
+  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, paintColors: [{ c: "#f6df35" }],
+    faceSkin: { id: "face", img: { complete: true, naturalWidth: 512 } },
+    skins: [{ id: "circuit", img: { complete: true, naturalWidth: 512 } }], materials: {
     body: "#3d413c", dark: "#252825", metal: "#80857a", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
     medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b"
   }, keychains: [
@@ -62,10 +64,49 @@ test("equipped weapon keychains and skins appear on third-person weapon models",
   const sim = simulation(), state = { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: "primary" };
   const plain = [], customized = [];
   sim.worldItemQuads(plain, "mk18", state);
-  sim.worldItemQuads(customized, "mk18", state, .28, "#f6df35", { keychain: "cougar-tag", skin: "test-skin" });
+  sim.worldItemQuads(customized, "mk18", state, .28, "#f6df35", { keychain: "cougar-tag", skin: "test-skin", paintSkin: "circuit" });
   assert.ok(customized.length > plain.length, "Equipped keychain should add model geometry");
   assert.ok(customized.some((quad) => quad.color === "#d3ef59"), "Keychain color should render");
   assert.ok(customized.some((quad) => quad.skin === sim.testSkin), "Equipped weapon skin should render");
+  assert.ok(customized.some((quad) => quad.skin?.id === "circuit" && quad.color === "#f6df35"), "Magazine uses the paint skin");
+});
+
+test("operator faces use the texture and hats are cosmetic geometry", () => {
+  const sim = simulation(), state = { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, droneState: true };
+  const plain = [], cap = [];
+  sim.operatorMeshQuads(plain, { operatorId: "custom", state }, "#ffffff");
+  sim.operatorMeshQuads(cap, { operatorId: "custom", state: { ...state, hat: "cap" } }, "#ffffff");
+  assert.ok(plain.some((quad) => quad.skin === sim.faceSkin && quad.uv.length === 4));
+  assert.ok(cap.length > plain.length);
+  assert.equal(plain.some((quad) => quad.color === "#302722" || quad.color === "#754f45"), false);
+});
+
+test("world textures use the camera transform while viewmodel textures remain camera-relative", () => {
+  const uniforms = [], shaders = [];
+  const gl = { VERTEX_SHADER: 1, FRAGMENT_SHADER: 2, TEXTURE_2D: 3, RGBA: 4, UNSIGNED_BYTE: 5,
+    TEXTURE_MIN_FILTER: 6, TEXTURE_MAG_FILTER: 7, LINEAR_MIPMAP_LINEAR: 8, LINEAR: 9,
+    TEXTURE_WRAP_S: 10, TEXTURE_WRAP_T: 11, REPEAT: 12, ARRAY_BUFFER: 13, DYNAMIC_DRAW: 14, FLOAT: 15, TRIANGLES: 16,
+    drawingBufferWidth: 800, drawingBufferHeight: 600, createProgram: () => ({}), createShader: () => ({}),
+    shaderSource: (_shader, source) => shaders.push(source), compileShader() {}, attachShader() {}, linkProgram() {},
+    createBuffer: () => ({}), createTexture: () => ({}), bindTexture() {}, texImage2D() {}, generateMipmap() {},
+    texParameteri() {}, useProgram() {}, getUniformLocation: (_program, name) => name,
+    uniform2f() {}, uniform3f: (name, ...values) => uniforms.push([name, ...values]),
+    uniform4f: (name, ...values) => uniforms.push([name, ...values]), uniform1i() {},
+    getAttribLocation: () => 0, bindBuffer() {}, bufferData() {}, enableVertexAttribArray() {},
+    vertexAttribPointer() {}, drawArrays() {}, disableVertexAttribArray() {} };
+  const context = { gl, Math, Float32Array, Map, viewScale: 1.8, renderCam: { x: 8, y: 2, z: 4 },
+    cam: { yaw: Math.PI / 2, pitch: 0 }, LIGHT: [.35, .8, .5], prog: {} };
+  vm.runInNewContext(section("      const skinTex = {}", "      // Translucent red wall"), context);
+  const quad = { pts: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]],
+    uv: [[0, 0], [512, 0], [512, 512], [0, 512]], skin: { id: "test", img: {} } };
+  context.drawSkinned([quad], true);
+  assert.ok(shaders.some((source) => source.includes("vec3 d=p-cam") && source.includes("d.x*rot.x")));
+  assert.deepEqual(uniforms.find((entry) => entry[0] === "cam"), ["cam", 8, 2, 4]);
+  assert.ok(Math.abs(uniforms.find((entry) => entry[0] === "rot")[2] - 1) < 1e-10);
+  uniforms.length = 0;
+  context.drawSkinned([quad]);
+  assert.deepEqual(uniforms.find((entry) => entry[0] === "cam"), ["cam", 0, 0, 0]);
+  assert.deepEqual(uniforms.find((entry) => entry[0] === "rot"), ["rot", 1, 0, 1, 0]);
 });
 
 test("casual third-person models retain equipped shields and Ms C's pistol", () => {

@@ -340,6 +340,9 @@
     .inspect-desc { margin: 5px 0 10px; color: #9c9f98; font-size: 11px; line-height: 1.4; }
     .operator-kit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .operator-kit-item { min-width: 0; padding: 6px 8px 8px; border: 1px solid rgba(230,235,220,.16); background: rgba(17,19,17,.72); }
+    button.operator-kit-item { color: inherit; text-align: left; cursor: pointer; }
+    button.operator-kit-item:hover, button.operator-kit-item:focus-visible { border-color: var(--acid); }
+    .inspect-back { margin-bottom: 10px; }
     .operator-kit-item canvas { display: block; width: 100%; height: 72px; background: radial-gradient(ellipse at 50% 60%, rgba(60,68,52,.55), rgba(12,14,12,.7)); }
     .operator-kit-slot { display: block; color: var(--acid); font-size: 8px; font-weight: 700; letter-spacing: 1px; }
     .operator-kit-name { display: block; margin-top: 4px; font: 600 15px/1.1 "Barlow Condensed", sans-serif; }
@@ -505,6 +508,7 @@
           <div class="items" id="loadout-items"></div>
         </section>
         <aside class="inspect" id="inspect" aria-label="Item inspection">
+          <button class="choice inspect-back" id="inspect-back">← BACK TO OPERATOR</button>
           <div class="inspect-head"><span>INSPECT</span><span id="inspect-type"></span></div>
           <div class="inspect-view"><canvas id="inspect-canvas" aria-label="3D model of the selected item"></canvas><span class="inspect-hint">DRAG TO ROTATE</span></div>
           <div class="inspect-name" id="inspect-name"></div>
@@ -517,6 +521,13 @@
           <div class="inspect-name" id="operator-inspect-name"></div>
           <p class="inspect-desc" id="operator-inspect-bonuses"></p>
           <div class="operator-kit" id="operator-kit" aria-label="Operator loadout"></div>
+        </aside>
+        <aside class="inspect" id="player-inspect" aria-label="Operator inspection" hidden>
+          <button class="choice inspect-back" id="player-inspect-back">← BACK TO OPERATOR</button>
+          <div class="inspect-head"><span>INSPECT OPERATOR</span></div>
+          <div class="inspect-view"><canvas id="player-inspect-canvas" aria-label="3D model of the selected operator"></canvas></div>
+          <div class="inspect-name" id="player-inspect-name"></div>
+          <div id="player-inspect-custom"></div>
         </aside>
         <section class="play-select" aria-label="Game mode and map select">
           <div class="select-group">
@@ -603,7 +614,7 @@
       </div>
     </div>
     <footer class="bottom-bar">
-      <div class="event"><span class="event-mark">//</span><span>BLACKOUT EVENT</span><span>·</span><span>ENDS IN 06D 14H</span></div>
+      <div class="event"><span class="event-mark">//</span><span>Capture the Safe and Free for All coming soon</span><span>·</span><span>New Paintball Skins</span></div>
       <div class="bottom-right"><span>PATCH 4.2.1</span><span>·</span><span class="social" id="online-count">OFFLINE</span></div>
     </footer>
     <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-mark">:3</span><span id="toast-message"></span></div>
@@ -616,8 +627,8 @@
         eyebrow: "SEASON 01",
         title: "PLAY",
         season: "PHONE BAN",
-        copy: "A hostile signal is moving through the city grid. Assemble your unit, or queue into a squad match and outplay the opposition.",
-        mission: "LIMITED-TIME OPERATION",
+        copy: "Cougar Pride runs deep. Welcome to CSS, Ultimate Canyon Paintball. This is not intended to offend anyone, we love our school and its staff. Please play CSS responsibly, stay off your phone, and listen to your teachers. -The Team",
+        mission: "NEW MAP - THE GRAND CANYON",
         action: "DEPLOY",
         mode: "QUICK MATCH",
         detail: "STANDARD · 5V5"
@@ -874,7 +885,7 @@
           if (victim) { victim.health = message.health; victim.deaths = message.deaths; }
           const killer = multiplayer.match.players.find((player) => player.id === message.killerId);
           if (killer) killer.kills = message.killerKills;
-          if (message.killerId === multiplayer.playerId) fieldView.say("OPPONENT DOWN");
+          if (message.killerId === multiplayer.playerId) { recordElimination(); fieldView.say("OPPONENT DOWN"); }
         }
         if (message.type === "player_healed" && multiplayer.match) {
           const patient = multiplayer.match.players.find((player) => player.id === message.playerId);
@@ -1042,7 +1053,7 @@
     loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === customLoadout[slot.id])) customLoadout[slot.id] = operatorRoster.find((operator) => operator.id === "custom").loadout[slot.id]; });
     const loadout = { ...operatorRoster.find((operator) => operator.id === selectedOperatorId).loadout };
     loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === loadout[slot.id])) loadout[slot.id] = operatorRoster[0].loadout[slot.id]; });
-    let activeSlot = loadoutSlots[0];
+    let activeSlot = loadoutSlots[0], inspectTarget = null;
     const chosen = (slot) => slot.items.find((item) => item.id === loadout[slot.id]);
 
     function renderLoadout() {
@@ -1081,10 +1092,11 @@
       });
       document.querySelector("#loadout-count").textContent = `0${loadoutSlots.indexOf(activeSlot) + 1} / 0${loadoutSlots.length}`;
       document.querySelector("#mode-button").innerHTML = `ACTIVE KIT<span>${operatorInfo().name} · ${chosen(loadoutSlots[0]).name}</span>`;
-      const customSelected = selectedOperatorId === "custom";
-      document.querySelector("#inspect").hidden = !customSelected;
-      document.querySelector("#operator-inspect").hidden = customSelected;
-      if (customSelected) renderInspect();
+      document.querySelector("#inspect").hidden = inspectTarget !== "item";
+      document.querySelector("#operator-inspect").hidden = inspectTarget !== null;
+      document.querySelector("#player-inspect").hidden = inspectTarget !== "player";
+      if (inspectTarget === "item") renderInspect();
+      else if (inspectTarget === "player") renderPlayerInspect();
       else renderOperatorInspect();
     }
 
@@ -1172,6 +1184,39 @@
       { id: "circuit", name: "Circuit", src: "assets/skin-circuit.jpg", need: 60 },
       { id: "ember", name: "Ember", src: "assets/skin-ember.jpg", need: 100 }
     ];
+    const faceSkin = { id: "operator-face", img: new Image() };
+    faceSkin.img.onerror = () => console.error("Failed to load operator face texture");
+    faceSkin.img.src = "assets/operator-face.png";
+    const hats = [
+      { id: "none", name: "None", need: 0 },
+      { id: "cap", name: "Field Cap", need: 10 },
+      { id: "beanie", name: "Beanie", need: 30 },
+      { id: "helmet", name: "Helmet", need: 50 }
+    ];
+    const appearance = { kills: 0, hat: "none", paintSkin: "none" };
+    const paintSkinUnlocked = (skin) => {
+      const index = skins.indexOf(skin);
+      return index >= 0 && appearance.kills >= (index + 1) * 20;
+    };
+    try {
+      const saved = JSON.parse(localStorage.getItem("c6-appearance") || "{}");
+      if (Number.isSafeInteger(saved.kills) && saved.kills >= 0) appearance.kills = saved.kills;
+      if (hats.some((hat) => hat.id === saved.hat && hat.need <= appearance.kills)) appearance.hat = saved.hat;
+      if (skins.some((skin) => skin.id === saved.paintSkin && paintSkinUnlocked(skin))) appearance.paintSkin = saved.paintSkin;
+    } catch (error) { console.error("Could not load operator appearance", error); }
+    function saveAppearance() {
+      try { localStorage.setItem("c6-appearance", JSON.stringify(appearance)); }
+      catch (error) { console.error("Could not save operator appearance", error); }
+    }
+    function recordElimination() {
+      appearance.kills++;
+      saveAppearance();
+      const hat = hats.find((entry) => entry.need === appearance.kills);
+      const paint = skins.find((entry, index) => (index + 1) * 20 === appearance.kills);
+      if (hat || paint) showToast(`Unlocked ${hat ? hat.name + " hat" : paint.name + " paint skin"}.`);
+    }
+    const selectedPaintSkin = () => skins.find((skin) => skin.id === appearance.paintSkin && skin.img.complete && skin.img.naturalWidth) || null;
+    const paintSkinById = (id) => skins.find((skin) => skin.id === id && skin.img.complete && skin.img.naturalWidth) || null;
     const keychains = [
       { id: "none", name: "None", color: "#3d413c", shape: "none" },
       { id: "cougar-tag", name: "Cougar Tag", color: "#d3ef59", shape: "tag" },
@@ -1179,7 +1224,8 @@
       { id: "lucky-dice", name: "Lucky Dice", color: "#f3f2ec", shape: "dice" },
       { id: "mini-drone", name: "Mini Drone", color: "#54c7d9", shape: "drone" }
     ];
-    skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); if (activeSection === "LOADOUT" && selectedOperatorId !== "custom") drawOperatorKit(); }; skin.img.src = skin.src; });
+    skins.forEach((skin) => { skin.img = new Image(); skin.img.onload = () => { skin.pattern = null; if (inspector.running) drawInspector(); if (activeSection === "LOADOUT" && inspectTarget === null) drawOperatorKit(); }; skin.img.onerror = () => console.error(`Failed to load skin: ${skin.src}`); skin.img.src = skin.src; });
+    faceSkin.img.onload = () => { if (activeSection === "LOADOUT") { if (inspectTarget === "player") renderPlayerInspect(); else if (inspectTarget === null) drawOperatorKit(); } };
     const usage = {};
     try { Object.assign(usage, JSON.parse(localStorage.getItem("c6-usage") || "{}")); } catch (error) {}
     const hitsWith = (id) => usage[id] || 0;
@@ -1289,7 +1335,7 @@
       const polys = [];
       const add = (v, m, c) => {
         const poly = { v, m, c };
-        if (m === "body") {
+        if (m === "body" || m === "paint") {
           const a = v[1].map((q, i) => q - v[0][i]), b = v[2].map((q, i) => q - v[0][i]);
           const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]].map(Math.abs);
           const axis = n.indexOf(Math.max(...n));
@@ -1391,13 +1437,14 @@
         d.v.forEach((q, i) => { const f = 36 / (36 - q[2]); const x = w / 2 + q[0] * s * f, y = h * .5 - q[1] * s * f; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
         ctx.closePath();
         ctx.fillStyle = fill; ctx.strokeStyle = fill; ctx.fill(); ctx.stroke();
-        const sc = skin && d.uv && affineFromUv(d.uv, d.v.map((q) => { const f = 36 / (36 - q[2]); return [w / 2 + q[0] * s * f, h * .5 - q[1] * s * f]; }));
+        const surfaceSkin = d.m === "paint" && item.dmg ? selectedPaintSkin() : d.m === "body" ? skin : null;
+        const sc = surfaceSkin && d.uv && affineFromUv(d.uv, d.v.map((q) => { const f = 36 / (36 - q[2]); return [w / 2 + q[0] * s * f, h * .5 - q[1] * s * f]; }));
         if (sc) {
           ctx.save();
           ctx.clip();
           ctx.transform(...sc);
-          if (!skin.pattern) skin.pattern = ctx.createPattern(skin.img, "repeat");
-          ctx.fillStyle = skin.pattern;
+          if (!surfaceSkin.pattern) surfaceSkin.pattern = ctx.createPattern(surfaceSkin.img, "repeat");
+          ctx.fillStyle = surfaceSkin.pattern;
           ctx.fillRect(-4000, -4000, 8000, 8000);
           ctx.restore();
           ctx.beginPath();
@@ -1413,9 +1460,32 @@
       drawItemModel(inspectCanvas, inspector, inspector.item, inspector.yaw, inspector.pitch);
     }
 
-    let operatorKitModels = [];
+    let operatorKitModels = [], operatorCanvas;
+    function drawOperatorModel(canvas) {
+      const w = canvas.clientWidth, h = canvas.clientHeight, dpr = window.devicePixelRatio || 1;
+      if (!w || !h) return;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      const ctx = canvas.getContext("2d"), quads = [];
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      fieldView.operatorMeshQuads(quads, { operatorId: selectedOperatorId,
+        state: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, droneState: true, hat: appearance.hat } }, "#667653");
+      const yaw = -.3, c = Math.cos(yaw), s = Math.sin(yaw), scale = Math.min(w * .85, h * .85) / 2.25;
+      const project = ([x, y, z]) => [w / 2 + (x * c + z * s) * scale, h * .91 - y * scale];
+      quads.sort((a, b) => a.pts.reduce((sum, p) => sum + p[2] * c - p[0] * s, 0) / a.pts.length -
+        b.pts.reduce((sum, p) => sum + p[2] * c - p[0] * s, 0) / b.pts.length);
+      quads.forEach((quad) => {
+        const points = quad.pts.map(project);
+        ctx.beginPath(); points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
+        ctx.fillStyle = quad.color; ctx.fill();
+        if (quad.skin && quad.uv) {
+          const matrix = affineFromUv(quad.uv, points);
+          if (matrix) { ctx.save(); ctx.clip(); ctx.transform(...matrix); ctx.drawImage(quad.skin.img, 0, 0, 512, 512); ctx.restore(); }
+        }
+      });
+    }
     function drawOperatorKit() {
       operatorKitModels.forEach(({ canvas, model, item }) => drawItemModel(canvas, model, item, -.55, .22));
+      if (operatorCanvas) drawOperatorModel(operatorCanvas);
     }
 
     function renderOperatorInspect() {
@@ -1424,10 +1494,22 @@
       document.querySelector("#operator-inspect-bonuses").textContent = operator.ability;
       const kit = document.querySelector("#operator-kit");
       kit.replaceChildren();
+      const playerCard = document.createElement("button");
+      playerCard.type = "button";
+      playerCard.className = "operator-kit-item";
+      playerCard.setAttribute("aria-label", `Inspect ${operator.name}`);
+      playerCard.innerHTML = `<span class="operator-kit-slot">OPERATOR</span><canvas aria-hidden="true"></canvas><span class="operator-kit-name"></span>`;
+      playerCard.querySelector(".operator-kit-name").textContent = operator.name;
+      operatorCanvas = playerCard.querySelector("canvas");
+      playerCard.addEventListener("click", () => { inspectTarget = "player"; renderLoadout(); });
+      kit.appendChild(playerCard);
       operatorKitModels = loadoutSlots.map((slot) => {
         const item = chosen(slot);
-        const card = document.createElement("div");
+        const card = document.createElement("button");
+        card.type = "button";
         card.className = "operator-kit-item";
+        card.setAttribute("aria-label", `Inspect ${item.name}`);
+        card.addEventListener("click", () => { activeSlot = slot; inspector.item = item; inspectTarget = "item"; renderLoadout(); });
         const label = document.createElement("span");
         label.className = "operator-kit-slot";
         label.textContent = slot.label;
@@ -1445,11 +1527,27 @@
     }
 
     window.addEventListener("resize", () => {
-      if (activeSection === "LOADOUT" && selectedOperatorId !== "custom") drawOperatorKit();
+      if (activeSection === "LOADOUT" && inspectTarget === null) drawOperatorKit();
+      else if (activeSection === "LOADOUT" && inspectTarget === "player") drawOperatorModel(document.querySelector("#player-inspect-canvas"));
     });
 
+    function renderPlayerInspect() {
+      document.querySelector("#player-inspect-name").textContent = operatorInfo().name;
+      const box = document.querySelector("#player-inspect-custom");
+      box.innerHTML = `<div class="custom-group"><div class="custom-label">OPERATOR SKIN</div><div class="choices"><button class="choice selected" disabled>Base</button></div></div>
+        <div class="custom-group"><div class="custom-label">HATS · ${appearance.kills} ELIMINATIONS</div><div class="choices">${hats.map((hat) =>
+          `<button class="choice" data-hat="${hat.id}"${hat.need > appearance.kills ? " disabled" : ""} aria-pressed="${hat.id === appearance.hat}">${hat.name}${hat.need > appearance.kills ? `<small>LOCKED · ${hat.need} ELIMINATIONS</small>` : ""}</button>`).join("")}</div></div>
+        <div class="custom-group"><div class="custom-label">PAINT SKINS · ${appearance.kills} ELIMINATIONS</div><div class="choices"><button class="choice" data-paint-skin="none" aria-pressed="${appearance.paintSkin === "none"}">Individual colors</button>${skins.map((skin, index) =>
+          `<button class="choice" data-paint-skin="${skin.id}"${paintSkinUnlocked(skin) ? "" : " disabled"} aria-pressed="${appearance.paintSkin === skin.id}">${skin.name}${paintSkinUnlocked(skin) ? "" : `<small>LOCKED · ${(index + 1) * 20} ELIMINATIONS</small>`}</button>`).join("")}</div></div>`;
+      box.querySelectorAll("button[aria-pressed=true]").forEach((button) => button.classList.add("selected"));
+      box.querySelectorAll("[data-hat]").forEach((button) => button.addEventListener("click", () => { appearance.hat = button.dataset.hat; saveAppearance(); renderPlayerInspect(); }));
+      box.querySelectorAll("[data-paint-skin]").forEach((button) => button.addEventListener("click", () => { appearance.paintSkin = button.dataset.paintSkin; saveAppearance(); renderPlayerInspect(); }));
+      drawOperatorModel(document.querySelector("#player-inspect-canvas"));
+    }
+    ["#inspect-back", "#player-inspect-back"].forEach((selector) => document.querySelector(selector).addEventListener("click", () => { inspectTarget = null; renderLoadout(); }));
+
     function inspectLoop() {
-      if (activeSection !== "LOADOUT" || selectedOperatorId !== "custom") { inspector.running = false; return; }
+      if (activeSection !== "LOADOUT" || inspectTarget !== "item") { inspector.running = false; return; }
       if (!inspector.dragging && !reducedMotion) inspector.yaw += .008;
       drawInspector();
       requestAnimationFrame(inspectLoop);
@@ -1496,7 +1594,7 @@
       box_.querySelectorAll(".paint-swatch").forEach((b) => b.addEventListener("click", () => { cfg.paint = b.dataset.paint; saveCustom(); renderInspect(); }));
       box_.querySelectorAll(".wrap").forEach((b) => b.addEventListener("click", () => { cfg.skin = b.dataset.skin; saveCustom(); renderInspect(); }));
       box_.querySelectorAll(".keychain-choice").forEach((b) => b.addEventListener("click", () => { cfg.keychain = b.dataset.keychain; saveCustom(); renderInspect(); }));
-      box_.querySelectorAll(".choice:not(.wrap)").forEach((b) => b.addEventListener("click", () => { cfg[b.dataset.kind] = b.dataset.id; saveCustom(); renderInspect(); }));
+      box_.querySelectorAll(".choice[data-kind]").forEach((b) => b.addEventListener("click", () => { cfg[b.dataset.kind] = b.dataset.id; saveCustom(); renderInspect(); }));
       box_.querySelector("#reset-custom").addEventListener("click", () => { delete custom[item.id]; saveCustom(); renderInspect(); });
       rebuildModel();
       drawInspector();
@@ -1520,6 +1618,7 @@
       const operator = operatorRoster.find((entry) => entry.id === id);
       if (!operator) return;
       selectedOperatorId = operator.id;
+      inspectTarget = null;
       Object.assign(loadout, operator.id === "custom" ? customLoadout : operator.loadout);
       inspector.item = chosen(activeSlot);
       operators.forEach((button, index) => {
@@ -1547,6 +1646,7 @@
       const content = sectionContent[section];
       if (!content) return;
       activeSection = section;
+      inspectTarget = null;
       navButtons.forEach((button) => {
         const selected = button.dataset.section === section;
         button.classList.toggle("active", selected);
@@ -2423,6 +2523,7 @@
         const charm = keychains.find((entry) => entry.id === appearance.keychain) || keychains[0];
         const polys = [...model.polys, ...buildPolys(weaponKeychainParts({ id: itemId, dmg: true }, { keychain: charm.id }))];
         const skin = weaponSkin(itemId, appearance.skin);
+        const paintSkin = typeof skins === "undefined" ? null : skins.find((entry) => entry.id === appearance.paintSkin && entry.img.complete && entry.img.naturalWidth);
         const transform = (p) => {
           const x = (p[0] - model.mid[0]) * scale, y = (p[1] - model.mid[1]) * scale, z = (p[2] - model.mid[2]) * scale;
           const forward = .48 + x * cp - y * sp, lateral = side + z + lean * .7;
@@ -2431,7 +2532,7 @@
         };
         polys.forEach((poly) => list.push({ pts: poly.v.map(transform), uv: poly.uv,
           color: poly.m === "paint" ? (paint || paintColors[0].c) : poly.m === "keychain" ? charm.color : materials[poly.m],
-          skin: skin && poly.uv ? skin : undefined }));
+          skin: poly.m === "paint" ? paintSkin : poly.m === "body" ? skin : undefined }));
       }
       function remoteEquippedItem(player) {
         const state = player.state;
@@ -2485,10 +2586,19 @@
         box(0, headY + .17, -.015, .35, .12, .32, hair);
         box(-.16, headY + .08, -.005, .045, .12, .27, hair);
         box(.16, headY + .08, -.005, .045, .12, .27, hair);
-        box(-.07, headY + .025, .155, .045, .035, .025, "#302722");
-        box(.07, headY + .025, .155, .045, .035, .025, "#302722");
-        box(0, headY - .035, .17, .055, .09, .05, skin);
-        box(0, headY - .11, .155, .09, .025, .025, "#754f45");
+        if (state.hat === "cap") {
+          box(0, headY + .25, 0, .37, .1, .34, "#536648");
+          box(0, headY + .2, .19, .37, .04, .2, "#536648");
+        } else if (state.hat === "beanie") {
+          box(0, headY + .24, 0, .37, .16, .33, "#973e36");
+        } else if (state.hat === "helmet") {
+          box(0, headY + .24, 0, .39, .17, .35, "#606b55");
+        }
+        if (typeof faceSkin !== "undefined" && faceSkin.img.complete && faceSkin.img.naturalWidth) {
+          list.push({ pts: [[-.16, headY - .17, .151], [.16, headY - .17, .151],
+            [.16, headY + .17, .151], [-.16, headY + .17, .151]].map(transform),
+            uv: [[0, 512], [512, 512], [512, 0], [0, 0]], color: skin, skin: faceSkin });
+        }
         box(0, crouched ? .79 : 1.12, .19, .16, .24, .04, "#f1f0eb");
         const item = remoteEquippedItem(player);
         if (!state.droneState && (state.shieldActive || item === "shield")) {
@@ -2504,10 +2614,10 @@
           panel(-.68, -.65, bottom, top, "#747d78");
           panel(.65, .68, bottom, top, "#747d78");
           if (player.operatorId === "ms-c") worldItemQuads(list, "p45", state, .76, state.sidearmPaint,
-            { skin: state.sidearmSkin, keychain: state.sidearmKeychain });
+            { skin: state.sidearmSkin, keychain: state.sidearmKeychain, paintSkin: state.paintSkin });
         } else if (item && !state.droneState) {
           worldItemQuads(list, item, state, .28, state.equippedPaint,
-            { skin: state.equippedSkin, keychain: state.equippedKeychain });
+            { skin: state.equippedSkin, keychain: state.equippedKeychain, paintSkin: state.paintSkin });
         }
       }
       function droneWorldQuads(list, state) {
@@ -2708,11 +2818,19 @@
             const shade = WOODS[(r * 2 + (c > 0 ? 1 : 0) + b.seed) % 4];
             const bx = (box, color) => qb(b.quads, box.x0, box.x1, box.y0, box.y1, box.z0, box.z1, color);
             for (let start = c; start < e;) {
-              const color = b.paint[r * b.cols + start]?.color || shade;
+              const mark = b.paint[r * b.cols + start], color = mark?.color || shade, paintSkin = mark?.skin || null;
               let end = start + 1;
-              while (end < e && (b.paint[r * b.cols + end]?.color || shade) === color) end++;
+              while (end < e && (b.paint[r * b.cols + end]?.color || shade) === color && (b.paint[r * b.cols + end]?.skin || null) === paintSkin) end++;
               const v = barBox(b, start, end, r, r + 1);
+              const first = b.quads.length;
               v.y0 += .012; bx(v, color);
+              if (paintSkin && typeof paintSkinById === "function") {
+                const texture = paintSkinById(paintSkin);
+                if (texture) b.quads.slice(first).forEach((quad) => {
+                  quad.skin = texture;
+                  quad.uv = quad.pts.map((point) => [point[b.ta] * 512, point[1] * 512]);
+                });
+              }
               start = end;
             }
             [1, b.cols - 2].forEach((bc) => { if (bc >= c && bc < e) { const k = barBox(b, bc, bc + 1, r, r + 1, .02); k.y0 += .012; bx(k, "#4a3018"); } });
@@ -2775,20 +2893,20 @@
         }
         return targetId === multiplayer.playerId ? ownEntry()?.state : multiplayer.remotePlayers.get(targetId)?.state;
       }
-      function addPaint(point, normal, color, size, targetId = null, broadcast = true, targetAnchor = null) {
+      function addPaint(point, normal, color, size, targetId = null, broadcast = true, targetAnchor = null, skin = null) {
         const target = targetId ? paintTarget(targetId) : null;
         const anchor = Array.isArray(targetAnchor) && targetAnchor.length === 3 && targetAnchor.every(Number.isFinite)
           ? targetAnchor : target ? [target.x, target.y, target.z] : null;
-        paintMarks.push({ point, normal, color, size, targetId, anchor, until: tNow + 20 });
+        paintMarks.push({ point, normal, color, size, targetId, anchor, skin, until: tNow + 20 });
         if (paintMarks.length > 300) paintMarks.shift();
-        if (broadcast) sendMatch({ type: "paint", point, normal, color, size, targetId, targetAnchor: anchor });
+        if (broadcast) sendMatch({ type: "paint", point, normal, color, size, targetId, targetAnchor: anchor, paintSkin: skin });
       }
       function remotePaint(message) {
         if (!multiplayer.match || !Array.isArray(message.point) || message.point.length !== 3 ||
             !Array.isArray(message.normal) || message.normal.length !== 3 ||
             ![...message.point, ...message.normal, message.size].every(Number.isFinite) ||
             !paintColors.some((color) => color.c === message.color)) return;
-        addPaint(message.point, message.normal, message.color, message.size, message.targetId, false, message.targetAnchor);
+        addPaint(message.point, message.normal, message.color, message.size, message.targetId, false, message.targetAnchor, message.paintSkin);
       }
       function paintHit(w, origin, direction, distance, box, targetId = null) {
         if (w.kind.melee || !Number.isFinite(distance)) return;
@@ -2796,7 +2914,7 @@
         const faces = [[0, box.x0, -1], [0, box.x1, 1], [1, box.y0, -1], [1, box.y1, 1], [2, box.z0, -1], [2, box.z1, 1]];
         faces.sort((a, b) => Math.abs(point[a[0]] - a[1]) - Math.abs(point[b[0]] - b[1]));
         const normal = [0, 0, 0]; normal[faces[0][0]] = faces[0][2];
-        addPaint(point, normal, paintColor(w.item), w.kind.pellets ? .22 : .11, targetId);
+        addPaint(point, normal, paintColor(w.item), w.kind.pellets ? .22 : .11, targetId, true, null, appearance.paintSkin);
       }
       function paintQuads(list) {
         paintMarks = paintMarks.filter((mark) => mark.until > tNow &&
@@ -2811,7 +2929,10 @@
             const angle = i * Math.PI / 6, r = mark.size * (i % 3 === 0 ? 1 : .65);
             return p.map((v, axis) => v + r * (Math.cos(angle) * tangent[axis] + Math.sin(angle) * bitangent[axis]));
           });
-          for (let i = 0; i < ring.length; i++) list.push({ pts: [p, ring[i], ring[(i + 1) % ring.length], p], color: mark.color });
+          const skin = paintSkinById(mark.skin);
+          const uv = (i) => [256 + 256 * Math.cos(i * Math.PI / 6), 256 + 256 * Math.sin(i * Math.PI / 6)];
+          for (let i = 0; i < ring.length; i++) list.push({ pts: [p, ring[i], ring[(i + 1) % ring.length], p], color: mark.color,
+            skin, uv: skin ? [[256, 256], uv(i), uv(i + 1), [256, 256]] : undefined });
         });
       }
       let barSeq = 0, projSeq = 0;
@@ -2828,11 +2949,11 @@
         }
         const b = barById(m.id);
         if (!b) return;
-        if (m.op === "hit") hitBarricade(b, m.p, m.radius, m.power, m.chip, m.src, m.paint);
+        if (m.op === "hit") hitBarricade(b, m.p, m.radius, m.power, m.chip, m.src, m.paint, m.paintSkin);
         else if (m.op === "repair") { b.hp.fill(b.steel ? STEEL_HP : CELL_HP); b.paint.fill(null); b.paintExpiry = Infinity; b.dirty = true; }
         else if (m.op === "steel") { b.steel = true; b.hp.fill(STEEL_HP); b.dirty = true; }
       }
-      function hitBarricade(b, p, radius, power, chip, src, paint) {
+      function hitBarricade(b, p, radius, power, chip, src, paint, skin = null) {
         const tc = p[b.ta], yy = p[1];
         const col = Math.max(0, Math.min(b.cols - 1, Math.floor((tc - b.a0) / b.cw)));
         const row = Math.max(0, Math.min(b.rows - 1, Math.floor((yy - b.y0) / b.ch)));
@@ -2840,7 +2961,7 @@
           if (!paint || r < 0 || r >= b.rows || c < 0 || c >= b.cols) return;
           const i = r * b.cols + c;
           if (b.hp[i] <= 0) return;
-          b.paint[i] = { color: paint, until: tNow + 20 };
+          b.paint[i] = { color: paint, skin, until: tNow + 20 };
           b.paintExpiry = Math.min(b.paintExpiry, tNow + 20);
           b.dirty = true;
         };
@@ -3072,7 +3193,7 @@
           if (shieldDistance <= reach && shieldDistance < tw && shieldDistance < bt && shieldDistance <= playerDistance && shieldDistance <= droneDistance) {
             const point = o.map((v, i) => v + dr[i] * shieldDistance);
             showShieldImpact(o, point);
-            if (!w.kind.melee) addPaint(point, dr.map((v) => -v), paintColor(w.item), w.kind.pellets ? .22 : .11);
+            if (!w.kind.melee) addPaint(point, dr.map((v) => -v), paintColor(w.item), w.kind.pellets ? .22 : .11, null, true, null, appearance.paintSkin);
             sendMatch({ type: "shield_impact", direction: { x: dr[0], y: dr[1], z: dr[2] } });
             say("SHIELD BLOCKED"); return;
           }
@@ -3116,8 +3237,9 @@
           const power = w.stats.dmg * k.mult * damageMul;
           const hit = k.melee ? [.65, 1000, false, "hammer"] : k.pellets ? [.3, power * 6, false, "shotgun"] : [.03, power, true, w.item.id === "longwatch" ? "longwatch" : "bullet"];
           const paint = k.melee ? null : paintColor(w.item);
-          hitBarricade(wall.bar, p, ...hit, paint);
-          sendMatch({ type: "bar", op: "hit", id: wall.bar.id, p, radius: hit[0], power: hit[1], chip: hit[2], src: hit[3], paint });
+          const paintSkin = typeof appearance !== "undefined" && paint ? appearance.paintSkin : null;
+          hitBarricade(wall.bar, p, ...hit, paint, ...(paintSkin && paintSkin !== "none" ? [paintSkin] : []));
+          sendMatch({ type: "bar", op: "hit", id: wall.bar.id, p, radius: hit[0], power: hit[1], chip: hit[2], src: hit[3], paint, paintSkin });
           recordHit(w.item.id); mark(false);
           return;
         }
@@ -3615,6 +3737,7 @@
         };
         const list = w.polys.filter((poly) => w.item.id !== "shield" || poly.m !== "glass" || poly.v.every((point) => point[0] === -.01))
           .map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv,
+            skin: poly.m === "paint" && w.item.dmg ? selectedPaintSkin() : poly.m === "body" ? skinOf(w) : null,
             shieldGlass: w.item.id === "shield" && poly.m === "glass" }));
         if (w.magPolys.length) {
           const removing = w.reloadEnd && reloadProgress <= .32;
@@ -3628,7 +3751,8 @@
               const p = place(q);
               return [p[0] + magazineOffset[0], p[1] + magazineOffset[1], p[2] + magazineOffset[2]];
             };
-            w.magPolys.forEach((poly) => list.push({ pts: poly.v.map(placeMagazine), color: colorOf(w, poly.m), uv: poly.uv }));
+            w.magPolys.forEach((poly) => list.push({ pts: poly.v.map(placeMagazine), color: colorOf(w, poly.m), uv: poly.uv,
+              skin: poly.m === "paint" && w.item.dmg ? selectedPaintSkin() : poly.m === "body" ? skinOf(w) : null }));
           }
           if (w.reloadEnd) {
             const vertices = w.magPolys.flatMap((poly) => poly.v.map(place));
@@ -3670,8 +3794,6 @@
           list.push({ pts: [[mx, my - r, mz], [mx + r * 2, my, mz], [mx, my + r, mz], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#ffd96b" });
           list.push({ pts: [[mx, my, mz - r], [mx + r * 2, my, mz], [mx, my, mz + r], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#fff1b8" });
         }
-        const sk = skinOf(w);
-        if (sk) list.forEach((q) => { if (q.uv) q.skin = sk; });
         return list;
       }
       function medkitActionQuads() {
@@ -3835,20 +3957,24 @@
       function initSkinProg() {
         const mk = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return sh; };
         skinProg = gl.createProgram();
-        gl.attachShader(skinProg, mk(gl.VERTEX_SHADER, `attribute vec3 p; attribute vec2 t; attribute float s; uniform vec2 fs; varying vec2 vt; varying float vs;
-          void main(){ float n=.1, f=1000.; gl_Position=vec4(p.x*fs.x, p.y*fs.y, (p.z*(f+n)-2.*f*n)/(f-n), p.z); vt=t; vs=s; }`));
+        gl.attachShader(skinProg, mk(gl.VERTEX_SHADER, `attribute vec3 p; attribute vec2 t; attribute float s; uniform vec2 fs; uniform vec3 cam; uniform vec4 rot; varying vec2 vt; varying float vs;
+          void main(){ vec3 d=p-cam; float x1=d.x*rot.x-d.z*rot.y; float z1=d.x*rot.y+d.z*rot.x; float y2=d.y*rot.z-z1*rot.w; float z2=d.y*rot.w+z1*rot.z;
+          float n=.1, f=1000.; gl_Position=vec4(x1*fs.x, y2*fs.y, (z2*(f+n)-2.*f*n)/(f-n), z2); vt=t; vs=s; }`));
         gl.attachShader(skinProg, mk(gl.FRAGMENT_SHADER, `precision mediump float; varying vec2 vt; varying float vs; uniform sampler2D tex;
           void main(){ gl_FragColor=vec4(texture2D(tex,vt).rgb*vs,1.); }`));
         gl.linkProgram(skinProg);
         skinBuf = gl.createBuffer();
       }
-      function drawSkinned(list) {
+      function drawSkinned(list, world = false) {
         if (!list.length) return;
         if (!skinProg) initSkinProg();
         const bySkin = new Map();
         list.forEach((q) => { if (!bySkin.has(q.skin)) bySkin.set(q.skin, []); bySkin.get(q.skin).push(q); });
         gl.useProgram(skinProg);
         gl.uniform2f(gl.getUniformLocation(skinProg, "fs"), viewScale * gl.drawingBufferHeight / gl.drawingBufferWidth, viewScale);
+        gl.uniform3f(gl.getUniformLocation(skinProg, "cam"), world ? renderCam.x : 0, world ? renderCam.y : 0, world ? renderCam.z : 0);
+        gl.uniform4f(gl.getUniformLocation(skinProg, "rot"), world ? Math.cos(cam.yaw) : 1, world ? Math.sin(cam.yaw) : 0,
+          world ? Math.cos(cam.pitch) : 1, world ? Math.sin(cam.pitch) : 0);
         const lp = gl.getAttribLocation(skinProg, "p"), lt = gl.getAttribLocation(skinProg, "t"), ls = gl.getAttribLocation(skinProg, "s");
         bySkin.forEach((qs, sk) => {
           if (!skinTex[sk.id]) {
@@ -3934,7 +4060,7 @@
         const body = drone.active ? drone.returnTo : cam, bodyLean = drone.active ? body.lean : lean;
         return {
           x: body.x, y: body.y, z: body.z,
-          yaw: body.yaw, pitch: body.pitch, crouched: drone.active ? body.crouched : crouched, lean: bodyLean
+          yaw: body.yaw, pitch: body.pitch, crouched: drone.active ? body.crouched : crouched, lean: bodyLean, hat: appearance.hat
         };
       }
       const teamTagEls = new Map();
@@ -4149,7 +4275,7 @@
             targetId: entry.targetId?.startsWith("player-") ? entry.targetId.slice(7) : null }));
           const sidearmConfig = customOf({ id: "p45" });
           multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, activeSlot: curSlot, equippedPaint: paintColor(cw.item),
-            equippedSkin: cw.cfg.skin, equippedKeychain: cw.cfg.keychain, sidearmPaint: paintColor({ id: "p45" }),
+            equippedSkin: cw.cfg.skin, equippedKeychain: cw.cfg.keychain, paintSkin: appearance.paintSkin, sidearmPaint: paintColor({ id: "p45" }),
             sidearmSkin: sidearmConfig.skin, sidearmKeychain: sidearmConfig.keychain, dronePaint: paintColor({ id: "drone" }), companions,
             droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch, mode: drone.mode } : null } }));
           multiplayer.lastStateAt = now;
@@ -4208,10 +4334,11 @@
         });
         stepProjectiles(bdt, dq);
         drawDynamic(dq.filter((q) => !q.skin), true);
-        drawSkinned(dq.filter((q) => q.skin));
+        drawSkinned(dq.filter((q) => q.skin), true);
         const paint = [];
         paintQuads(paint);
-        drawDynamic(paint, false);
+        drawDynamic(paint.filter((q) => !q.skin), false);
+        drawSkinned(paint.filter((q) => q.skin), true);
         drawTornadoes();
         if (isCanyon()) {
           gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
@@ -4317,7 +4444,7 @@
         if (locked()) document.exitPointerLock();
       }
       document.querySelector("#field-exit").addEventListener("click", close);
-      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, open({ practice = false } = {}) {
+      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false } = {}) {
         freeplayMode = practice;
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);

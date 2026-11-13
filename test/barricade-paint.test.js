@@ -13,8 +13,9 @@ function section(start, end) {
 function simulation() {
   const context = { Math, Float32Array, Array, Infinity, tNow: 0, barricades: [], colliders: [],
     BAR_TH: .12, CELL: .2, CELL_HP: 50, STEEL_HP: 150, WOODS: ["#8b5e34"],
-    multiplayer: { match: {} }, spawnDebris() {},
-    qb(list, x0, x1, y0, y1, z0, z1, color) { list.push({ x0, x1, y0, y1, z0, z1, color }); } };
+    multiplayer: { match: {} }, spawnDebris() {}, paintSkinById: (id) => id === "circuit" ? { id } : null,
+    qb(list, x0, x1, y0, y1, z0, z1, color) { list.push({ x0, x1, y0, y1, z0, z1, color,
+      pts: [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]] }); } };
   vm.runInNewContext(section("      function barBox(", "      function spawnDebris(") +
     section("      const barById =", "      function aimedBarricade(") +
     section("      function makeBarricade(", "      function resetBarricades()"), context);
@@ -66,4 +67,13 @@ test("a relayed hit reproduces the same stained cells and holes for another play
   assert.deepEqual(Array.from(receiver.b.paint, (mark) => mark?.color || null), Array.from(sender.b.paint, (mark) => mark?.color || null));
   receiver.context.rebuildBarricade(receiver.b);
   assert.ok(receiver.b.quads.some((quad) => quad.color === message.paint));
+});
+
+test("paint skins are retained for relayed stains and mapped to surviving cells", () => {
+  const { context: sim, b } = simulation();
+  sim.remoteBarricade({ id: "bar", op: "hit", p: [.5, .5, 0], radius: .01, power: 20,
+    chip: false, src: "bullet", paint: "#32a6ef", paintSkin: "circuit" });
+  sim.rebuildBarricade(b);
+  assert.equal(b.paint[2 * b.cols + 2].skin, "circuit");
+  assert.ok(b.quads.some((quad) => quad.skin?.id === "circuit" && quad.uv.length === quad.pts.length));
 });
