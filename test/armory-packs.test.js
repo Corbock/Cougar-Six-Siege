@@ -37,15 +37,17 @@ test("each unique match victory grants and saves exactly one Armory Pack", () =>
 
 test("pack reward pool excludes only camos already unlocked from packs", () => {
   const context = {
-    packPairs: ["mk18:night-digital", "mk18:ember", "vector:night-digital"],
+    packPairs: ["mk18:night-digital", "mk18:ember", "operator:night-digital", "vector:night-digital"],
     skins: [{ id: "night-digital" }, { id: "ember" }],
     ownedWraps: new Set(["mk18:night-digital", "vector:night-digital"]),
     skinUnlockKey: (weaponId, skinId) => `${weaponId}:${skinId}`,
-    skinUnlocked: (skin, weaponId) => context.ownedWraps.has(`${weaponId}:${skin.id}`)
+    playerPaintUnlockKey: (skinId) => `operator:${skinId}`,
+    skinUnlocked: (skin, weaponId) => context.ownedWraps.has(weaponId === "operator" ?
+      context.playerPaintUnlockKey(skin.id) : context.skinUnlockKey(weaponId, skin.id))
   };
   const pool = section("    function packRewardPool() {", "    function openArmoryPack()");
   vm.runInNewContext(`${pool}\nglobalThis.getPool = packRewardPool;`, context);
-  assert.deepEqual([...context.getPool()], ["mk18:ember"]);
+  assert.deepEqual([...context.getPool()], ["mk18:ember", "operator:night-digital"]);
 });
 
 test("unowned camos stay hidden until a pack unlocks them for that weapon", () => {
@@ -61,6 +63,22 @@ test("unowned camos stay hidden until a pack unlocks them for that weapon", () =
   context.ownedWraps.add("mk18:ember");
   assert.deepEqual([...context.available("mk18")].map((skin) => skin.id), ["ember"]);
   assert.deepEqual([...context.available("vector")], []);
+});
+
+test("operator paint camos also require their own pack unlock", () => {
+  const context = {
+    skins: [{ id: "circuit" }],
+    ownedWraps: new Set(),
+    playerPaintUnlockKey: (skinId) => `operator:${skinId}`,
+    skinUnlockKey: (weaponId, skinId) => `${weaponId}:${skinId}`,
+    appearance: { paintSkin: "none" },
+    savedPaintSkin: "none"
+  };
+  const helpers = section("    const paintSkinUnlocked =", "    const unlockedWeaponSkins =");
+  vm.runInNewContext(`${helpers}\nglobalThis.isOwned = paintSkinUnlocked;`, context);
+  assert.equal(context.isOwned(context.skins[0]), false);
+  context.ownedWraps.add("operator:circuit");
+  assert.equal(context.isOwned(context.skins[0]), true);
 });
 
 test("opening a pack stages the reveal and displays the unlocked camo preview", () => {

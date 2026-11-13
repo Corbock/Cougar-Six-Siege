@@ -34,7 +34,9 @@ test("minimap renders map geometry and updates player, spawn, drone, teammates a
   });
   assert.deepEqual(screenLog.filter((entry) => entry[0] === "fill").map((entry) => entry[1]),
     ["#64b6ff", "#ffd75b", "#ff7866", "#67d68c", "#67d68c", "#ffffff", "#65e4ef"]);
-  assert.ok(screenLog.some((entry) => entry[0] === "rotate" && entry[1] === -Math.PI / 2));
+  assert.ok(screenLog.some((entry) => entry[0] === "rotate" && entry[1] === Math.PI / 2));
+  assert.ok(backgroundLog.some((entry) => entry[0] === "fillRect" && entry[1] === 331.2 && entry[2] === 38.4), "walls are mirrored horizontally");
+  assert.ok(screenLog.some((entry) => entry[0] === "translate" && entry[1] === 361.6 && entry[2] === 38.4), "markers are mirrored horizontally");
   screenLog.length = 0;
   minimap.draw({ player: { x: 51, z: 50, yaw: 0 }, spawn: { x: 10, z: 10 }, drone: null, teammates: [], objectives: [] });
   assert.deepEqual(screenLog.filter((entry) => entry[0] === "fill").map((entry) => entry[1]), ["#64b6ff", "#ffffff"]);

@@ -38,21 +38,23 @@ test("paint colors and impacts synchronize, and invalid paint is rejected", asyn
   const shooter = messages[0].find((m) => m.type === "welcome").playerId;
   send(0, { type: "state", state: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: "primary",
     equippedPaint: "#32a6ef", dronePaint: "#f04c9b", equippedSkin: "circuit", equippedKeychain: "cougar-tag",
-    sidearmSkin: "ember", sidearmKeychain: "lucky-dice" } });
+    sidearmSkin: "ember", sidearmKeychain: "lucky-dice", paintSkin: "circuit", hat: "cap" } });
   const snapshot = await waitFor(() => messages[1].find((m) => m.type === "snapshot" &&
     m.players.find((p) => p.id === shooter)?.state.equippedPaint === "#32a6ef"), "Magazine paint was not synchronized");
-  assert.deepEqual(["equippedSkin", "equippedKeychain", "sidearmSkin", "sidearmKeychain", "dronePaint"].map((key) =>
-    snapshot.players.find((p) => p.id === shooter).state[key]), ["circuit", "cougar-tag", "ember", "lucky-dice", "#f04c9b"]);
-  send(0, { type: "paint", point: [0, 1, 2], normal: [0, 0, -1], size: .22, color: "#32a6ef" });
+  assert.deepEqual(["equippedSkin", "equippedKeychain", "sidearmSkin", "sidearmKeychain", "dronePaint", "paintSkin", "hat"].map((key) =>
+    snapshot.players.find((p) => p.id === shooter).state[key]), ["circuit", "cougar-tag", "ember", "lucky-dice", "#f04c9b", "circuit", "cap"]);
+  send(0, { type: "paint", point: [0, 1, 2], normal: [0, 0, -1], size: .22, color: "#32a6ef", paintSkin: "circuit" });
   const mark = await waitFor(() => messages[1].find((m) => m.type === "paint"), "Paint impact was not relayed");
   assert.equal(mark.color, "#32a6ef");
   assert.equal(mark.size, .22);
+  assert.equal(mark.paintSkin, "circuit");
   send(0, { type: "paint", point: [0, 1, 2], normal: [0, 0, -1], size: .22, color: "invalid" });
   await sleep(120);
   assert.equal(messages[1].filter((m) => m.type === "paint").length, 1);
-  send(0, { type: "bar", op: "hit", id: "cover", p: [0, 1, 2], radius: .03, power: 20, chip: true, src: "bullet", paint: "#32a6ef" });
+  send(0, { type: "bar", op: "hit", id: "cover", p: [0, 1, 2], radius: .03, power: 20, chip: true, src: "bullet", paint: "#32a6ef", paintSkin: "circuit" });
   const barHit = await waitFor(() => messages[1].find((m) => m.type === "bar" && m.id === "cover"), "Barricade hit was not relayed");
   assert.equal(barHit.paint, "#32a6ef");
+  assert.equal(barHit.paintSkin, "circuit");
   send(0, { type: "bar", op: "hit", id: "hammer", p: [0, 1, 2], radius: .65, power: 1000, src: "hammer", paint: "#32a6ef" });
   const hammerHit = await waitFor(() => messages[1].find((m) => m.type === "bar" && m.id === "hammer"), "Hammer hit was not relayed");
   assert.equal(hammerHit.paint, null);

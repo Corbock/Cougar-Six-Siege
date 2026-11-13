@@ -791,6 +791,7 @@ function handleMessage(player, raw) {
       Math.hypot(suppliedAnchor[0] - target.state.x, suppliedAnchor[1] - target.state.y, suppliedAnchor[2] - target.state.z) < 3
       ? suppliedAnchor : targetId ? [target.state.x, target.state.y, target.state.z] : null;
     relayToMatch(match, player, { type: "paint", point: message.point, normal: message.normal, color: message.color,
+      paintSkin: weaponSkins.has(message.paintSkin) ? message.paintSkin : "none",
       size: Math.max(.04, Math.min(.7, message.size)), targetId, targetAnchor });
     return;
   }
@@ -919,7 +920,8 @@ function handleMessage(player, raw) {
       if (!Array.isArray(message.p) || message.p.length !== 3 || !message.p.every(Number.isFinite)) return;
       const src = String(message.src || "").slice(0, 12);
       const paint = src !== "hammer" && paintColors.includes(message.paint) ? message.paint : null;
-      relayToMatch(match, player, { type: "bar", op: "hit", id, p: message.p, radius: finite(message.radius, 5), power: finite(message.power, 5000), chip: message.chip === true, src, paint });
+      relayToMatch(match, player, { type: "bar", op: "hit", id, p: message.p, radius: finite(message.radius, 5), power: finite(message.power, 5000), chip: message.chip === true, src, paint,
+        paintSkin: paint && weaponSkins.has(message.paintSkin) ? message.paintSkin : "none" });
     } else if (message.op === "repair" || message.op === "steel") relayToMatch(match, player, { type: "bar", op: message.op, id });
     return;
   }
@@ -996,6 +998,8 @@ function handleMessage(player, raw) {
       equippedPaint: validPaint(state.equippedPaint),
       sidearmPaint: validPaint(state.sidearmPaint),
       dronePaint: validPaint(state.dronePaint),
+      hat: ["none", "cap", "beanie", "helmet"].includes(state.hat) ? state.hat : "none",
+      paintSkin: weaponSkins.has(state.paintSkin) ? state.paintSkin : "none",
       equippedSkin: weaponSkins.has(state.equippedSkin) ? state.equippedSkin : "none",
       equippedKeychain: weaponKeychains.has(state.equippedKeychain) ? state.equippedKeychain : "none",
       sidearmSkin: weaponSkins.has(state.sidearmSkin) ? state.sidearmSkin : "none",
