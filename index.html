@@ -1127,7 +1127,7 @@
         { id: "vector", name: "V-9 Vector", type: "SMG", desc: "High fire rate for fast, close entries.", dmg: 4, rng: 4, mob: 9 },
         { id: "hammer", name: "Hammer 12", type: "SHOTGUN", desc: "Devastating up close, weak at distance.", dmg: 9, rng: 2, mob: 5 },
         { id: "longwatch", name: "Longwatch", type: "MARKSMAN RIFLE", desc: "Two body shots or one uncovered headshot.", dmg: 8, rng: 9, mob: 3 },
-        { id: "f451", name: "F 451", type: "FLAMETHROWER", desc: "Close-range flame; sustained hits ignite targets for 3 seconds.", dmg: 6, rng: 3, mob: 3, presetOnly: true }
+        { id: "f451", name: "F 451", type: "FLAMETHROWER", desc: "Continuous close-range flame stream that drains fuel while firing.", dmg: 6, rng: 3, mob: 3, presetOnly: true }
       ] },
       { id: "secondary", label: "SECONDARY", stats: true, items: [
         { id: "p45", name: "P45 Sidearm", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
@@ -4418,8 +4418,13 @@
         if (k.held) { w.next = tNow + 1 / k.rate; useHeld(w); return; }
         if (k.melee) { w.swingStart = tNow; w.swingHit = false; w.next = tNow + 1 / k.rate; return; }
         if (w.ammo <= 0) { startReload(w); return; }
+        if (w.item.id === "f451") {
+          w.next = tNow + 1 / k.rate;
+          w.flameUntil = tNow + .08;
+          trace(w, 9, 1);
+          return;
+        }
         w.ammo--; w.next = tNow + 1 / k.rate; w.kick = 1; w.flash = .05;
-        if (w.item.id === "f451") w.flameUntil = tNow + .19;
         if (k.pellets) w.shotId = `${multiplayer.playerId}:s${++projSeq}`;
         const reach = w.item.id === "longwatch" ? Infinity : w.item.id === "f451" ? 9 : (12 + w.stats.rng * 10) * 2;
         for (let i = 0; i < (k.pellets || 1); i++) trace(w, reach, 1);
@@ -4431,7 +4436,11 @@
         if (w.kind.melee || w.reloadEnd || w.ammo >= w.kind.mag || w.reserve <= 0) return;
         w.reloadEnd = tNow + w.kind.reload; w.reloadStart = tNow;
       }
-      function updateWeapon(w) {
+      function drainFlamethrowerAmmo(w, elapsed) {
+        w.ammo = Math.max(0, w.ammo - Math.max(0, elapsed) * w.kind.rate);
+        return w.ammo === 0;
+      }
+      function updateWeapon(w, elapsed) {
         if (w.reloadEnd && tNow >= w.reloadEnd) {
           const take = Math.min(w.kind.mag - w.ammo, w.reserve); w.ammo += take; w.reserve -= take; w.reloadEnd = 0;
         }
@@ -4443,6 +4452,12 @@
         const sprinting = !crouched && isSprinting();
         if (sprinting) pressedAt = -1;
         const wantsFire = !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
+        if (w.item.id === "f451") {
+          if (wantsFire && !w.reloadEnd && w.ammo > 0) {
+            w.flameUntil = tNow + .08;
+            if (drainFlamethrowerAmmo(w, elapsed)) startReload(w);
+          } else w.flameUntil = 0;
+        }
         if (wantsFire && !w.reloadEnd && tNow >= w.next && w.swingStart < 0) { fire(w); pressedAt = -1; }
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
@@ -5050,7 +5065,8 @@
       }
       function updateHud() {
         const equipped = wpn(), w = shieldWeapon(equipped), k = w.kind;
-        const ammo = selectedOperatorId === "mr-m" && w.item.id === "drone" ? `${drone.uses} LEFT` : k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${w.ammo} / ${w.reserve}`;
+        const ammoCount = w.item.id === "f451" ? Math.ceil(w.ammo) : w.ammo;
+        const ammo = selectedOperatorId === "mr-m" && w.item.id === "drone" ? `${drone.uses} LEFT` : k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${ammoCount} / ${w.reserve}`;
         const droneCount = selectedOperatorId === "mr-m" ? ` · DRONES ${drone.companions.length} ACTIVE / ${drone.uses} LEFT` : "";
         const fragCount = selectedOperatorId === "ms-c" ? ` · FRAGS ${charges.frag ?? 3}/3` : "";
         weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">${operatorInfo().name.toUpperCase()}${droneCount}${fragCount} · [${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · ELIMINATIONS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount === Infinity ? "INF" : barCount}</div>`;
@@ -5301,7 +5317,7 @@
         if (barrierOn()) drawBarrier();
         if (drone.active && drone.mode === "camera" && tNow >= drone.nextScan) scanDrone();
         rechargeGrenades();
-        if (!drone.active && !dead) updateWeapon(shieldWeapon(cw));
+        if (!drone.active && !dead) updateWeapon(shieldWeapon(cw), dt);
         lastT = tNow;
         gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.uniform3f(u("cam"), 0, 0, 0);

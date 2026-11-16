@@ -132,6 +132,29 @@ test("the F 451 is cadence-limited and Pyromaniac is immune to flame damage", ()
   assert.equal(immune.target.burning, undefined);
 });
 
+test("F 451 fuel drains smoothly while held instead of consuming a round per flame check", () => {
+  const drain = section(html, "function drainFlamethrowerAmmo(", "function updateWeapon(");
+  const drainContext = { Math };
+  vm.runInNewContext(`${drain}\nglobalThis.drain = drainFlamethrowerAmmo;`, drainContext);
+  const weapon = { ammo: 60, kind: { rate: 5 } };
+  assert.equal(drainContext.drain(weapon, .1), false);
+  assert.equal(weapon.ammo, 59.5);
+  assert.equal(drainContext.drain(weapon, .1), false);
+  assert.equal(weapon.ammo, 59);
+  assert.equal(drainContext.drain(weapon, 20), true);
+  assert.equal(weapon.ammo, 0);
+
+  const firing = section(html, "function fire(w)", "function startReload(w)");
+  const fireContext = { tNow: 1, shots: [], trace: (...args) => fireContext.shots.push(args), startReload() {} };
+  vm.runInNewContext(`${firing}\nglobalThis.fire = fire;`, fireContext);
+  const flameWeapon = { item: { id: "f451" }, kind: { rate: 5 }, ammo: 59, kick: 0, flash: 0 };
+  fireContext.fire(flameWeapon);
+  assert.equal(flameWeapon.ammo, 59);
+  assert.equal(flameWeapon.kick, 0);
+  assert.equal(flameWeapon.flash, 0);
+  assert.equal(fireContext.shots.length, 1);
+});
+
 test("Molotovs damage and ignite nearby enemies but not Pyromaniac", () => {
   let now = 1000;
   const attacker = { id: "attacker", matchId: "match", team: 1, health: 100, kills: 0, deaths: 0, operatorId: "pyromaniac" };
