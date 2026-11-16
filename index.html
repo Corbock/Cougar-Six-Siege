@@ -644,7 +644,7 @@
           </div>
         </section>
         <section class="operator-strip" aria-label="Choose an operator">
-          <div class="strip-heading"><span>YOUR OPERATORS</span><span id="operator-count">01 / 07</span></div>
+          <div class="strip-heading"><span>YOUR OPERATORS</span><span id="operator-count">01 / 08</span></div>
           <div class="operators">
             <button class="operator selected" data-id="mr-m" data-name="Mr M" data-code="INTEL / 01" aria-pressed="true"><span class="operator-code">01 / ALL-SEEING</span><span class="operator-name">Mr M</span></button>
             <button class="operator" data-id="mr-l" data-name="Mr L" data-code="AREA / 02" aria-pressed="false"><span class="operator-code">02 / RA</span><span class="operator-name">Mr L</span></button>
@@ -652,7 +652,8 @@
             <button class="operator" data-id="ms-a" data-name="Ms A" data-code="ASSAULT / 04" aria-pressed="false"><span class="operator-code">04 / RAPID FIRE</span><span class="operator-name">Ms A</span></button>
             <button class="operator" data-id="hallway-monitor" data-name="Hallway Monitor" data-code="SCOUT / 05" aria-pressed="false"><span class="operator-code">05 / SCOUT</span><span class="operator-name">Hallway Monitor</span></button>
             <button class="operator" data-id="skanska" data-name="Skanska" data-code="BREACH / 06" aria-pressed="false"><span class="operator-code">06 / CONSTRUCTION</span><span class="operator-name">Skanska</span></button>
-            <button class="operator" data-id="custom" data-name="Custom" data-code="CUSTOM / 07" aria-pressed="false"><span class="operator-code">07 / CUSTOM</span><span class="operator-name">Custom</span></button>
+            <button class="operator" data-id="pyromaniac" data-name="Pyromaniac" data-code="INCENDIARY / 07" aria-pressed="false"><span class="operator-code">07 / PYROMANIAC</span><span class="operator-name">Pyromaniac</span></button>
+            <button class="operator" data-id="custom" data-name="Custom" data-code="CUSTOM / 08" aria-pressed="false"><span class="operator-code">08 / CUSTOM</span><span class="operator-name">Custom</span></button>
           </div>
           <p class="operator-ability" id="operator-ability"></p>
         </section>
@@ -1125,7 +1126,8 @@
         { id: "mk18", name: "Mk. 18", type: "ASSAULT RIFLE", desc: "Reliable all-rounder with controllable recoil.", dmg: 6, rng: 7, mob: 6 },
         { id: "vector", name: "V-9 Vector", type: "SMG", desc: "High fire rate for fast, close entries.", dmg: 4, rng: 4, mob: 9 },
         { id: "hammer", name: "Hammer 12", type: "SHOTGUN", desc: "Devastating up close, weak at distance.", dmg: 9, rng: 2, mob: 5 },
-        { id: "longwatch", name: "Longwatch", type: "MARKSMAN RIFLE", desc: "Semi-auto precision for long sightlines.", dmg: 8, rng: 9, mob: 3 }
+        { id: "longwatch", name: "Longwatch", type: "MARKSMAN RIFLE", desc: "Two body shots or one uncovered headshot.", dmg: 8, rng: 9, mob: 3 },
+        { id: "f451", name: "F 451", type: "FLAMETHROWER", desc: "Close-range flame; sustained hits ignite targets for 3 seconds.", dmg: 6, rng: 3, mob: 3, presetOnly: true }
       ] },
       { id: "secondary", label: "SECONDARY", stats: true, items: [
         { id: "p45", name: "P45 Sidearm", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
@@ -1145,7 +1147,8 @@
         { id: "frag", name: "Frag Grenade", type: "LETHAL", desc: "Timed explosive for clearing cover." },
         { id: "flash", name: "Flashbang", type: "TACTICAL", desc: "Blinds and disorients anyone nearby." },
         { id: "smoke", name: "Smoke Grenade", type: "TACTICAL", desc: "Blocks line of sight for a short time." },
-        { id: "claymore", name: "Proximity Mine", type: "LETHAL", desc: "Detonates when an enemy crosses its sensor." }
+        { id: "claymore", name: "Proximity Mine", type: "LETHAL", desc: "Detonates when an enemy crosses its sensor." },
+        { id: "molotov", name: "Molotov Cocktail", type: "INCENDIARY", desc: "Ignites an area and burns enemies who remain in the flames.", presetOnly: true }
       ] }
     ];
     const operatorRoster = [
@@ -1155,6 +1158,7 @@
       { id: "ms-a", name: "Ms A", ability: "RAPID FIRE · Reloads faster and carries larger magazines with more reserve ammunition.", loadout: { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" } },
       { id: "hallway-monitor", name: "Hallway Monitor", ability: "Moves faster and deploys a camera drone. Longwatch comes with a scope.", loadout: { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" } },
       { id: "skanska", name: "Skanska", ability: "CONSTRUCTION · Can place unlimited barricades. Hammer weapons deal bonus damage to full-health enemies.", loadout: { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" } },
+      { id: "pyromaniac", name: "Pyromaniac", ability: "FIRE IMMUNITY · Sustained F 451 hits ignite enemies for 3 seconds; Molotovs recharge over time.", loadout: { primary: "f451", secondary: "sledgehammer", gadget: "steel-bars", equipment: "molotov" } },
       { id: "custom", name: "Custom", ability: "Base stats and weapons. Choose any primary, secondary, gadget, and equipment.", loadout: { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" } }
     ];
     const defaultOperatorId = "mr-m";
@@ -1166,7 +1170,7 @@
     const operatorInfo = () => operatorRoster.find((operator) => operator.id === selectedOperatorId) || operatorRoster[0];
     const customLoadout = { ...operatorRoster.find((operator) => operator.id === "custom").loadout };
     try { Object.assign(customLoadout, JSON.parse(localStorage.getItem("c6-loadout") || "{}")); } catch (error) {}
-    loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === customLoadout[slot.id])) customLoadout[slot.id] = operatorRoster.find((operator) => operator.id === "custom").loadout[slot.id]; });
+    loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === customLoadout[slot.id] && !item.presetOnly)) customLoadout[slot.id] = operatorRoster.find((operator) => operator.id === "custom").loadout[slot.id]; });
     const loadout = { ...operatorRoster.find((operator) => operator.id === selectedOperatorId).loadout };
     loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === loadout[slot.id])) loadout[slot.id] = operatorRoster[0].loadout[slot.id]; });
     let activeSlot = loadoutSlots[0], inspectTarget = null;
@@ -1233,9 +1237,43 @@
         box(0, 0, 0, 3, .9, .7, "body"), cyl("x", 4.25, 0, 0, 5.5, .22, "metal"), cyl("x", 4, -.45, 0, 5, .18, "dark"),
         box(4, -.75, 0, 2, .5, .6, "body"), box(-2.6, -.2, 0, 2.6, .8, .6, "body"), box(-4, -.3, 0, .3, 1.2, .6, "dark"), box(-1, -.9, 0, .5, .9, .5, "dark") ] },
       longwatch: { mounts: { optic: [.5, .4, 0], muzzle: [8, 0, 0], grip: [4, -.35, 0] }, sight: [-3.2, .5, 0], parts: [
-        box(0, 0, 0, 4, .8, .6, "body"), cyl("x", 5, 0, 0, 6, .13, "metal"), box(3.5, 0, 0, 3, .6, .55, "body"),
-        box(-3.4, -.1, 0, 2.8, .9, .55, "body"), box(-3.2, .5, 0, 1.4, .25, .45, "dark"), box(-1, -.9, 0, .5, 1, .45, "dark"),
-        box(5.5, -.4, .25, .1, .8, .1, "metal"), box(5.5, -.4, -.25, .1, .8, .1, "metal") ], mag: [box(.6, -.8, 0, .6, .9, .45, "paint")] },
+        box(0, 0, 0, 3.8, .78, .68, "body"), box(.15, .3, 0, 2.5, .28, .72, "dark"),
+        box(3.5, -.02, 0, 3.2, .64, .7, "body"), box(3.5, .35, 0, 3.1, .12, .76, "metal"),
+        cyl("x", 5, .02, 0, 6, .13, "metal"), cyl("x", 8.05, .02, 0, .35, .22, "dark"),
+        cyl("x", 8.28, .02, 0, .12, .18, "metal"),
+        box(-3.55, -.08, 0, 2.9, .82, .62, "body"), box(-5.08, -.08, 0, .22, 1.02, .72, "dark"),
+        box(-3.35, .42, 0, 1.8, .22, .58, "dark"), box(-3.48, .54, 0, 1.35, .12, .44, "metal"),
+        box(-3.1, .68, 0, .72, .12, .42, "body"),
+        box(-1.04, -.92, 0, .68, 1.16, .5, "dark", -.12), box(-1.04, -.98, .27, .48, .72, .05, "metal", -.12),
+        box(-.72, -.58, 0, .78, .09, .42, "metal"), box(-.56, -.63, 0, .48, .08, .3, "dark"),
+        cyl("y", -.58, -.35, .45, .48, .075, "metal"), ball(-.58, -.62, .48, .12, "dark"),
+        ...[2.65, 3.15, 3.65, 4.15].flatMap((x) => [
+          box(x, .02, .37, .25, .09, .035, "dark"), box(x, .02, -.37, .25, .09, .035, "dark")
+        ]),
+        box(2.95, -.38, 0, 1.45, .1, .78, "dark"),
+        ...[-.92, -.28, .36, 1].map((y) => cyl("y", -2.35, y, 0, .13, .8, "metal")),
+        cyl("y", 6.05, -.68, .28, 1.12, .07, "metal"), cyl("y", 6.05, -.68, -.28, 1.12, .07, "metal"),
+        box(6.05, -1.24, .28, .32, .1, .14, "dark"), box(6.05, -1.24, -.28, .32, .1, .14, "dark"),
+        box(5.5, -.4, .25, .1, .8, .1, "metal"), box(5.5, -.4, -.25, .1, .8, .1, "metal"),
+        cyl("y", -2.35, 1.48, 0, .24, .34, "metal"), cyl("y", -2.35, 1.69, 0, .15, .16, "red"),
+        box(-2.35, .02, .835, .8, .5, .04, "accent"), box(-2.35, .02, .86, .42, .16, .025, "dark"),
+        ...[3.1, 3.42, 3.74, 4.06].map((x) => cyl("x", x, .05, 0, .07, .32, "dark")) ],
+        mag: [box(.45, -.88, 0, .62, 1.02, .48, "paint", -.08), box(.45, -1.35, 0, .56, .12, .44, "dark"),
+          box(.45, -.9, .25, .36, .65, .035, "dark", -.08), box(.45, -.9, -.25, .36, .65, .035, "dark", -.08)] },
+      f451: { mounts: { optic: [0, .85, 0], muzzle: [5.4, .05, 0], grip: [2.4, -.65, 0] }, sight: [0, .85, 0], parts: [
+        box(.2, 0, 0, 3.3, 1.05, .86, "body"), box(.25, .53, 0, 2.9, .16, .92, "dark"),
+        box(2.15, -.02, 0, 1.2, .78, .72, "dark"), cyl("x", 3.6, .05, 0, 2.6, .22, "metal"),
+        cyl("x", 4.65, .05, 0, .38, .36, "dark"), cyl("x", 4.88, .05, 0, .16, .28, "red"),
+        box(3.55, .4, 0, .25, .5, .5, "metal"), box(3.55, .4, .27, .16, .32, .06, "accent"),
+        cyl("y", -2.35, .02, 0, 2.65, .76, "body"), cyl("y", -2.35, .02, .77, 2.1, .06, "metal"),
+        cyl("y", -2.35, 1.38, 0, .22, .58, "dark"), cyl("y", -2.35, -1.34, 0, .18, .64, "dark"),
+        box(-2.35, .02, .77, 1.3, .12, .08, "metal"), box(-2.35, -.55, .79, .64, .5, .08, "red"),
+        box(-.8, .03, -.58, 1.5, .16, .18, "metal"), cyl("x", .3, -.75, 0, .9, .12, "dark"),
+        box(.3, -1.13, 0, .42, .62, .5, "dark"), box(.3, -1.42, 0, .56, .12, .62, "metal"),
+        box(-1.3, -.84, 0, .65, .14, .62, "dark"), box(1.65, .7, 0, .32, .18, .32, "metal"),
+        box(1.65, .84, 0, .12, .22, .12, "accent"), box(-.2, .62, 0, .28, .18, .64, "metal"),
+        ...[-.45, -.05, .35, .75].map((x) => box(x, .56, .445, .13, .12, .025, "red"))
+      ] },
       p45: { mounts: { optic: [0, .7, 0], muzzle: [1.7, .3, 0] }, sight: [-.25, .7, 0], parts: [
         box(0, .3, 0, 3, .7, .6, "body"), box(-.2, -.2, 0, 2.8, .35, .5, "dark"), box(-1, -1.1, 0, .9, 1.8, .55, "dark"),
         box(.6, -.5, 0, .8, .12, .4, "dark"), cyl("x", 1.7, .3, 0, .3, .13, "metal"), box(1.3, .72, 0, .2, .15, .1, "dark") ], mag: [box(-1, -2.05, 0, .95, .15, .6, "paint")] },
@@ -1249,14 +1287,17 @@
         cyl("x", 0, 0, 0, 6, .18, "dark"), cyl("x", -2, 0, 0, 2, .23, "accent"), box(3.2, 0, 0, 1.6, 1.3, 1.1, "body"),
         box(3.2, 0, 0, 1.7, .6, 1.2, "metal"), box(-3.1, 0, 0, .25, .5, .5, "dark") ] },
       karambit: { mounts: {}, parts: [
-        box(1.58, -.4, 0, .52, .13, .32, "accent", .16), box(1.88, -.28, 0, .34, .13, .32, "dark", .9),
-        box(1.83, .12, 0, .48, .13, .32, "accent", -.28), box(1.48, -.04, 0, .3, .14, .34, "dark", .8),
-        box(.96, -.06, 0, .95, .34, .38, "dark", -.08), box(.91, -.1, .2, .62, .1, .035, "accent", -.08),
-        box(.43, -.04, 0, .18, .58, .48, "metal"),
-        box(.12, -.12, 0, .72, .29, .2, "blade", .38), box(-.31, -.48, 0, .84, .25, .17, "blade", .88),
-        box(-.59, -.92, 0, .78, .22, .15, "blade", 1.42), box(-.46, -1.34, 0, .62, .17, .13, "blade", 2.18),
-        box(-.12, -.3, .105, .52, .035, .018, "edge", .38), box(-.5, -.72, .09, .54, .03, .016, "edge", .88),
-        box(1.57, -.32, .18, .12, .12, .035, "edge"), box(1.83, .2, .18, .12, .12, .035, "edge")
+        box(1.38, -.2, 0, .88, .42, .42, "dark", -.12), box(1.23, -.2, .23, .62, .28, .055, "accent", -.12),
+        box(1.23, -.2, -.23, .62, .28, .055, "accent", -.12),
+        box(1.88, -.3, 0, .36, .12, .32, "dark", .72), box(1.98, -.55, 0, .32, .12, .32, "accent", .05),
+        box(1.73, -.68, 0, .38, .12, .32, "dark", -.68),
+        box(.8, -.03, 0, .22, .44, .48, "metal"), box(.55, -.05, 0, .4, .12, .38, "dark"),
+        box(1.12, -.04, .27, .09, .09, .035, "metal"), box(1.12, -.04, -.27, .09, .09, .035, "metal"),
+        box(.12, -.14, 0, .58, .25, .17, "blade", .36), box(-.28, -.51, 0, .66, .2, .14, "blade", .86),
+        box(-.56, -.91, 0, .62, .16, .12, "blade", 1.38), box(-.48, -1.31, 0, .44, .12, .1, "blade", 2.05),
+        box(-.08, -.28, .09, .42, .025, .014, "edge", .36), box(-.43, -.68, .075, .43, .022, .012, "edge", .86),
+        box(-.64, -1.02, .065, .32, .018, .01, "edge", 1.38),
+        box(1.53, -.13, .22, .08, .08, .025, "metal"), box(1.53, -.13, -.22, .08, .08, .025, "metal")
       ] },
       shield: { mounts: {}, parts: [
         box(0, -.875, 0, .4, 3.25, 3.2, "body"), box(0, 2.075, 0, .4, .85, 3.2, "body"),
@@ -1289,7 +1330,16 @@
         cyl("y", 0, .2, 0, .5, .67, "accent"), box(.5, 1.95, 0, 1.1, .1, .3, "metal") ] },
       claymore: { mounts: {}, parts: [
         box(0, 0, 0, .6, 1.8, 3, "body"), box(.32, 0, 0, .05, .3, 2.6, "accent"), box(0, 1.05, 0, .5, .3, .5, "dark"),
-        box(0, -1.15, 1, .12, .5, .12, "metal"), box(0, -1.15, -1, .12, .5, .12, "metal"), box(-.35, 0, 0, .15, 1.2, 2.4, "dark") ] }
+        box(0, -1.15, 1, .12, .5, .12, "metal"), box(0, -1.15, -1, .12, .5, .12, "metal"), box(-.35, 0, 0, .15, 1.2, 2.4, "dark") ] },
+      molotov: { mounts: {}, parts: [
+        cyl("y", 0, -.05, 0, 2.1, .58, "glass"), ball(0, .94, 0, .56, "glass", .68),
+        cyl("y", 0, 1.33, 0, .66, .25, "body"), cyl("y", 0, 1.72, 0, .2, .3, "dark"),
+        cyl("y", 0, 1.88, 0, .12, .28, "metal"),
+        box(0, -.55, .58, .88, .58, .05, "accent"), box(0, -.55, .615, .7, .35, .025, "dark"),
+        box(-.12, 1.75, 0, .14, .42, .07, "wick", -.22),
+        box(-.24, 1.52, 0, .13, .34, .07, "wick", -.46),
+        box(-.34, 1.33, 0, .12, .16, .06, "wick", -.5)
+      ] }
     };
     modelDefs["camera-drone"] = modelDefs.drone;
 
@@ -1399,7 +1449,8 @@
     const ownedWraps = new Set(armorySave.wraps);
     const rewardedMatches = new Set(armorySave.rewardedMatches);
     const karambitUnlocked = () => ownedWraps.has(karambitRewardKey);
-    const loadoutItemsFor = (slot) => slot.items.filter((item) => item.id !== "karambit" || karambitUnlocked());
+    const loadoutItemsFor = (slot) => slot.items.filter((item) =>
+      (item.id !== "karambit" || karambitUnlocked()) && (selectedOperatorId !== "custom" || !item.presetOnly));
     if (!karambitUnlocked()) {
       if (customLoadout.secondary === "karambit") customLoadout.secondary = "p45";
       if (loadout.secondary === "karambit") loadout.secondary = "p45";
@@ -1432,7 +1483,7 @@
         { id: "none", name: "Stock", mod: {} },
         { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
     };
-    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c",
+    const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c", wick: "#c5b99c",
       medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b" };
 
     const custom = {};
@@ -2890,13 +2941,14 @@
         "MACHINE PISTOL": { rate: 14, auto: true, mag: 20, reload: 1.5, mult: 4 },
         "REVOLVER": { rate: 1.8, auto: false, mag: 6, reload: 2.4, mult: 5 },
         "MELEE": { rate: 1.4, auto: false, mag: Infinity, reload: 0, mult: 6, melee: true },
+        "FLAMETHROWER": { rate: 5, auto: true, mag: 60, reload: 2.6, mult: 1 },
         "KARAMBIT": { rate: 2, auto: false, mag: Infinity, reload: 0, mult: 4.8, melee: true }
       };
       // Gadgets and equipment are held items: vs scales the armory model for the viewmodel, uses is the charges per life
       const held = (vs, uses, at) => ({ rate: 1.6, auto: false, mag: Infinity, reload: 0, mult: 0, held: true, vs, uses, at: at || [.14, -.16, .4] });
       Object.assign(kinds, {
         DEFENSE: held(2.6, Infinity, [.0, -.072, .42]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, 3),
-        LETHAL: held(1.7, 3), TACTICAL: held(1.7, 3)
+        LETHAL: held(1.7, 3), TACTICAL: held(1.7, 3), INCENDIARY: held(1.7, 2)
       });
       const K = .06;
       const weapons = {};
@@ -2925,7 +2977,7 @@
         const mag = kind.mag;
         const sight = cfg.optic !== "none" && def.mounts.optic ? def.mounts.optic : def.sight || def.mounts.optic || [0, 0, 0];
         return { item, kind, cfg, polys, magPolys, mid, tip, rear, stats, sight, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
-          ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1, swingHit: false, kick: 0, flash: 0 };
+          ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0 };
       }
       const wpn = () => weapons[loadout[curSlot]];
       const shieldWeapon = (equipped) => equipped.item.id === "shield" && loadout.secondary === "p45" ? weapons.p45 : equipped;
@@ -2938,7 +2990,8 @@
       let dummies = [];
       const resetDummies = () => {
         const spots = isCanyon() ? [95, 155, 215, 275, 345, 405, 465].map((x) => { const p = GrandCanyon.point(x, 152); return [p.x, p.z]; }) : dummySpots;
-        dummies = spots.map(([x, z], i) => ({ x0: x, z0: z, x, z, move: !isCanyon() && i % 3 === 0, hp: 100, hit: 0, died: 0 }));
+        dummies = spots.map(([x, z], i) => ({ x0: x, z0: z, x, z, move: !isCanyon() && i % 3 === 0,
+          hp: 100, hit: 0, died: 0, flameHits: 0, flameLastAt: 0, burningUntil: 0, burnNextAt: 0 }));
       };
       let kills = 0, tNow = 0;
       const qb = (list, x0, x1, y0, y1, z0, z1, color, tf) => {
@@ -2955,6 +3008,10 @@
         qb(list, -.46, -.3, 1.0, 1.5, -.1, .1, body, tf); qb(list, .3, .46, 1.0, 1.5, -.1, .1, body, tf);
         qb(list, -.2, .2, 1.58, 2, -.2, .2, skin, tf);
         qb(list, -.21, .21, 1.76, 1.82, -.21, .21, "#c42a30", tf);
+        if (d.burningUntil > tNow) {
+          for (let i = 0; i < 3; i++)
+            addFlameMesh(list, [-.3 + i * .3, 1.04, .2], .11, .52, i * 2 + tNow * 4, tf);
+        }
       }
       const worldItemModels = new Map();
       function worldItemQuads(list, itemId, state, side = .28, paint = state.equippedPaint, appearance = {}) {
@@ -3013,6 +3070,7 @@
           "ms-a": ["#506748", "#39434a", "#c58c69", "#573b2d"],
           "hallway-monitor": ["#777c68", "#42434a", "#dcb99a", "#827259"],
           skanska: ["#53616b", "#393f48", "#a96f50", "#2e2925"],
+          pyromaniac: ["#75453a", "#343b3c", "#c89170", "#30231e"],
           custom: ["#58656a", "#38444b", "#c99778", "#41302a"]
         }[player.operatorId] || ["#58656a", "#38444b", "#c99778", "#41302a"];
         const [shirt, pants, skin, hair] = look;
@@ -3102,6 +3160,13 @@
           box(0, headY - .11, .155, .09, .025, .025, "#754f45");
         }
         box(0, crouched ? .79 : 1.12, .19, .16, .24, .04, "#f1f0eb");
+        if (player.burning) {
+          for (let i = 0; i < 4; i++) {
+            const x = -.24 + i * .16, y = .8 + (i % 2) * .42, flicker = Math.sin(tNow * 18 + i * 2) * .07;
+            list.push({ pts: [[x - .09, y, .23], [x + .09, y, .23], [x + flicker, y + .42, .23]].map(transform),
+              color: i % 2 ? "#ffd96b" : "#df563c" });
+          }
+        }
         const item = remoteEquippedItem(player);
         if (!state.droneState && (state.shieldActive || item === "shield")) {
           const lean = state.lean || 0, lx = state.x + c * lean * .7, lz = state.z - s * lean * .7;
@@ -3594,7 +3659,7 @@
         return b;
       }
       function clearBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; }
-      function resetBarricades() { clearBarricades(); remoteBarricadeActions.clear(); barricadeActionStart = -1; grenadeThrowAction = null; debris = []; projectiles = []; smokes = []; shieldImpacts = []; paintMarks = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
+      function resetBarricades() { clearBarricades(); remoteBarricadeActions.clear(); barricadeActionStart = -1; grenadeThrowAction = null; debris = []; projectiles = []; smokes = []; firePatches = []; shieldImpacts = []; paintMarks = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
       // ---- Pre-built barricades and supply pickups ----
       // ax is the wall normal (0 = x, 2 = z), n the wall plane, a0..a1 the opening along the other axis
       function seedBarricades() {
@@ -3773,7 +3838,7 @@
         if (hostageDistance <= reach && hostageDistance < tw && hostageDistance < bt && hostageDistance < playerDistance && hostageDistance <= droneDistance) {
           const effectiveRange = reach / 2;
           const falloff = hostageDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (hostageDistance - effectiveRange) / effectiveRange * .65);
-          const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul);
+          const damage = w.item.id === "f451" ? 6 : Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul);
           paintHit(w, o, dr, hostageDistance, hostageBox);
           multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: "hostage", damage, direction: { x: dr[0], y: dr[1], z: dr[2] } }));
           recordHit(w.item.id); mark(false);
@@ -3788,9 +3853,10 @@
           const effectiveRange = reach / 2;
           const falloff = playerDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (playerDistance - effectiveRange) / effectiveRange * .65);
           const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && playerTarget.health >= 100 ? 1.5 : 1;
-          const damage = Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
+          const damage = w.item.id === "f451" ? 6 : Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
           paintHit(w, o, dr, playerDistance, playerBox, playerTarget.id);
           multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage,
+            weaponId: w.item.id,
             shotId: w.kind.pellets ? w.shotId : undefined, snapshotAt: multiplayer.lastSnapshotAt,
             direction: { x: dr[0], y: dr[1], z: dr[2] } }));
           recordHit(w.item.id); mark(false);
@@ -3815,20 +3881,53 @@
         const fall = bt <= eff || w.kind.melee ? 1 : Math.max(.35, 1 - (bt - eff) / eff * .65);
         const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && best.hp >= 100 ? 1.5 : 1;
         const instantHeadshot = head && !w.kind.melee && (curSlot === "primary" || w.item.id === "magnum");
-        const dmg = instantHeadshot ? best.hp : w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul * fullHealthBonus;
+        const dmg = w.item.id === "f451" ? 6 : instantHeadshot ? best.hp : w.item.id === "longwatch" ? 50 :
+          w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul * fullHealthBonus;
         paintHit(w, o, dr, bt, bestBox, `dummy-${dummies.indexOf(best)}`);
         recordHit(w.item.id);
         hurtDummy(best, dmg, head);
+        if (w.item.id === "f451" && best.hp > 0) {
+          best.flameHits = best.flameHits && tNow - best.flameLastAt <= 1.1 ? best.flameHits + 1 : 1;
+          best.flameLastAt = tNow;
+          if (best.flameHits >= 4 && !(best.burningUntil > tNow)) {
+            best.burningUntil = tNow + 3;
+            best.burnNextAt = tNow + .25;
+            best.flameHits = 0;
+          }
+        }
       }
       function hurtDummy(d, dmg, head) {
         d.hp -= dmg; d.hit = .12;
-        if (d.hp <= 0) { d.died = tNow; kills++; addDrop({ id: `l${tNow}${d.x0}`, kind: "ammo", x: d.x, y: 0, z: d.z, remote: false }); if (Math.random() < .3) addDrop({ id: `m${tNow}${d.x0}`, kind: ["grenade", "medkit", "wood", "metal"][Math.floor(Math.random() * 4)], x: d.x + .7, y: 0, z: d.z + .4, remote: false }); if (selectedOperatorId !== "skanska") barCount = Math.min(MAX_BARS, barCount + 1); say(head ? "HEADSHOT ELIMINATION" : "TARGET DOWN"); mark(true); setTimeout(() => { d.hp = 100; d.died = 0; }, 3500); }
+        if (d.hp <= 0) { d.burningUntil = 0; d.died = tNow; kills++; addDrop({ id: `l${tNow}${d.x0}`, kind: "ammo", x: d.x, y: 0, z: d.z, remote: false }); if (Math.random() < .3) addDrop({ id: `m${tNow}${d.x0}`, kind: ["grenade", "medkit", "wood", "metal"][Math.floor(Math.random() * 4)], x: d.x + .7, y: 0, z: d.z + .4, remote: false }); if (selectedOperatorId !== "skanska") barCount = Math.min(MAX_BARS, barCount + 1); say(head ? "HEADSHOT ELIMINATION" : "TARGET DOWN"); mark(true); setTimeout(() => { d.hp = 100; d.died = 0; d.flameHits = 0; d.burningUntil = 0; }, 3500); }
         else { if (head) say("HEADSHOT"); mark(false); }
       }
       // ---- Gadgets and equipment ----
-      let projectiles = [], smokes = [];
+      let projectiles = [], smokes = [], firePatches = [];
       const medkitActionDuration = 4.2;
       let medkitActionStart = -1;
+      function addFlameMesh(list, base, width, height, phase, transform = (point) => point,
+        colors = ["#df563c", "#f78a30", "#ffd96b"]) {
+        const rings = [{ y: 0, radius: .55 }, { y: .28, radius: 1 }, { y: .7, radius: .64 }, { y: 1, radius: .18 }];
+        const sides = 6;
+        const pointAt = (ringIndex, side) => {
+          const ring = rings[ringIndex], angle = side / sides * Math.PI * 2;
+          const sway = Math.sin(tNow * 15 + phase + ringIndex * 1.3) * width * ringIndex * .12;
+          return transform([
+            base[0] + sway + Math.cos(angle) * width * ring.radius,
+            base[1] + ring.y * height,
+            base[2] + Math.cos(tNow * 12 + phase + ringIndex) * width * ringIndex * .06 +
+              Math.sin(angle) * width * ring.radius * .72
+          ]);
+        };
+        for (let ring = 0; ring < rings.length - 1; ring++) {
+          for (let side = 0; side < sides; side++) {
+            list.push({ pts: [
+              pointAt(ring, side), pointAt(ring, side + 1),
+              pointAt(ring + 1, side + 1), pointAt(ring + 1, side)
+            ], color: colors[ring] });
+          }
+        }
+      }
       const medkitActionActive = () => {
         if (medkitActionStart < 0) return false;
         if (tNow - medkitActionStart >= medkitActionDuration) { medkitActionStart = -1; return false; }
@@ -4074,14 +4173,14 @@
         }
         if (w.kind.uses === Infinity) return say(id === "medkit" ? "NO INJURIES TO TREAT" : id === "shield" ? "SHIELD READY" : "NOT AVAILABLE YET");
         if (left <= 0) return say("OUT OF " + w.item.name.toUpperCase());
-        if (id === "frag" || id === "flash" || id === "smoke") {
+        if (id === "frag" || id === "flash" || id === "smoke" || id === "molotov") {
           if (grenadeThrowAction) return;
           grenadeThrowAction = {
             startedAt: tNow, itemId: id, uses: w.kind.uses, paint: paintColor(w.item),
             tornado: id === "smoke" && selectedOperatorId === "mr-l",
             markedFlash: id === "flash" && selectedOperatorId === "mr-m", thrown: false
           };
-          return say(`${w.item.name.toUpperCase()} PIN PULLED`);
+          return say(id === "molotov" ? "LIGHTING MOLOTOV" : `${w.item.name.toUpperCase()} PIN PULLED`);
         }
         charges[id] = left - 1; w.kick = 1;
         if (id === "claymore") {
@@ -4097,7 +4196,7 @@
         charges[action.itemId] = left - 1;
         w.kick = 1;
         const o = [renderCam.x, renderCam.y, renderCam.z], dr = aimDir(), id = action.itemId;
-        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, paint: action.paint, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : 1.6, own: true,
+        const thrown = { pid: `${multiplayer.playerId}:p${++projSeq}`, type: id, lit: id === "molotov", paint: action.paint, x: o[0] + dr[0] * .5, y: o[1] - .15, z: o[2] + dr[2] * .5, vx: dr[0] * 13, vy: dr[1] * 13 + 3, vz: dr[2] * 13, fuse: id === "frag" ? 2.2 : id === "molotov" ? 1.9 : 1.6, own: true,
           tornado: action.tornado, markedFlash: action.markedFlash };
         projectiles.push(thrown);
         sendMatch({ type: "throw", id: thrown.pid, kind: id, paint: thrown.paint, x: thrown.x, y: thrown.y, z: thrown.z, vx: thrown.vx, vy: thrown.vy, vz: thrown.vz, fuse: thrown.fuse });
@@ -4105,6 +4204,10 @@
       function advanceGrenadeThrow() {
         if (!grenadeThrowAction) return;
         const elapsed = tNow - grenadeThrowAction.startedAt;
+        if (grenadeThrowAction.itemId === "molotov" && !grenadeThrowAction.lit && elapsed >= .42) {
+          grenadeThrowAction.lit = true;
+          say("MOLOTOV LIT");
+        }
         if (!grenadeThrowAction.thrown && elapsed >= grenadeThrowReleaseAt) {
           grenadeThrowAction.thrown = true;
           throwGrenade(grenadeThrowAction);
@@ -4136,10 +4239,10 @@
       }
       function rechargeGrenades() {
         if (tNow < nextGrenadeRecharge) return;
-        const id = selectedOperatorId === "ms-c" ? "frag" : selectedOperatorId === "mr-l" ? "smoke" : null;
+        const id = selectedOperatorId === "ms-c" ? "frag" : selectedOperatorId === "mr-l" ? "smoke" : selectedOperatorId === "pyromaniac" ? "molotov" : null;
         if (!id) return;
         const current = charges[id] ?? weapons[id].kind.uses;
-        if (current < weapons[id].kind.uses) { charges[id] = current + 1; say(id === "frag" ? "FRAG RECHARGED" : "TORNADO RECHARGED"); }
+        if (current < weapons[id].kind.uses) { charges[id] = current + 1; say(id === "frag" ? "FRAG RECHARGED" : id === "molotov" ? "MOLOTOV RECHARGED" : "TORNADO RECHARGED"); }
         nextGrenadeRecharge = tNow + 15;
       }
       function setSmoke(program, on) {
@@ -4182,12 +4285,21 @@
       }
       function remoteThrow(m) {
         if (!multiplayer.match || projectiles.some((p) => p.pid === m.id)) return;
-        projectiles.push({ pid: m.id, type: m.kind, paint: m.paint, x: m.x, y: m.y, z: m.z, vx: m.vx, vy: m.vy, vz: m.vz, fuse: m.fuse, mine: m.mine, arm: Infinity, own: false,
+        projectiles.push({ pid: m.id, type: m.kind, lit: m.lit === true, paint: m.paint, x: m.x, y: m.y, z: m.z, vx: m.vx, vy: m.vy, vz: m.vz, fuse: m.fuse, mine: m.mine, arm: Infinity, own: false,
           tornado: m.tornado === true, markedFlash: m.kind === "flash" && multiplayer.remotePlayers.get(m.from)?.operatorId === "mr-m" });
       }
       function applyEffect(p) {
         if (p.type === "frag") explode(p, 6, 320);
         else if (p.type === "claymore") explode(p, 5, 260);
+        else if (p.type === "molotov") {
+          firePatches.push({ x: p.x, y: Math.max(p.y, .1), z: p.z, t0: tNow });
+          if (p.own) dummies.forEach((d) => {
+            const distance = Math.hypot(d.x - p.x, d.z - p.z);
+            if (d.hp <= 0 || distance >= 4.5) return;
+            hurtDummy(d, 15, false);
+            if (d.hp > 0) { d.burningUntil = tNow + 3; d.burnNextAt = tNow + .25; }
+          });
+        }
         else if (p.type === "flash") {
           if (Math.hypot(cam.x - p.x, cam.z - p.z) < 14) { flashEl.style.transition = "none"; flashEl.style.opacity = 1; void flashEl.offsetWidth; flashEl.style.transition = "opacity 2.2s ease-out .4s"; flashEl.style.opacity = 0; }
           if (p.markedFlash) markEnemiesAround(p.x, p.z, 14);
@@ -4195,6 +4307,21 @@
         } else if (!p.tornado || !smokes.some((sm) => sm.tornado && sm.id === p.pid)) {
           smokes.push({ id: p.pid, x: p.x, y: Math.max(p.y, .1) + 1.4, z: p.z, t0: tNow, tornado: Boolean(p.tornado) });
         }
+      }
+      function firePatchQuads() {
+        firePatches = firePatches.filter((patch) => tNow - patch.t0 < 3);
+        const list = [];
+        firePatches.forEach((patch) => {
+          const age = tNow - patch.t0, fade = Math.max(.25, 1 - age / 3);
+          for (let i = 0; i < 3; i++) {
+            const angle = i * Math.PI * 2 / 3 + age * .7, radius = .35 + i * .38;
+            const x = patch.x + Math.cos(angle) * radius, z = patch.z + Math.sin(angle) * radius;
+            addFlameMesh(list, [x, patch.y + .03, z], .17 * fade, .78 * fade, i + age * 5);
+            addFlameMesh(list, [x, patch.y + .04, z], .075 * fade, .48 * fade, i + age * 5 + 1,
+              (point) => point, ["#f78a30", "#ffd96b", "#fff1b8"]);
+          }
+        });
+        return list;
       }
       function remoteExplosion(m) {
         if (!multiplayer.match) return;
@@ -4271,8 +4398,18 @@
               return false;
             }
           }
-          const col = { frag: "#3d4a2a", flash: "#cfd3d6", smoke: "#8a9096", claymore: "#4a5a3a" }[p.type], r = p.mine ? .12 : .06;
-          qb(dq, p.x - r, p.x + r, p.y - r, p.y + r, p.z - r, p.z + r, col);
+          if (p.type === "molotov") {
+            worldItemQuads(dq, "molotov", { x: p.x, y: p.y + EYE - 1.3, z: p.z, yaw: Math.atan2(p.vx || 0, p.vz || 1),
+              pitch: 0, lean: 0, crouched: false, activeSlot: "equipment" }, .28, p.paint);
+            if (p.lit) {
+              addFlameMesh(dq, [p.x, p.y + 1.5, p.z], .06, .3, tNow * 16);
+              addFlameMesh(dq, [p.x, p.y + 1.5, p.z], .03, .2, tNow * 16 + 1,
+                (point) => point, ["#f78a30", "#ffd96b", "#fff1b8"]);
+            }
+          } else {
+            const col = { frag: "#3d4a2a", flash: "#cfd3d6", smoke: "#8a9096", claymore: "#4a5a3a" }[p.type], r = p.mine ? .12 : .06;
+            qb(dq, p.x - r, p.x + r, p.y - r, p.y + r, p.z - r, p.z + r, col);
+          }
           return true;
         });
       }
@@ -4282,8 +4419,9 @@
         if (k.melee) { w.swingStart = tNow; w.swingHit = false; w.next = tNow + 1 / k.rate; return; }
         if (w.ammo <= 0) { startReload(w); return; }
         w.ammo--; w.next = tNow + 1 / k.rate; w.kick = 1; w.flash = .05;
+        if (w.item.id === "f451") w.flameUntil = tNow + .19;
         if (k.pellets) w.shotId = `${multiplayer.playerId}:s${++projSeq}`;
-        const reach = (12 + w.stats.rng * 10) * 2;
+        const reach = w.item.id === "longwatch" ? Infinity : w.item.id === "f451" ? 9 : (12 + w.stats.rng * 10) * 2;
         for (let i = 0; i < (k.pellets || 1); i++) trace(w, reach, 1);
         cam.pitch = Math.min(1.4, cam.pitch + .002 + .0018 * w.stats.dmg * (k.pellets ? 1 : .8));
         cam.yaw += (Math.random() - .5) * .004;
@@ -4410,6 +4548,44 @@
           const mx = w.mid[0] + w.tip + .1, my = w.mid[1] + w.muzzle[0], mz = w.mid[2] + w.muzzle[1], r = .9 + Math.random() * .5;
           list.push({ pts: [[mx, my - r, mz], [mx + r * 2, my, mz], [mx, my + r, mz], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#ffd96b" });
           list.push({ pts: [[mx, my, mz - r], [mx + r * 2, my, mz], [mx, my, mz + r], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#fff1b8" });
+        }
+        if (w.item.id === "f451" && w.flameUntil > tNow) {
+          const mx = w.mid[0] + w.tip + .2, my = w.mid[1] + w.muzzle[0], mz = w.mid[2] + w.muzzle[1];
+          const muzzle = place([mx, my, mz]), pulse = .92 + Math.sin(tNow * 42) * .12;
+          addFlameMesh(list, muzzle, .09, .3 * pulse, tNow * 8);
+          addFlameMesh(list, muzzle, .042, .21 * pulse, tNow * 8 + 1,
+            (point) => point, ["#f78a30", "#ffd96b", "#fff1b8"]);
+        }
+        if (w.item.id === "molotov") {
+          const elapsed = tNow - w.equippedAt, clamp = (value) => Math.max(0, Math.min(1, value));
+          const smooth = (value) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+          const reach = smooth(elapsed / .35), retract = smooth((elapsed - .56) / .28);
+          const amount = reach * (1 - retract), start = [-.58, -.8, .58];
+          const wick = place([-.24, 1.9, .02]);
+          const hand = start.map((value, i) => value + (wick[i] - value) * amount);
+          const box = (center, size, color, angle = 0) => {
+            const rotate = (point) => {
+              const x = point[0] - center[0], y = point[1] - center[1];
+              return [center[0] + x * Math.cos(angle) - y * Math.sin(angle),
+                center[1] + x * Math.sin(angle) + y * Math.cos(angle), point[2]];
+            };
+            qb(list, center[0] - size[0] / 2, center[0] + size[0] / 2,
+              center[1] - size[1] / 2, center[1] + size[1] / 2,
+              center[2] - size[2] / 2, center[2] + size[2] / 2, color, rotate);
+          };
+          if (amount > .02) {
+            const dx = hand[0] - start[0], dy = hand[1] - start[1], length = Math.hypot(dx, dy);
+            const angle = Math.atan2(dy, dx);
+            box([start[0] + dx * .43, start[1] + dy * .43, start[2]], [length * .7, .12, .09], "#394a5d", angle);
+            box([hand[0], hand[1], hand[2]], [.14, .12, .1], "#c89170", angle);
+            box([hand[0] + .045, hand[1] - .025, hand[2]], [.09, .035, .07], "#c89170", angle);
+          }
+          if (elapsed >= .42) {
+            const lit = smooth((elapsed - .42) / .16), flame = place([-.24, 1.92, .04]);
+            addFlameMesh(list, flame, .04 * lit, .15 * lit, tNow * 20);
+            addFlameMesh(list, flame, .019 * lit, .1 * lit, tNow * 20 + 1,
+              (point) => point, ["#f78a30", "#ffd96b", "#fff1b8"]);
+          }
         }
         return list;
       }
@@ -4631,12 +4807,29 @@
         arm([.57, -.72], rightEnd, .48);
 
         const body = { frag: "#3d4a2a", flash: "#cfd3d6", smoke: "#8a9096" }[action.itemId] || "#3d4a2a";
-        box([gx, gy - .015, gz], [.16, .16, .13], body);
-        box([gx, gy - .105, gz], [.13, .035, .12], "#293326");
-        box([gx, gy + .075, gz], [.12, .045, .11], body);
-        box([gx, gy + .12, gz], [.075, .045, .075], "#626d55");
-        box([gx + .065, gy + .045, gz - .035], [.035, .15, .035], "#858b8a");
-        if (elapsed < .52) {
+        if (action.itemId === "molotov") {
+          box([gx, gy - .07, gz], [.24, .33, .19], "#3d413c");
+          box([gx, gy + .09, gz], [.2, .13, .17], "#4fa3b8");
+          box([gx, gy + .18, gz], [.11, .13, .11], "#252825");
+          box([gx, gy + .26, gz], [.12, .035, .12], "#80857a");
+          box([gx, gy - .08, gz + .101], [.16, .17, .018], "#d3ef59");
+          box([gx, gy - .08, gz + .112], [.12, .1, .012], "#252825");
+          box([gx - .07, gy + .21, gz], [.08, .27, .045], "#c5b99c", -.2);
+          box([gx - .13, gy + .08, gz], [.08, .22, .04], "#c5b99c", -.45);
+          if (elapsed >= .38) {
+            const lit = smooth((elapsed - .38) / .16);
+            addFlameMesh(list, [gx - .13, gy + .28, gz + .03], .045 * lit, .15 * lit, tNow * 20);
+            addFlameMesh(list, [gx - .13, gy + .28, gz + .03], .02 * lit, .1 * lit, tNow * 20 + 1,
+              (point) => point, ["#f78a30", "#ffd96b", "#fff1b8"]);
+          }
+        } else {
+          box([gx, gy - .015, gz], [.16, .16, .13], body);
+          box([gx, gy - .105, gz], [.13, .035, .12], "#293326");
+          box([gx, gy + .075, gz], [.12, .045, .11], body);
+          box([gx, gy + .12, gz], [.075, .045, .075], "#626d55");
+          box([gx + .065, gy + .045, gz - .035], [.035, .15, .035], "#858b8a");
+        }
+        if (elapsed < .52 && action.itemId !== "molotov") {
           box([pin[0] - .025, pin[1] - .03, gz + .055], [.055, .025, .025], "#cbd0cc", -.45);
           const sides = 10, inner = .023, outer = .038, ringZ = gz + .065;
           for (let side = 0; side < sides; side++) {
@@ -4945,7 +5138,14 @@
         viewScale = 1.8 * (1 + (drone.deploying ? 0 : ads) * .2);
         tNow = now / 1000;
         if (!lastT) lastT = tNow;
-        dummies.forEach((d, i) => { d.hit = Math.max(0, d.hit - (tNow - lastT)); if (d.move && d.hp > 0) d.z = d.z0 + Math.sin(tNow * .7 + i) * 4; });
+        dummies.forEach((d, i) => {
+          d.hit = Math.max(0, d.hit - (tNow - lastT));
+          if (d.burningUntil > tNow && tNow >= d.burnNextAt && d.hp > 0) {
+            d.burnNextAt = tNow + .25;
+            hurtDummy(d, 5, false);
+          }
+          if (d.move && d.hp > 0) d.z = d.z0 + Math.sin(tNow * .7 + i) * 4;
+        });
         const dead = isDead();
         if (dead) { grenadeThrowAction = null; cancelDroneDeploy(); if (drone.active) recallDrone(); followSpectate(); }
         else { advanceGrenadeThrow(); finishDroneDeploy(); }
@@ -5087,6 +5287,7 @@
         stepProjectiles(bdt, dq);
         drawDynamic(dq.filter((q) => !q.skin), true);
         drawSkinned(dq.filter((q) => q.skin), true);
+        drawDynamic(firePatchQuads(), true);
         const paint = [];
         paintQuads(paint);
         drawDynamic(paint.filter((q) => !q.skin), false);
@@ -5174,7 +5375,7 @@
             crouched = !crouched; eyeHeight = crouched ? CROUCH_EYE : EYE; cam.y = feet + eyeHeight;
           }
           const slotIndex = [currentKeybinds.switchWeapon1, currentKeybinds.switchWeapon2, currentKeybinds.switchWeapon3, currentKeybinds.switchWeapon4].indexOf(key);
-          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; } }
+          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; wpn().equippedAt = tNow; } }
           if (key === currentKeybinds.reload) startReload(shieldWeapon(wpn()));
           if (key === currentKeybinds.barricade && !e.repeat) placeBarricade();
           if (key === currentKeybinds.scan && grounded) cam.vy = 6.5;

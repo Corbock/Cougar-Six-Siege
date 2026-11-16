@@ -25,14 +25,15 @@ const objectiveSites = { press: { x: 0, y: 7.25, z: -55.5 }, bathroom: { x: -81,
 const roundEndSeconds = 6;
 const matchOverSeconds = 8;
 const roundsToWin = 2;
-const operatorIds = new Set(["mr-m", "mr-l", "ms-c", "ms-a", "hallway-monitor", "skanska", "custom"]);
+const operatorIds = new Set(["mr-m", "mr-l", "ms-c", "ms-a", "hallway-monitor", "skanska", "pyromaniac", "custom"]);
 const operatorKits = {
   "mr-m": { primary: "vector", secondary: "p45", gadget: "drone", equipment: "flash" },
   "mr-l": { primary: "hammer", secondary: "rattler", gadget: "medkit", equipment: "smoke" },
   "ms-c": { primary: "mk18", secondary: "p45", gadget: "shield", equipment: "frag" },
   "ms-a": { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" },
   "hallway-monitor": { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" },
-  "skanska": { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" }
+  "skanska": { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" },
+  pyromaniac: { primary: "f451", secondary: "sledgehammer", gadget: "steel-bars", equipment: "molotov" }
 };
 const customItems = {
   primary: ["mk18", "vector", "hammer", "longwatch"],
@@ -272,6 +273,8 @@ function applyDamage(match, attacker, target, amount) {
   if (match.phase !== "live" || target.health <= 0) return;
   target.health = Math.max(0, target.health - amount);
   if (target.health === 0) {
+    target.burning = null;
+    target.flamethrowerExposure = null;
     attacker.kills++;
     target.deaths++;
     dropLoot(match, target);
@@ -282,6 +285,54 @@ function applyDamage(match, attacker, target, amount) {
 }
 
 const blastRadius = { frag: 6, claymore: 5 };
+const flamethrowerDamage = 6;
+const flamethrowerRange = 10;
+const fireTickDamage = 5;
+const fireTickInterval = 250;
+const fireImmune = (player) => player.operatorId === "pyromaniac";
+function ignitePlayer(match, attacker, target, now) {
+  if (fireImmune(target) || target.health <= 0) return;
+  if (target.burning?.until > now) return;
+  target.burning = { attackerId: attacker.id, until: now + 3000, nextTickAt: now + fireTickInterval };
+  for (const id of match.players) sendPlayer(players.get(id), { type: "player_burning", playerId: target.id, burning: true });
+}
+
+function tickFireEffects(match, now) {
+  for (const id of match.players) {
+    const target = players.get(id), burning = target?.burning;
+    if (!burning || target.health <= 0 || fireImmune(target)) {
+      if (burning && fireImmune(target)) target.burning = null;
+      continue;
+    }
+    if (now >= burning.until && now < burning.nextTickAt) {
+      target.burning = null;
+      for (const playerId of match.players) sendPlayer(players.get(playerId), { type: "player_burning", playerId: target.id, burning: false });
+      continue;
+    }
+    if (now < burning.nextTickAt) continue;
+    burning.nextTickAt += fireTickInterval;
+    const attacker = players.get(burning.attackerId);
+    if (attacker?.matchId === match.id) applyDamage(match, attacker, target, fireTickDamage);
+    if (now >= burning.until) {
+      target.burning = null;
+      for (const playerId of match.players) sendPlayer(players.get(playerId), { type: "player_burning", playerId: target.id, burning: false });
+    }
+  }
+  match.fireZones ||= new Map();
+  for (const [zoneId, zone] of match.fireZones) {
+    if (now >= zone.expiresAt) { match.fireZones.delete(zoneId); continue; }
+    if (now < zone.nextTickAt) continue;
+    zone.nextTickAt += fireTickInterval;
+    const attacker = players.get(zone.ownerId);
+    if (!attacker || attacker.matchId !== match.id) continue;
+    for (const id of match.players) {
+      const target = players.get(id);
+      if (!target || target.team === attacker.team || target.health <= 0 || fireImmune(target) ||
+          Math.hypot(target.state.x - zone.x, target.state.z - zone.z) >= zone.radius) continue;
+      ignitePlayer(match, attacker, target, now);
+    }
+  }
+}
 const finite = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
 
 function relayToMatch(match, sender, message) {
@@ -293,6 +344,7 @@ function startRound(match, type) {
   match.drops = new Map();
   match.projectiles = new Map();
   match.tornadoes = new Map();
+  match.fireZones = new Map();
   match.phase = "prep";
   const objective = objectiveModes.has(match.mode);
   if (objective && match.round > 1) match.swapped = !match.swapped;
@@ -307,6 +359,9 @@ function startRound(match, type) {
     player.medkits = 3;
     player.lastHealAt = 0;
     player.lastShotAt = 0;
+    player.lastFlameShotAt = 0;
+    player.burning = null;
+    player.flamethrowerExposure = null;
     player.droneLock = null;
     player.lastDroneShotAt = 0;
     player.destroyedDrones = new Set();
@@ -725,14 +780,18 @@ function handleMessage(player, raw) {
     const match = matches.get(player.matchId);
     if (!match || match.phase !== "live" || player.health <= 0) return;
     const snapshotAt = Number(message.snapshotAt);
-    const shooterState = stateAt(player, snapshotAt, now);
+    const shooterState = player.state;
     const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const flamethrower = player.state.activeSlot === "primary" && kit.primary === "f451";
     const pelletId = player.state.activeSlot === "primary" && kit.primary === "hammer" &&
       typeof message.shotId === "string" && message.shotId.length > 0 && message.shotId.length <= 48 ? message.shotId : null;
     const volley = pelletId && player.shotgunVolley?.id === pelletId && now - player.shotgunVolley.started < 100;
-    if (volley ? player.shotgunVolley.count >= 8 : now - player.lastShotAt < 70) return;
+    if (volley ? player.shotgunVolley.count >= 8 : flamethrower ? now - player.lastFlameShotAt < 180 : now - player.lastShotAt < 60) return;
     if (message.targetId === "hostage") {
-      if (!volley) shootHostage(match, player, message, now, shooterState);
+      if (!volley) {
+        if (flamethrower) player.lastFlameShotAt = now;
+        shootHostage(match, player, flamethrower ? { ...message, damage: flamethrowerDamage } : message, now, shooterState);
+      }
       return;
     }
     const target = players.get(String(message.targetId || ""));
@@ -749,7 +808,15 @@ function handleMessage(player, raw) {
     const length = Math.hypot(aim.x, aim.y, aim.z);
     if (!Number.isFinite(length) || length < .9 || length > 1.1) return;
     const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
-    if (direction.x * forward.x + direction.y * forward.y + direction.z * forward.z < Math.cos(.3)) return;
+    const snapshotShooterState = stateAt(player, snapshotAt, now);
+    const snapshotForward = {
+      x: Math.sin(snapshotShooterState.yaw) * Math.cos(snapshotShooterState.pitch),
+      y: Math.sin(snapshotShooterState.pitch),
+      z: Math.cos(snapshotShooterState.yaw) * Math.cos(snapshotShooterState.pitch)
+    };
+    const aimIsPlausible = [forward, snapshotForward].some((candidate) =>
+      direction.x * candidate.x + direction.y * candidate.y + direction.z * candidate.z >= Math.cos(.3));
+    if (!aimIsPlausible) return;
     const targetState = stateAt(target, snapshotAt, now);
     const targetLean = targetState.lean || 0;
     const targetBase = targetState.y - Math.abs(targetLean) * .12 - (targetState.crouched ? 1.05 : 1.8);
@@ -759,20 +826,35 @@ function handleMessage(player, raw) {
       z0: targetState.z - Math.sin(targetState.yaw) * targetLean * .7 - .35, z1: targetState.z - Math.sin(targetState.yaw) * targetLean * .7 + .35
     });
     const damage = Number(message.damage);
-    if (!Number.isFinite(distance) || distance > 100 || !Number.isFinite(damage)) return;
+    const sniper = hasActiveSniper(player, shooterState);
+    if (!Number.isFinite(distance) || (!sniper && distance > 100) || !Number.isFinite(damage) || (flamethrower && distance > flamethrowerRange)) return;
     if (pelletId) {
       if (volley) player.shotgunVolley.count++;
       else player.shotgunVolley = { id: pelletId, started: now, count: 1 };
     }
     if (!volley) player.lastShotAt = now;
-    const shieldDistance = hasActiveSniper(player, shooterState) ? Infinity : nearestShieldHit(match, player, origin, direction, distance, snapshotAt, now);
+    if (flamethrower) player.lastFlameShotAt = now;
+    const shieldDistance = sniper ? Infinity : nearestShieldHit(match, player, origin, direction, distance, snapshotAt, now);
     if (Number.isFinite(shieldDistance)) {
       relayShieldImpact(match, player, origin, direction, shieldDistance, true);
       return;
     }
     const instantHeadshot = isInstantHeadshotWeapon(player, kit, shooterState) && uncoveredHeadHit(targetState, origin, direction);
     if (volley && !instantHeadshot) return;
-    applyDamage(match, player, target, instantHeadshot ? target.health : Math.min(55, Math.max(1, damage)));
+    if (flamethrower) {
+      if (fireImmune(target)) return;
+      applyDamage(match, player, target, flamethrowerDamage);
+      const exposure = target.flamethrowerExposure;
+      target.flamethrowerExposure = exposure && exposure.attackerId === player.id && now - exposure.lastAt <= 1100
+        ? { attackerId: player.id, count: exposure.count + 1, lastAt: now }
+        : { attackerId: player.id, count: 1, lastAt: now };
+      if (target.flamethrowerExposure.count >= 4 && !target.burning) {
+        target.flamethrowerExposure = null;
+        ignitePlayer(match, player, target, now);
+      }
+      return;
+    }
+    applyDamage(match, player, target, instantHeadshot ? target.health : sniper ? 50 : Math.min(55, Math.max(1, damage)));
     return;
   }
   if (message.type === "paint" && player.matchId) {
@@ -874,14 +956,16 @@ function handleMessage(player, raw) {
   }
   if (message.type === "throw" && player.matchId) {
     const match = matches.get(player.matchId);
-    if (!match || match.phase === "over" || player.health <= 0 || !["frag", "flash", "smoke", "claymore"].includes(message.kind)) return;
+    if (!match || match.phase === "over" || player.health <= 0 || !["frag", "flash", "smoke", "claymore", "molotov"].includes(message.kind)) return;
+    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    if (message.kind === "molotov" && kit.equipment !== "molotov") return;
     const id = String(message.id || "").slice(0, 48);
     if (!id || match.projectiles.has(id) || [...match.projectiles.values()].filter((entry) => entry.owner === player.id).length >= 12) return;
     const tornado = message.kind === "smoke" && player.operatorId === "mr-l";
     const paint = validPaint(message.paint);
     match.projectiles.set(id, { owner: player.id, kind: message.kind, tornado, paint });
     const positionLimit = match.map === "harbor" ? 240 : 150;
-    relayToMatch(match, player, { type: "throw", id, kind: message.kind, tornado, paint, x: finite(message.x, positionLimit), y: finite(message.y, 40), z: finite(message.z, positionLimit), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
+    relayToMatch(match, player, { type: "throw", id, kind: message.kind, lit: message.kind === "molotov", tornado, paint, x: finite(message.x, positionLimit), y: finite(message.y, 40), z: finite(message.z, positionLimit), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
     return;
   }
   if (message.type === "explode" && player.matchId) {
@@ -893,7 +977,21 @@ function handleMessage(player, raw) {
     const x = finite(message.x, positionLimit), y = finite(message.y, 40), z = finite(message.z, positionLimit);
     if (projectile.tornado) match.tornadoes.set(String(message.id), { id: String(message.id), x, y, z, startedAt: Date.now() });
     relayToMatch(match, player, { type: "explosion", id: String(message.id), kind: projectile.kind, tornado: projectile.tornado, paint: projectile.paint, x, y, z });
+    if (projectile.kind === "molotov" && match.phase === "live") {
+      match.fireZones ||= new Map();
+      match.fireZones.set(String(message.id), { ownerId: player.id, x, z, radius: 4.5, expiresAt: Date.now() + 3000, nextTickAt: Date.now() + fireTickInterval });
+    }
     const radius = blastRadius[projectile.kind];
+    if (projectile.kind === "molotov" && match.phase === "live") {
+      for (const targetId of [...match.players]) {
+        const target = players.get(targetId);
+        if (!target || target.team === player.team || target.health <= 0 || fireImmune(target) ||
+            Math.hypot(target.state.x - x, target.state.z - z) >= 4.5) continue;
+        applyDamage(match, player, target, 15);
+        ignitePlayer(match, player, target, Date.now());
+      }
+      return;
+    }
     if (!radius || match.phase !== "live") return;
     for (const targetId of [...match.players]) {
       const target = players.get(targetId);
@@ -1085,6 +1183,7 @@ setInterval(() => {
   for (const match of [...matches.values()]) {
     advanceMatch(match, now);
     if (!matches.has(match.id)) continue;
+    tickFireEffects(match, now);
     const roster = [...match.players].map((id) => players.get(id)).filter(Boolean).map((player) => ({
       id: player.id,
       name: player.name,
@@ -1093,6 +1192,7 @@ setInterval(() => {
       kills: player.kills,
       deaths: player.deaths,
       health: player.health,
+      burning: Boolean(player.burning && player.burning.until > now),
       state: player.state
     }));
     for (const [id, tornado] of match.tornadoes) if (now - tornado.startedAt >= 16000) match.tornadoes.delete(id);

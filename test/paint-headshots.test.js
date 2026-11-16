@@ -12,20 +12,22 @@ function section(source, start, end) {
 }
 
 function shooting() {
+  let now = 1000;
   const target = { id: "target", matchId: "match", team: 2, health: 100,
     state: { x: 0, y: 1.8, z: 10, yaw: 0, crouched: false, lean: 0 } };
-  const shooter = { matchId: "match", team: 1, health: 100, operatorId: "custom", lastShotAt: 0,
+  const shooter = { matchId: "match", team: 1, health: 100, operatorId: "custom", customPrimary: "mk18", lastShotAt: 0,
     customLoadout: { primary: "mk18", secondary: "p45" },
     state: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: "primary" } };
-  const context = { Math, Number, String, Date: { now: () => 1000 }, players: new Map([[target.id, target]]),
-    matches: new Map([["match", { phase: "live" }]]), operatorKits: {}, hasActiveSniper: () => false,
+  const context = { Math, Number, String, Date: { now: () => now }, players: new Map([[target.id, target]]),
+    matches: new Map([["match", { phase: "live" }]]), operatorKits: {},
+    hasActiveSniper: (player, state) => state.activeSlot === "primary" && player.customPrimary === "longwatch",
     nearestShieldHit: () => Infinity, relayShieldImpact() {}, shootHostage() {},
     applyDamage(_match, _shooter, victim, amount) { victim.health = Math.max(0, victim.health - amount); } };
   const geometry = section(server, "function rayBox(", "function shootHostage(");
   const handler = section(server, '  if (message.type === "shoot" && player.matchId)', '  if (message.type === "paint"');
   vm.runInNewContext(`${geometry}\nfunction shoot(player, message) { ${handler} }`, context);
-  return { context, shooter, target, fire(direction = { x: 0, y: 0, z: 1 }, shotId) {
-    context.shoot(shooter, { type: "shoot", targetId: target.id, damage: 20, direction, shotId });
+  return { context, shooter, target, setNow: (value) => { now = value; }, fire(direction = { x: 0, y: 0, z: 1 }, shotId, snapshotAt) {
+    context.shoot(shooter, { type: "shoot", targetId: target.id, damage: 20, direction, shotId, snapshotAt });
   } };
 }
 
@@ -60,6 +62,51 @@ test("only primaries and the magnum eliminate on uncovered headshots", () => {
   shield.context.nearestShieldHit = () => 5;
   shield.fire();
   assert.equal(shield.target.health, 100);
+});
+
+test("Longwatch takes two body hits or one uncovered headshot, including beyond the usual range", () => {
+  const sim = shooting();
+  sim.shooter.customPrimary = "longwatch";
+  sim.shooter.customLoadout.primary = "longwatch";
+  sim.shooter.state.y = 1.3;
+  sim.target.state.z = 150;
+  sim.fire();
+  assert.equal(sim.target.health, 50);
+  sim.setNow(1400);
+  sim.fire();
+  assert.equal(sim.target.health, 0);
+
+  const headshot = shooting();
+  headshot.shooter.customPrimary = "longwatch";
+  headshot.shooter.customLoadout.primary = "longwatch";
+  headshot.fire();
+  assert.equal(headshot.target.health, 0);
+
+  const otherWeapon = shooting();
+  otherWeapon.target.state.z = 150;
+  otherWeapon.fire();
+  assert.equal(otherWeapon.target.health, 100);
+});
+
+test("fastest configured gun cadence and current shooter aim are accepted", () => {
+  const cadence = shooting();
+  cadence.shooter.state.y = 1.3;
+  cadence.shooter.lastShotAt = 935;
+  cadence.fire();
+  assert.equal(cadence.target.health, 80, "A valid 65 ms firing interval should not be dropped");
+
+  const staleAim = shooting();
+  staleAim.shooter.state.y = 1.3;
+  staleAim.shooter.state.yaw = Math.PI / 2;
+  staleAim.shooter.stateHistory = [{ at: 900, state: { ...staleAim.shooter.state, yaw: 0 } }];
+  staleAim.fire(undefined, undefined, 900);
+  assert.equal(staleAim.target.health, 80, "Aim aligned to the firing snapshot should not be rejected");
+
+  const currentAim = shooting();
+  currentAim.shooter.state.y = 1.3;
+  currentAim.shooter.stateHistory = [{ at: 900, state: { ...currentAim.shooter.state, yaw: Math.PI / 2 } }];
+  currentAim.fire(undefined, undefined, 900);
+  assert.equal(currentAim.target.health, 80, "Aim aligned to the latest accepted state should not be rejected");
 });
 
 test("a later shotgun pellet can land a headshot in the same volley", () => {

@@ -103,7 +103,7 @@ test("existing Armory saves are reset once without granting packs", () => {
 test("Karambit is hidden until unlocked and can drop at a rare 2% rate", () => {
   const helpers = section("    const karambitUnlocked =", "    const paintSkinUnlocked =");
   const context = {
-    karambitRewardKey: "weapon:karambit", ownedWraps: new Set(),
+    karambitRewardKey: "weapon:karambit", ownedWraps: new Set(), selectedOperatorId: "custom",
     customLoadout: { secondary: "karambit" }, loadout: { secondary: "karambit" }
   };
   vm.runInNewContext(`${helpers}
