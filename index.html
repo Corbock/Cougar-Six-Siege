@@ -1012,6 +1012,9 @@
         if (message.type === "player_left") multiplayer.remotePlayers.delete(message.playerId);
         if (message.type === "throw") fieldView.remoteThrow(message);
         if (message.type === "explosion") fieldView.remoteExplosion(message);
+        if (message.type === "paint_spill") fieldView.remotePaintSpill(message);
+        if (message.type === "paint_spill_update") fieldView.remotePaintSpillUpdate(message);
+        if (message.type === "paint_ignited") fieldView.remotePaintIgnited(message);
         if (message.type === "bar") fieldView.remoteBarricade(message);
         if (message.type === "shield_impact") fieldView.remoteShieldImpact(message);
         if (message.type === "drone_destroyed") fieldView.droneDestroyed(message);
@@ -1127,7 +1130,7 @@
         { id: "vector", name: "V-9 Vector", type: "SMG", desc: "High fire rate for fast, close entries.", dmg: 4, rng: 4, mob: 9 },
         { id: "hammer", name: "Hammer 12", type: "SHOTGUN", desc: "Devastating up close, weak at distance.", dmg: 9, rng: 2, mob: 5 },
         { id: "longwatch", name: "Longwatch", type: "MARKSMAN RIFLE", desc: "Two body shots or one uncovered headshot.", dmg: 8, rng: 9, mob: 3 },
-        { id: "f451", name: "F 451", type: "FLAMETHROWER", desc: "Continuous close-range flame stream that drains fuel while firing.", dmg: 6, rng: 3, mob: 3, presetOnly: true }
+        { id: "f451", name: "F 451", type: "FLAMETHROWER", desc: "Continuous close-range flame stream that drains fuel while firing.", dmg: 7, rng: 3, mob: 3, presetOnly: true }
       ] },
       { id: "secondary", label: "SECONDARY", stats: true, items: [
         { id: "p45", name: "P45 Sidearm", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
@@ -1141,6 +1144,7 @@
         { id: "drone", name: "Recon Drone", type: "INTEL", desc: "Scout rooms and tag hostile units." },
         { id: "camera-drone", name: "Camera Drone", type: "INTEL", desc: "Pilot a camera drone and watch the field from its viewpoint." },
         { id: "steel-bars", name: "Galvanized Steel Bars", type: "FORTIFICATION", desc: "Reinforce player barricades with galvanized steel bars." },
+        { id: "paint-can", name: "Paint Can", type: "PAINT CAN", desc: "Pour white paint that can be ignited by flames.", presetOnly: true },
         { id: "medkit", name: "Field Medkit", type: "SUPPORT", desc: "Restore 50 health. Three charges per round." }
       ] },
       { id: "equipment", label: "EQUIPMENT", items: [
@@ -1158,7 +1162,7 @@
       { id: "ms-a", name: "Ms A", ability: "RAPID FIRE · Reloads faster and carries larger magazines with more reserve ammunition.", loadout: { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" } },
       { id: "hallway-monitor", name: "Hallway Monitor", ability: "Moves faster and deploys a camera drone. Longwatch comes with a scope.", loadout: { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" } },
       { id: "skanska", name: "Skanska", ability: "CONSTRUCTION · Can place unlimited barricades. Hammer weapons deal bonus damage to full-health enemies.", loadout: { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" } },
-      { id: "pyromaniac", name: "Pyromaniac", ability: "FIRE IMMUNITY · Sustained F 451 hits ignite enemies for 3 seconds; Molotovs recharge over time.", loadout: { primary: "f451", secondary: "sledgehammer", gadget: "steel-bars", equipment: "molotov" } },
+      { id: "pyromaniac", name: "Pyromaniac", ability: "FIRE IMMUNITY · Stronger F 451 flames and a paint can that leaves ignitable white paint; Molotovs recharge over time.", loadout: { primary: "f451", secondary: "sledgehammer", gadget: "paint-can", equipment: "molotov" } },
       { id: "custom", name: "Custom", ability: "Base stats and weapons. Choose any primary, secondary, gadget, and equipment.", loadout: { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" } }
     ];
     const defaultOperatorId = "mr-m";
@@ -1312,6 +1316,11 @@
         ...[-2, -1, 0, 1, 2].map((x) => cyl("y", x * .8, 0, 0, 4.4, .15, "metal")),
         box(0, 1.7, 0, 4.2, .3, .4, "body"), box(0, -1.7, 0, 4.2, .3, .4, "body"), box(0, 0, 0, 4.2, .25, .35, "body"),
         box(-2.3, 0, 0, .3, 4, .4, "dark"), box(2.3, 0, 0, .3, 4, .4, "dark") ] },
+      "paint-can": { mounts: {}, parts: [
+        cyl("y", 0, 0, 0, 2.4, .72, "canBody"), cyl("y", 0, 1.25, 0, .1, .76, "metal"),
+        cyl("y", 0, -1.25, 0, .1, .76, "metal"), box(0, 0, .37, 1.5, 1.05, .06, "canLabel"),
+        box(0, .72, 0, 1.5, .08, .68, "metal"), box(0, .9, 0, .8, .08, .4, "dark"),
+        cyl("x", 0, 1.04, 0, 1.25, .06, "metal") ] },
       medkit: { mounts: {}, parts: [
         box(0, 0, 0, 2.4, 1.35, 1.0, "medical"), box(0, -.6, .52, 2.2, .12, .05, "medicalTrim"),
         box(0, 0, .52, 2.15, 1.12, .03, "medicalWhite"), box(0, 0, .55, .76, .76, .04, "medicalRed"),
@@ -1484,6 +1493,7 @@
         { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
     };
     const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c", wick: "#c5b99c",
+      canBody: "#f7f5ea", canLabel: "#397b83",
       medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b" };
 
     const custom = {};
@@ -2948,6 +2958,7 @@
       const held = (vs, uses, at) => ({ rate: 1.6, auto: false, mag: Infinity, reload: 0, mult: 0, held: true, vs, uses, at: at || [.14, -.16, .4] });
       Object.assign(kinds, {
         DEFENSE: held(2.6, Infinity, [.0, -.072, .42]), INTEL: held(1.5, Infinity), FORTIFICATION: held(1.5, 4, [.0, -.1, .55]), SUPPORT: held(1.9, 3),
+        "PAINT CAN": { ...held(1.6, 100, [.12, -.18, .42]), rate: 8, auto: true },
         LETHAL: held(1.7, 3), TACTICAL: held(1.7, 3), INCENDIARY: held(1.7, 2)
       });
       const K = .06;
@@ -3659,7 +3670,7 @@
         return b;
       }
       function clearBarricades() { barricades.forEach((b) => b.solids.forEach((s) => { const i = colliders.indexOf(s); if (i >= 0) colliders.splice(i, 1); })); barricades = []; }
-      function resetBarricades() { clearBarricades(); remoteBarricadeActions.clear(); barricadeActionStart = -1; grenadeThrowAction = null; debris = []; projectiles = []; smokes = []; firePatches = []; shieldImpacts = []; paintMarks = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
+      function resetBarricades() { clearBarricades(); remoteBarricadeActions.clear(); barricadeActionStart = -1; grenadeThrowAction = null; debris = []; projectiles = []; smokes = []; firePatches = []; paintPuddles = []; paintCanPourStartedAt = -1; paintCanPourStoppedAt = -1; paintCanPouring = false; paintCanActiveSpillId = null; shieldImpacts = []; paintMarks = []; barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6; Object.keys(charges).forEach((k) => delete charges[k]); drone.uses = 3; drone.cameraDestroyed = false; drone.companions = []; drone.tags.clear(); nextGrenadeRecharge = tNow + 15; seedBarricades(); resetPickups(); }
       // ---- Pre-built barricades and supply pickups ----
       // ax is the wall normal (0 = x, 2 = z), n the wall plane, a0..a1 the opening along the other axis
       function seedBarricades() {
@@ -3853,7 +3864,7 @@
           const effectiveRange = reach / 2;
           const falloff = playerDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (playerDistance - effectiveRange) / effectiveRange * .65);
           const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && playerTarget.health >= 100 ? 1.5 : 1;
-          const damage = w.item.id === "f451" ? 6 : Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
+          const damage = w.item.id === "f451" ? 7 : Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
           paintHit(w, o, dr, playerDistance, playerBox, playerTarget.id);
           multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage,
             weaponId: w.item.id,
@@ -3881,7 +3892,7 @@
         const fall = bt <= eff || w.kind.melee ? 1 : Math.max(.35, 1 - (bt - eff) / eff * .65);
         const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && best.hp >= 100 ? 1.5 : 1;
         const instantHeadshot = head && !w.kind.melee && (curSlot === "primary" || w.item.id === "magnum");
-        const dmg = w.item.id === "f451" ? 6 : instantHeadshot ? best.hp : w.item.id === "longwatch" ? 50 :
+        const dmg = w.item.id === "f451" ? 7 : instantHeadshot ? best.hp : w.item.id === "longwatch" ? 50 :
           w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul * fullHealthBonus;
         paintHit(w, o, dr, bt, bestBox, `dummy-${dummies.indexOf(best)}`);
         recordHit(w.item.id);
@@ -3890,7 +3901,7 @@
           best.flameHits = best.flameHits && tNow - best.flameLastAt <= 1.1 ? best.flameHits + 1 : 1;
           best.flameLastAt = tNow;
           if (best.flameHits >= 4 && !(best.burningUntil > tNow)) {
-            best.burningUntil = tNow + 3;
+            best.burningUntil = tNow + 3.5;
             best.burnNextAt = tNow + .25;
             best.flameHits = 0;
           }
@@ -3902,7 +3913,8 @@
         else { if (head) say("HEADSHOT"); mark(false); }
       }
       // ---- Gadgets and equipment ----
-      let projectiles = [], smokes = [], firePatches = [];
+      let projectiles = [], smokes = [], firePatches = [], paintPuddles = [];
+      let paintCanPourStartedAt = -1, paintCanPourStoppedAt = -1, paintCanPouring = false;
       const medkitActionDuration = 4.2;
       let medkitActionStart = -1;
       function addFlameMesh(list, base, width, height, phase, transform = (point) => point,
@@ -4144,10 +4156,162 @@
         else drone.companions = drone.companions.filter((entry) => entry.slot !== message.slot);
         say("DRONE DESTROYED");
       }
+      let paintSpillSeq = 0, paintCanActiveSpillId = null;
+      const paintSpillPoints = (spill) => spill.points?.length ? spill.points : [spill];
+      function paintPathDistance(x, z, points) {
+        if (!points?.length) return Infinity;
+        let distance = Infinity;
+        for (let i = 0; i < points.length; i++) {
+          const point = points[i];
+          distance = Math.min(distance, Math.hypot(x - point.x, z - point.z));
+          if (i === 0) continue;
+          const previous = points[i - 1], dx = point.x - previous.x, dz = point.z - previous.z;
+          const lengthSq = dx * dx + dz * dz;
+          const t = lengthSq ? Math.max(0, Math.min(1, ((x - previous.x) * dx + (z - previous.z) * dz) / lengthSq)) : 0;
+          distance = Math.min(distance, Math.hypot(x - previous.x - dx * t, z - previous.z - dz * t));
+        }
+        return distance;
+      }
+      function paintSpillsTouch(a, b) {
+        for (const point of paintSpillPoints(a)) for (const other of paintSpillPoints(b)) {
+          if (Math.abs(point.y - other.y) <= .45 && Math.hypot(point.x - other.x, point.z - other.z) <= .95) return true;
+        }
+        return false;
+      }
+      function paintPourPoint() {
+        const origin = [renderCam.x, renderCam.y, renderCam.z], direction = aimDir();
+        const feet = cam.y - eyeHeight, floor = probe(cam.x, cam.z, feet);
+        const distance = direction[1] < -.08 ? (floor - origin[1]) / direction[1] : 3;
+        const along = Math.max(1.2, Math.min(7, Number.isFinite(distance) && distance > 0 ? distance : 3));
+        const x = origin[0] + direction[0] * along, z = origin[2] + direction[2] * along;
+        return { x, y: Math.max(0, probe(x, z, feet)) + .025, z };
+      }
+      function pourPaint() {
+        const point = paintPourPoint();
+        let spill = paintCanActiveSpillId && paintPuddles.find((entry) => entry.id === paintCanActiveSpillId);
+        const isNew = !spill;
+        if (isNew) {
+          const id = `${multiplayer.playerId}:paint${++paintSpillSeq}`;
+          spill = { id, ...point, points: [point], color: "#d6dad2", expiresAt: tNow + 30, burningUntil: 0,
+            nextDamageAt: 0, hitDummies: new Set(), own: true };
+          paintPuddles.push(spill);
+          paintCanActiveSpillId = id;
+        } else {
+          const points = paintSpillPoints(spill), last = points[points.length - 1];
+          if (points.length < 200 && Math.hypot(point.x - last.x, point.y - last.y, point.z - last.z) > .15)
+            spill.points.push(point);
+          spill.x = point.x; spill.y = point.y; spill.z = point.z;
+          spill.expiresAt = tNow + 30;
+        }
+        sendMatch({ type: "paint_pour", id: spill.id, x: point.x, y: point.y, z: point.z });
+        if (paintCanPourStartedAt < 0) paintCanPourStartedAt = tNow;
+        paintCanPouring = true;
+      }
+      function ignitePaintPuddle(spill, notify = false) {
+        if (!spill || spill.burningUntil > tNow) return;
+        const pending = [spill], connected = new Set([spill]), ignited = [];
+        while (pending.length) {
+          const current = pending.pop();
+          if (current.burningUntil <= tNow) ignited.push(current);
+          for (const candidate of paintPuddles) {
+            if (connected.has(candidate) || candidate.expiresAt <= tNow || !paintSpillsTouch(current, candidate)) continue;
+            connected.add(candidate);
+            pending.push(candidate);
+          }
+        }
+        for (const current of ignited) {
+          current.burningUntil = tNow + 5;
+          current.expiresAt = current.burningUntil;
+          current.damageUntil = tNow + 3.5;
+          current.nextDamageAt = tNow + .25;
+          current.hitDummies = new Set();
+          let previous = null;
+          for (const point of paintSpillPoints(current)) {
+            if (!previous || Math.hypot(point.x - previous.x, point.z - previous.z) >= 1.2) {
+              firePatches.push({ x: point.x, y: point.y, z: point.z, t0: tNow, life: 5 });
+              previous = point;
+            }
+          }
+          const last = paintSpillPoints(current).at(-1);
+          if (previous !== last) firePatches.push({ x: last.x, y: last.y, z: last.z, t0: tNow, life: 5 });
+        }
+        if (notify) sendMatch({ type: "paint_ignite", id: spill.id });
+      }
+      function ignitePaintNear(x, z, radius) {
+        paintPuddles.forEach((spill) => {
+          if (spill.burningUntil <= tNow && paintPathDistance(x, z, paintSpillPoints(spill)) < radius)
+            ignitePaintPuddle(spill);
+        });
+      }
+      function aimedPaintPuddle() {
+        const direction = aimDir();
+        let nearest = null, nearestAlong = Infinity;
+        for (const spill of paintPuddles) {
+          if (spill.expiresAt <= tNow || spill.burningUntil > tNow) continue;
+          for (const point of paintSpillPoints(spill)) {
+            const dx = point.x - renderCam.x, dy = point.y - renderCam.y, dz = point.z - renderCam.z;
+            const along = dx * direction[0] + dy * direction[1] + dz * direction[2];
+            const miss = Math.hypot(dx - direction[0] * along, dy - direction[1] * along, dz - direction[2] * along);
+            if (along > 0 && along <= 10 && miss < 1.8 && along < nearestAlong) { nearest = spill; nearestAlong = along; }
+          }
+        }
+        return nearest;
+      }
+      function updatePaintPuddles() {
+        paintPuddles = paintPuddles.filter((spill) => spill.expiresAt > tNow);
+        for (const spill of paintPuddles) {
+          if (spill.damageUntil <= tNow || tNow < spill.nextDamageAt) continue;
+          spill.nextDamageAt += .25;
+          dummies.forEach((dummy) => {
+            if (dummy.hp > 0 && paintPathDistance(dummy.x, dummy.z, paintSpillPoints(spill)) < 2.4) hurtDummy(dummy, 5, false);
+          });
+        }
+      }
+      function remotePaintSpill(message) {
+        if (typeof message.id !== "string" || paintPuddles.some((spill) => spill.id === message.id) ||
+            ![message.x, message.y, message.z].every(Number.isFinite)) return;
+        const point = { x: message.x, y: message.y, z: message.z };
+        paintPuddles.push({ id: message.id, ...point, points: [point], color: "#d6dad2",
+          expiresAt: tNow + 30, burningUntil: 0, nextDamageAt: 0, hitDummies: new Set(), own: false });
+      }
+      function remotePaintSpillUpdate(message) {
+        const spill = paintPuddles.find((entry) => entry.id === message.id);
+        if (!spill || spill.burningUntil > tNow || ![message.x, message.y, message.z].every(Number.isFinite)) return;
+        const point = { x: message.x, y: message.y, z: message.z }, points = paintSpillPoints(spill);
+        const last = points[points.length - 1];
+        if (points.length < 200 && Math.hypot(point.x - last.x, point.y - last.y, point.z - last.z) > .15)
+          spill.points.push(point);
+        spill.x = point.x; spill.y = point.y; spill.z = point.z;
+        spill.expiresAt = tNow + 30;
+      }
+      function stopPaintCanPour() {
+        if (paintCanPouring) {
+          paintCanPouring = false;
+          paintCanPourStoppedAt = tNow;
+        }
+        paintCanActiveSpillId = null;
+      }
+      function remotePaintIgnited(message) {
+        const spill = paintPuddles.find((entry) => entry.id === message.id);
+        if (spill) ignitePaintPuddle(spill);
+      }
+      function paintCanActionActive() {
+        if (paintCanPourStartedAt < 0) return false;
+        if (paintCanPouring || tNow - paintCanPourStoppedAt < .35) return true;
+        paintCanPourStartedAt = -1;
+        paintCanPourStoppedAt = -1;
+        return false;
+      }
       function useHeld(w) {
         const id = w.item.id, left = charges[id] ?? w.kind.uses;
         const o = [renderCam.x, renderCam.y, renderCam.z], dr = aimDir();
         if (id === "drone" || id === "camera-drone") { deployDrone(); return; }
+        if (id === "paint-can") {
+          if (left <= 0) { stopPaintCanPour(); return say("PAINT CAN EMPTY"); }
+          charges[id] = Math.max(0, left - .5);
+          pourPaint();
+          return;
+        }
         if (id === "steel-bars") {
           if (left <= 0) return say("OUT OF STEEL BARS");
           const bar = aimedBarricade(o, dr, 3.5);
@@ -4292,12 +4456,13 @@
         if (p.type === "frag") explode(p, 6, 320);
         else if (p.type === "claymore") explode(p, 5, 260);
         else if (p.type === "molotov") {
-          firePatches.push({ x: p.x, y: Math.max(p.y, .1), z: p.z, t0: tNow });
+          firePatches.push({ x: p.x, y: Math.max(p.y, .1), z: p.z, t0: tNow, life: 5 });
+          ignitePaintNear(p.x, p.z, 4.5);
           if (p.own) dummies.forEach((d) => {
             const distance = Math.hypot(d.x - p.x, d.z - p.z);
             if (d.hp <= 0 || distance >= 4.5) return;
             hurtDummy(d, 15, false);
-            if (d.hp > 0) { d.burningUntil = tNow + 3; d.burnNextAt = tNow + .25; }
+            if (d.hp > 0) { d.burningUntil = tNow + 3.5; d.burnNextAt = tNow + .25; }
           });
         }
         else if (p.type === "flash") {
@@ -4309,10 +4474,10 @@
         }
       }
       function firePatchQuads() {
-        firePatches = firePatches.filter((patch) => tNow - patch.t0 < 3);
+        firePatches = firePatches.filter((patch) => tNow - patch.t0 < (patch.life || 3));
         const list = [];
         firePatches.forEach((patch) => {
-          const age = tNow - patch.t0, fade = Math.max(.25, 1 - age / 3);
+          const age = tNow - patch.t0, life = patch.life || 3, fade = Math.max(.25, 1 - age / life);
           for (let i = 0; i < 3; i++) {
             const angle = i * Math.PI * 2 / 3 + age * .7, radius = .35 + i * .38;
             const x = patch.x + Math.cos(angle) * radius, z = patch.z + Math.sin(angle) * radius;
@@ -4320,6 +4485,32 @@
             addFlameMesh(list, [x, patch.y + .04, z], .075 * fade, .48 * fade, i + age * 5 + 1,
               (point) => point, ["#f78a30", "#ffd96b", "#fff1b8"]);
           }
+        });
+        return list;
+      }
+      function paintPuddleQuads() {
+        const list = [];
+        paintPuddles.forEach((spill) => {
+          if (spill.burningUntil > tNow || spill.expiresAt <= tNow) return;
+          const points = paintSpillPoints(spill), radius = .42, segments = 8;
+          points.forEach((point, index) => {
+            for (let i = 0; i < segments; i++) {
+              const a = i * Math.PI * 2 / segments, b = (i + 1) * Math.PI * 2 / segments;
+              list.push({ pts: [[point.x, point.y, point.z],
+                [point.x + Math.cos(a) * radius, point.y, point.z + Math.sin(a) * radius],
+                [point.x + Math.cos(b) * radius, point.y, point.z + Math.sin(b) * radius],
+                [point.x, point.y, point.z]], color: "#d6dad2" });
+            }
+            if (index === 0) return;
+            const previous = points[index - 1], dx = point.x - previous.x, dz = point.z - previous.z;
+            const length = Math.hypot(dx, dz);
+            if (length < .01) return;
+            const ox = -dz / length * radius, oz = dx / length * radius;
+            list.push({ pts: [[previous.x + ox, previous.y, previous.z + oz],
+              [previous.x - ox, previous.y, previous.z - oz],
+              [point.x - ox, point.y, point.z - oz],
+              [point.x + ox, point.y, point.z + oz]], color: "#d6dad2" });
+          });
         });
         return list;
       }
@@ -4452,10 +4643,20 @@
         const sprinting = !crouched && isSprinting();
         if (sprinting) pressedAt = -1;
         const wantsFire = !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
+        if (w.item.id === "paint-can") {
+          if (wantsFire && (charges["paint-can"] ?? w.kind.uses) > 0) paintCanPouring = true;
+          else if (paintCanPouring || paintCanActiveSpillId) stopPaintCanPour();
+        } else if (paintCanPouring || paintCanActiveSpillId) {
+          stopPaintCanPour();
+        }
         if (w.item.id === "f451") {
           if (wantsFire && !w.reloadEnd && w.ammo > 0) {
             w.flameUntil = tNow + .08;
             if (drainFlamethrowerAmmo(w, elapsed)) startReload(w);
+            if (tNow >= (w.nextPaintIgniteAt || 0)) {
+              const spill = aimedPaintPuddle();
+              if (spill) { ignitePaintPuddle(spill, true); w.nextPaintIgniteAt = tNow + .3; }
+            }
           } else w.flameUntil = 0;
         }
         if (wantsFire && !w.reloadEnd && tNow >= w.next && w.swingStart < 0) { fire(w); pressedAt = -1; }
@@ -4783,6 +4984,58 @@
         box([leftEnd[0], leftEnd[1], .49], [.09, .12, .04], "#b9a17c", -.2);
         return list;
       }
+      function paintCanActionQuads() {
+        const list = [];
+        const clamp = (value) => Math.max(0, Math.min(1, value));
+        const smooth = (value) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+        const pourBlend = paintCanPouring
+          ? smooth((tNow - paintCanPourStartedAt) / .18)
+          : paintCanPourStartedAt < 0 ? 0 : 1 - smooth((tNow - paintCanPourStoppedAt) / .18);
+        const sway = Math.sin(tNow * 4) * .012, tilt = pourBlend * (.58 + Math.sin(tNow * 11) * .025);
+        const box = (center, size, color, angle = 0) => {
+          const rotate = (point) => {
+            const x = point[0] - center[0], y = point[1] - center[1];
+            return [center[0] + x * Math.cos(angle) - y * Math.sin(angle),
+              center[1] + x * Math.sin(angle) + y * Math.cos(angle), point[2]];
+          };
+          qb(list, center[0] - size[0] / 2, center[0] + size[0] / 2,
+            center[1] - size[1] / 2, center[1] + size[1] / 2,
+            center[2] - size[2] / 2, center[2] + size[2] / 2, color, rotate);
+        };
+        const segment = (start, end, width, depth, color) => {
+          const dx = end[0] - start[0], dy = end[1] - start[1];
+          box([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2, (start[2] + end[2]) / 2],
+              [Math.hypot(dx, dy), width, depth], color, Math.atan2(dy, dx));
+        };
+        const can = [.56 - pourBlend * .035 + sway, .1 + pourBlend * .035, 1.42];
+        const rightHand = [can[0] + .12, can[1] - .08, can[2] - .09];
+        const leftHand = [can[0] - .2, can[1] - .25, can[2] - .06];
+        segment([.96, -.62 + sway, 1.62], rightHand, .2, .17, "#394a5d");
+        segment([-.78, -.62 - sway, 1.62], leftHand, .18, .16, "#394a5d");
+        box(rightHand, [.19, .14, .16], "#c89170", -.22 + tilt);
+        box(leftHand, [.2, .14, .16], "#c89170", .18 + tilt * .6);
+        box(can, [.34, .44, .29], "#f7f5ea", tilt);
+        box([can[0], can[1] + .015, can[2] + .15], [.25, .19, .025], "#397b83", tilt);
+        box([can[0], can[1] + .25, can[2]], [.27, .07, .25], "#80857a", tilt);
+        box([can[0], can[1] + .3, can[2]], [.12, .06, .12], "#596261", tilt);
+        box([can[0] - .2, can[1] + .03, can[2] + .17], [.06, .17, .03], "#b9c3c4", tilt);
+        if (pourBlend > .02) {
+          const outlet = [can[0] - .13, can[1] - .16, can[2] - .04];
+          for (let i = 0; i < 10; i++) {
+              const along = (i + .5) / 10, ripple = Math.sin(tNow * 17 - i * .65) * .009 * pourBlend;
+              const width = (.04 - along * .014) * pourBlend;
+              box([outlet[0] - along * .11 + ripple, outlet[1] - along * .4, outlet[2]],
+                [width, .052, width], "#e9ece5", ripple * 4);
+          }
+          const impact = [outlet[0] - .11, outlet[1] - .4, outlet[2]];
+          for (let i = 0; i < 3; i++) {
+              const angle = i * Math.PI * 2 / 3 + tNow * 3, spread = .055 * pourBlend;
+              box([impact[0] + Math.cos(angle) * spread, impact[1] + .02, impact[2] + Math.sin(angle) * spread],
+                [.035 * pourBlend, .08 * pourBlend, .035 * pourBlend], "#f7f5ea", angle);
+          }
+        }
+        return list;
+      }
       function grenadeThrowActionQuads() {
         const action = grenadeThrowAction;
         if (!action) return [];
@@ -5066,7 +5319,8 @@
       function updateHud() {
         const equipped = wpn(), w = shieldWeapon(equipped), k = w.kind;
         const ammoCount = w.item.id === "f451" ? Math.ceil(w.ammo) : w.ammo;
-        const ammo = selectedOperatorId === "mr-m" && w.item.id === "drone" ? `${drone.uses} LEFT` : k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${ammoCount} / ${w.reserve}`;
+        const ammo = selectedOperatorId === "mr-m" && w.item.id === "drone" ? `${drone.uses} LEFT` : w.item.id === "paint-can"
+          ? `${(charges[w.item.id] ?? k.uses).toFixed(1)}%` : k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${ammoCount} / ${w.reserve}`;
         const droneCount = selectedOperatorId === "mr-m" ? ` · DRONES ${drone.companions.length} ACTIVE / ${drone.uses} LEFT` : "";
         const fragCount = selectedOperatorId === "ms-c" ? ` · FRAGS ${charges.frag ?? 3}/3` : "";
         weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">${operatorInfo().name.toUpperCase()}${droneCount}${fragCount} · [${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · ELIMINATIONS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount === Infinity ? "INF" : barCount}</div>`;
@@ -5154,6 +5408,7 @@
         viewScale = 1.8 * (1 + (drone.deploying ? 0 : ads) * .2);
         tNow = now / 1000;
         if (!lastT) lastT = tNow;
+        updatePaintPuddles();
         dummies.forEach((d, i) => {
           d.hit = Math.max(0, d.hit - (tNow - lastT));
           if (d.burningUntil > tNow && tNow >= d.burnNextAt && d.hp > 0) {
@@ -5293,6 +5548,7 @@
         });
         pickupQuads(dq);
         objectiveQuads(dq);
+        dq.push(...paintPuddleQuads());
         const bdt = tNow - lastT;
         debris = debris.filter((p) => (p.life -= bdt) > 0);
         debris.forEach((p) => {
@@ -5330,8 +5586,10 @@
         else delete el.dataset.optic;
         const moving = fwd !== 0 || str !== 0;
         const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : drone.deploying ? tabletActionQuads() : grenadeThrowActionActive()
-          ? grenadeThrowActionQuads() : medkitActionActive() ? medkitActionQuads() : barricadeActionActive() ? barricadeActionQuads() : viewmodelQuads(cw, moving);
-        if (!dead && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
+          ? grenadeThrowActionQuads() : medkitActionActive() ? medkitActionQuads() : barricadeActionActive() ? barricadeActionQuads()
+            : cw.item.id === "paint-can" && paintCanActionActive() ? paintCanActionQuads() : viewmodelQuads(cw, moving);
+        if (!dead && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() &&
+            !(cw.item.id === "paint-can" && paintCanActionActive()) && cw.item.id === "shield" && selectedOperatorId === "ms-c") vm.push(...viewmodelQuads(weapons.p45, moving, true));
         drawDynamic(vm.filter((q) => !q.skin && !q.shieldGlass), true);
         drawSkinned(vm.filter((q) => q.skin));
         const glass = vm.filter((q) => q.shieldGlass);
@@ -5417,7 +5675,7 @@
         if (locked()) document.exitPointerLock();
       }
       document.querySelector("#field-exit").addEventListener("click", close);
-      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false } = {}) {
+      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, remotePaintSpill, remotePaintSpillUpdate, remotePaintIgnited, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false } = {}) {
         freeplayMode = practice;
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);

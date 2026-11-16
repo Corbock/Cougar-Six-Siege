@@ -33,7 +33,7 @@ const operatorKits = {
   "ms-a": { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" },
   "hallway-monitor": { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" },
   "skanska": { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" },
-  pyromaniac: { primary: "f451", secondary: "sledgehammer", gadget: "steel-bars", equipment: "molotov" }
+  pyromaniac: { primary: "f451", secondary: "sledgehammer", gadget: "paint-can", equipment: "molotov" }
 };
 const customItems = {
   primary: ["mk18", "vector", "hammer", "longwatch"],
@@ -285,16 +285,68 @@ function applyDamage(match, attacker, target, amount) {
 }
 
 const blastRadius = { frag: 6, claymore: 5 };
-const flamethrowerDamage = 6;
+const flamethrowerDamage = 7;
 const flamethrowerRange = 10;
 const fireTickDamage = 5;
 const fireTickInterval = 250;
+const fireDuration = 3500;
+const fireZoneDuration = 5000;
+const paintConnectDistance = .95;
 const fireImmune = (player) => player.operatorId === "pyromaniac";
 function ignitePlayer(match, attacker, target, now) {
   if (fireImmune(target) || target.health <= 0) return;
   if (target.burning?.until > now) return;
-  target.burning = { attackerId: attacker.id, until: now + 3000, nextTickAt: now + fireTickInterval };
+  target.burning = { attackerId: attacker.id, until: now + fireDuration, nextTickAt: now + fireTickInterval };
   for (const id of match.players) sendPlayer(players.get(id), { type: "player_burning", playerId: target.id, burning: true });
+}
+
+function paintSpillPoints(spill) {
+  return Array.isArray(spill.points) && spill.points.length ? spill.points : [spill];
+}
+
+function paintSpillsTouch(a, b) {
+  for (const point of paintSpillPoints(a)) for (const other of paintSpillPoints(b)) {
+    if (Math.abs(point.y - other.y) <= .45 &&
+        Math.hypot(point.x - other.x, point.z - other.z) <= paintConnectDistance) return true;
+  }
+  return false;
+}
+
+function paintPathDistance(x, z, points) {
+  if (!points?.length) return Infinity;
+  let distance = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    distance = Math.min(distance, Math.hypot(x - point.x, z - point.z));
+    if (i === 0) continue;
+    const previous = points[i - 1], dx = point.x - previous.x, dz = point.z - previous.z;
+    const lengthSq = dx * dx + dz * dz;
+    const t = lengthSq ? Math.max(0, Math.min(1, ((x - previous.x) * dx + (z - previous.z) * dz) / lengthSq)) : 0;
+    distance = Math.min(distance, Math.hypot(x - previous.x - dx * t, z - previous.z - dz * t));
+  }
+  return distance;
+}
+
+function ignitePaintSpill(match, spill, attacker, now) {
+  if (spill.burningUntil > now) return;
+  match.fireZones ||= new Map();
+  const pending = [spill], connected = new Set([spill]), ignited = [];
+  while (pending.length) {
+    const current = pending.pop();
+    if (current.burningUntil <= now) ignited.push(current);
+    for (const candidate of match.paintPuddles?.values() || []) {
+      if (connected.has(candidate) || candidate.expiresAt <= now || !paintSpillsTouch(current, candidate)) continue;
+      connected.add(candidate);
+      pending.push(candidate);
+    }
+  }
+  for (const current of ignited) {
+    current.burningUntil = now + fireZoneDuration;
+    match.fireZones.set(`paint:${current.id}`, { ownerId: attacker.id, x: current.x, z: current.z,
+      points: paintSpillPoints(current).map(({ x, z }) => ({ x, z })), radius: 2.4,
+      expiresAt: current.burningUntil, nextTickAt: now + fireTickInterval });
+    relayToMatch(match, attacker, { type: "paint_ignited", id: current.id, x: current.x, y: current.y, z: current.z, duration: fireZoneDuration });
+  }
 }
 
 function tickFireEffects(match, now) {
@@ -325,11 +377,17 @@ function tickFireEffects(match, now) {
     zone.nextTickAt += fireTickInterval;
     const attacker = players.get(zone.ownerId);
     if (!attacker || attacker.matchId !== match.id) continue;
+    zone.ignitedPlayers ||= new Set();
     for (const id of match.players) {
       const target = players.get(id);
+      const distance = !target?.state ? Infinity : zone.points
+        ? paintPathDistance(target?.state?.x, target?.state?.z, zone.points)
+        : Math.hypot(target.state.x - zone.x, target.state.z - zone.z);
       if (!target || target.team === attacker.team || target.health <= 0 || fireImmune(target) ||
-          Math.hypot(target.state.x - zone.x, target.state.z - zone.z) >= zone.radius) continue;
+          zone.ignitedPlayers.has(target.id) || target.burning?.until > now ||
+          distance >= zone.radius) continue;
       ignitePlayer(match, attacker, target, now);
+      zone.ignitedPlayers.add(target.id);
     }
   }
 }
@@ -345,6 +403,7 @@ function startRound(match, type) {
   match.projectiles = new Map();
   match.tornadoes = new Map();
   match.fireZones = new Map();
+  match.paintPuddles = new Map();
   match.phase = "prep";
   const objective = objectiveModes.has(match.mode);
   if (objective && match.round > 1) match.swapped = !match.swapped;
@@ -357,6 +416,7 @@ function startRound(match, type) {
     player.interact = null;
     player.health = 100;
     player.medkits = 3;
+    player.paintCanRemaining = 100;
     player.lastHealAt = 0;
     player.lastShotAt = 0;
     player.lastFlameShotAt = 0;
@@ -877,6 +937,68 @@ function handleMessage(player, raw) {
       size: Math.max(.04, Math.min(.7, message.size)), targetId, targetAnchor });
     return;
   }
+  if (message.type === "paint_pour" && player.matchId) {
+    const match = matches.get(player.matchId), state = player.state;
+    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const now = Date.now(), id = String(message.id || "").slice(0, 48);
+    if (!match || match.phase !== "live" || player.health <= 0 || !state || player.operatorId !== "pyromaniac" ||
+        kit?.gadget !== "paint-can" || state.activeSlot !== "gadget" || !id ||
+        !Number.isFinite(player.paintCanRemaining) || player.paintCanRemaining < .5 ||
+        now - (player.lastPaintPourAt || 0) < 100 ||
+        ![message.x, message.y, message.z].every(Number.isFinite)) return;
+    const limit = match.map === "harbor" ? 240 : 150;
+    const feet = state.y - (state.crouched ? 1.05 : 1.8);
+    if (Math.abs(message.x) > limit || Math.abs(message.z) > limit || Math.abs(message.y) > 40 ||
+        Math.hypot(message.x - state.x, message.z - state.z) > 8 || Math.abs(message.y - feet) > 3) return;
+    match.paintPuddles ||= new Map();
+    for (const [spillId, spill] of match.paintPuddles) {
+      if (spill.expiresAt <= now) match.paintPuddles.delete(spillId);
+    }
+    const spill = match.paintPuddles.get(id);
+    if (spill && (spill.ownerId !== player.id || spill.burningUntil > now)) return;
+    if (!spill && match.paintPuddles.size >= 600) return;
+    player.lastPaintPourAt = now;
+    player.paintCanRemaining -= .5;
+    const point = { x: message.x, y: message.y, z: message.z };
+    if (spill) {
+      spill.points ||= [{ x: spill.x, y: spill.y, z: spill.z }];
+      const last = spill.points.at(-1);
+      if (spill.points.length < 200 && Math.hypot(point.x - last.x, point.y - last.y, point.z - last.z) > .15)
+        spill.points.push(point);
+      spill.x = point.x; spill.y = point.y; spill.z = point.z;
+      spill.expiresAt = now + 30000;
+      relayToMatch(match, player, { type: "paint_spill_update", id, ...point, expiresAt: spill.expiresAt });
+    } else {
+      const created = { id, ownerId: player.id, ...point, points: [point], color: "#d6dad2",
+        expiresAt: now + 30000, burningUntil: 0 };
+      match.paintPuddles.set(id, created);
+      relayToMatch(match, player, { type: "paint_spill", ...created });
+    }
+    const burningNeighbor = [...match.paintPuddles.values()].find((candidate) =>
+      candidate !== spill && candidate.burningUntil > now && candidate.expiresAt > now && paintSpillsTouch(spill || match.paintPuddles.get(id), candidate));
+    if (burningNeighbor) ignitePaintSpill(match, spill || match.paintPuddles.get(id), players.get(burningNeighbor.ignitedBy) || player, now);
+    return;
+  }
+  if (message.type === "paint_ignite" && player.matchId) {
+    const match = matches.get(player.matchId), state = player.state;
+    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const now = Date.now(), spill = match?.paintPuddles?.get(String(message.id || ""));
+    if (!match || match.phase !== "live" || player.health <= 0 || !state || player.operatorId !== "pyromaniac" ||
+        kit?.primary !== "f451" || state.activeSlot !== "primary" || !spill || spill.expiresAt <= now ||
+        spill.burningUntil > now || now - (player.lastPaintIgniteAt || 0) < 200) return;
+    const forward = { x: Math.sin(state.yaw) * Math.cos(state.pitch), y: Math.sin(state.pitch),
+      z: Math.cos(state.yaw) * Math.cos(state.pitch) };
+    const aimed = paintSpillPoints(spill).some((point) => {
+      const dx = point.x - state.x, dy = point.y - state.y, dz = point.z - state.z;
+      const distance = Math.hypot(dx, dy, dz);
+      return distance <= flamethrowerRange && distance >= .1 &&
+        (dx * forward.x + dy * forward.y + dz * forward.z) / distance >= Math.cos(.65);
+    });
+    if (!aimed) return;
+    player.lastPaintIgniteAt = now;
+    ignitePaintSpill(match, spill, player, now);
+    return;
+  }
   if (message.type === "interact" && player.matchId) {
     player.interact = message.holding === true && typeof message.id === "string" ? message.id.slice(0, 12) : null;
     return;
@@ -979,7 +1101,13 @@ function handleMessage(player, raw) {
     relayToMatch(match, player, { type: "explosion", id: String(message.id), kind: projectile.kind, tornado: projectile.tornado, paint: projectile.paint, x, y, z });
     if (projectile.kind === "molotov" && match.phase === "live") {
       match.fireZones ||= new Map();
-      match.fireZones.set(String(message.id), { ownerId: player.id, x, z, radius: 4.5, expiresAt: Date.now() + 3000, nextTickAt: Date.now() + fireTickInterval });
+      const now = Date.now();
+      match.fireZones.set(String(message.id), { ownerId: player.id, x, z, radius: 4.5, expiresAt: now + fireZoneDuration, nextTickAt: now + fireTickInterval });
+      for (const spill of match.paintPuddles?.values() || []) {
+        if (spill.expiresAt > now && spill.burningUntil <= now &&
+            paintPathDistance(x, z, paintSpillPoints(spill).map(({ x: pointX, z: pointZ }) => ({ x: pointX, z: pointZ }))) < 4.5)
+          ignitePaintSpill(match, spill, player, now);
+      }
     }
     const radius = blastRadius[projectile.kind];
     if (projectile.kind === "molotov" && match.phase === "live") {
