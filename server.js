@@ -1085,9 +1085,59 @@ function handleMessage(player, raw) {
     if (!id || match.projectiles.has(id) || [...match.projectiles.values()].filter((entry) => entry.owner === player.id).length >= 12) return;
     const tornado = message.kind === "smoke" && player.operatorId === "mr-l";
     const paint = validPaint(message.paint);
-    match.projectiles.set(id, { owner: player.id, kind: message.kind, tornado, paint });
     const positionLimit = match.map === "harbor" ? 240 : 150;
-    relayToMatch(match, player, { type: "throw", id, kind: message.kind, lit: message.kind === "molotov", tornado, paint, x: finite(message.x, positionLimit), y: finite(message.y, 40), z: finite(message.z, positionLimit), vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine: message.mine === true });
+    const x = finite(message.x, positionLimit), y = finite(message.y, 40), z = finite(message.z, positionLimit);
+    const mine = message.kind === "claymore" && message.mine === true;
+    match.projectiles.set(id, { owner: player.id, kind: message.kind, tornado, paint, x, y, z, mine });
+    relayToMatch(match, player, { type: "throw", id, kind: message.kind, lit: message.kind === "molotov", tornado, paint, x, y, z, vx: finite(message.vx, 40), vy: finite(message.vy, 40), vz: finite(message.vz, 40), fuse: finite(message.fuse, 120), mine });
+    return;
+  }
+  if (message.type === "mine_hit" && player.matchId) {
+    const match = matches.get(player.matchId), id = String(message.id || "");
+    const mine = match?.projectiles.get(id), state = player.state;
+    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const weaponId = ["primary", "secondary"].includes(state?.activeSlot) ? kit?.[state.activeSlot] : null;
+    const now = Date.now(), snapshotAt = Number(message.snapshotAt), snapshotShooterState = stateAt(player, snapshotAt, now);
+    const aim = message.direction || {}, length = Math.hypot(aim.x, aim.y, aim.z);
+    if (!match || match.phase !== "live" || player.health <= 0 || !mine?.mine || mine.kind !== "claymore" ||
+        !weaponId || weaponId !== message.weaponId || ["hammer", "sledgehammer", "karambit"].includes(weaponId) ||
+        now - player.lastShotAt < 60 || !Number.isFinite(length) || length < .9 || length > 1.1) return;
+    const direction = { x: aim.x / length, y: aim.y / length, z: aim.z / length };
+    const forwards = [state, snapshotShooterState].map((candidate) => ({
+      x: Math.sin(candidate.yaw) * Math.cos(candidate.pitch),
+      y: Math.sin(candidate.pitch),
+      z: Math.cos(candidate.yaw) * Math.cos(candidate.pitch)
+    }));
+    if (!forwards.some((forward) => direction.x * forward.x + direction.y * forward.y + direction.z * forward.z >= Math.cos(.3))) return;
+    const lean = state.lean || 0;
+    const origin = {
+      x: state.x + Math.cos(state.yaw) * lean * .7,
+      y: state.y - Math.abs(lean) * .12,
+      z: state.z - Math.sin(state.yaw) * lean * .7
+    };
+    const distance = rayBox(origin, direction, {
+      x0: mine.x - .18, x1: mine.x + .18, y0: mine.y - .15, y1: mine.y + .15,
+      z0: mine.z - .18, z1: mine.z + .18
+    });
+    if (!Number.isFinite(distance) || distance > 100) return;
+    player.lastShotAt = now;
+    match.projectiles.delete(id);
+    const owner = players.get(mine.owner) || player;
+    const explosion = { type: "explosion", id, kind: "claymore", tornado: false, paint: mine.paint,
+      x: mine.x, y: mine.y, z: mine.z, from: player.id };
+    for (const playerId of match.players) sendPlayer(players.get(playerId), explosion);
+    const radius = blastRadius.claymore;
+    for (const targetId of [...match.players]) {
+      const target = players.get(targetId);
+      if (!target || target.team === owner.team || target.health <= 0) continue;
+      const targetDistance = Math.hypot(target.state.x - mine.x, target.state.y - 1 - mine.y, target.state.z - mine.z);
+      if (targetDistance < radius) applyDamage(match, owner, target, Math.max(1, Math.round(130 * (1 - targetDistance / radius))));
+    }
+    for (const hostage of match.objectives) {
+      if (hostage.kind !== "hostage" || !hostage.alive) continue;
+      const targetDistance = Math.hypot(hostage.x - mine.x, hostage.y + .9 - mine.y, hostage.z - mine.z);
+      if (targetDistance < radius) hostageHurt(match, owner, hostage, Math.max(1, Math.round(130 * (1 - targetDistance / radius))));
+    }
     return;
   }
   if (message.type === "explode" && player.matchId) {

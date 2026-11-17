@@ -170,14 +170,20 @@ test("remote player paint renders before snapshots and follows the sender's targ
   assert.equal(after[0].pts[0][0] - before[0].pts[0][0], 2);
 });
 
-test("inspect models retain their paint-colored magazine geometry", () => {
-  const context = { Math, customOf: () => ({ optic: "none", muzzle: "none", grip: "none" }) };
+test("inspect models retain paint surfaces in their weapon-specific geometry", () => {
+  const context = { Math, ArrayBuffer, DataView, Uint8Array, TextDecoder,
+    customOf: () => ({ optic: "none", muzzle: "none", grip: "none" }) };
   vm.runInNewContext(section(html, "    const box = (cx", "    const finishes =") +
     section(html, "    function attachmentParts(", "    const inspector =") +
     section(html, "    function buildInspectModel(", "    function rebuildModel()"), context);
+  const glb = context.parseMk18Glb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_ar.glb")).buffer);
+  context.glbParts = glb.parts;
+  context.glbMagazine = glb.mag;
+  vm.runInNewContext("modelDefs.mk18.parts = glbParts; modelDefs.mk18.mag = glbMagazine", context);
   for (const id of ["mk18", "vector", "longwatch", "p45", "rattler"]) {
     const model = context.buildInspectModel({ id });
-    assert.ok(model.polys.some((poly) => poly.m === "paint"), id);
+    const paintSurface = id === "mk18" ? "mk18Orange" : "paint";
+    assert.ok(model.polys.some((poly) => poly.m === paintSurface && poly.uv), id);
   }
   assert.equal(context.buildInspectModel({ id: "magnum" }).polys.some((poly) => poly.m === "paint"), false);
 });

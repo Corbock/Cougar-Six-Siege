@@ -1224,16 +1224,13 @@
       else renderOperatorInspect();
     }
 
-    /* ---- Procedural 3D item models (software-rendered, no external assets) ---- */
+    /* ---- Software-rendered item models; selected meshes load from GLBs ---- */
     const box = (cx, cy, cz, w, h, d, m, rz = 0) => ({ k: "box", c: [cx, cy, cz], s: [w, h, d], m, rz });
     const cyl = (axis, cx, cy, cz, len, r, m, r2 = r) => ({ k: "cyl", axis, c: [cx, cy, cz], len, r, r2, m });
     const ball = (cx, cy, cz, r, m, sy = 1) => ({ k: "ball", c: [cx, cy, cz], r, m, sy });
 
     const modelDefs = {
-      mk18: { mounts: { optic: [.5, .45, 0], muzzle: [6.5, 0, 0], grip: [3.6, -.4, 0] }, sight: [1.5, .6, 0], parts: [
-        box(0, 0, 0, 4, .9, .7, "body"), box(-3.2, -.1, 0, 2.2, .8, .6, "body"), box(-4.5, -.3, 0, .4, 1.6, .7, "dark"),
-        box(3.2, 0, 0, 2.6, .8, .7, "body"), cyl("x", 5.5, 0, 0, 2, .12, "metal"), box(-.8, -1, 0, .5, 1.1, .5, "dark"),
-        box(1.5, .6, 0, .25, .3, .1, "dark"), box(4.3, .5, 0, .2, .3, .1, "dark") ], mag: [box(.8, -1.1, 0, .6, 1.4, .5, "paint")] },
+      mk18: { mounts: { optic: [.5, .45, 0], muzzle: [6.5, 0, 0], grip: [3.6, -.4, 0] }, sight: [1.5, .6, 0], parts: [], mag: [] },
       vector: { mounts: { optic: [0, .55, 0], muzzle: [3.2, 0, 0], grip: [1.3, -.55, 0] }, sight: [-.45, .55, 0], parts: [
         box(0, 0, 0, 3.4, 1.1, .8, "body"), cyl("x", 2.45, 0, 0, 1.5, .14, "metal"),
         box(-1, -1, 0, .5, 1, .5, "dark"), box(-2.4, .1, 0, 1.6, .3, .2, "metal"), box(-3.2, -.3, 0, .3, 1.2, .5, "dark"), box(1.2, .6, 0, .3, .25, .1, "dark") ], mag: [box(.2, -1.5, 0, .55, 2, .5, "paint")] },
@@ -1290,28 +1287,13 @@
       sledgehammer: { mounts: {}, parts: [
         cyl("x", 0, 0, 0, 6, .18, "dark"), cyl("x", -2, 0, 0, 2, .23, "accent"), box(3.2, 0, 0, 1.6, 1.3, 1.1, "body"),
         box(3.2, 0, 0, 1.7, .6, 1.2, "metal"), box(-3.1, 0, 0, .25, .5, .5, "dark") ] },
-      karambit: { mounts: {}, parts: [
-        box(1.38, -.2, 0, .88, .42, .42, "dark", -.12), box(1.23, -.2, .23, .62, .28, .055, "accent", -.12),
-        box(1.23, -.2, -.23, .62, .28, .055, "accent", -.12),
-        box(1.88, -.3, 0, .36, .12, .32, "dark", .72), box(1.98, -.55, 0, .32, .12, .32, "accent", .05),
-        box(1.73, -.68, 0, .38, .12, .32, "dark", -.68),
-        box(.8, -.03, 0, .22, .44, .48, "metal"), box(.55, -.05, 0, .4, .12, .38, "dark"),
-        box(1.12, -.04, .27, .09, .09, .035, "metal"), box(1.12, -.04, -.27, .09, .09, .035, "metal"),
-        box(.12, -.14, 0, .58, .25, .17, "blade", .36), box(-.28, -.51, 0, .66, .2, .14, "blade", .86),
-        box(-.56, -.91, 0, .62, .16, .12, "blade", 1.38), box(-.48, -1.31, 0, .44, .12, .1, "blade", 2.05),
-        box(-.08, -.28, .09, .42, .025, .014, "edge", .36), box(-.43, -.68, .075, .43, .022, .012, "edge", .86),
-        box(-.64, -1.02, .065, .32, .018, .01, "edge", 1.38),
-        box(1.53, -.13, .22, .08, .08, .025, "metal"), box(1.53, -.13, -.22, .08, .08, .025, "metal")
-      ] },
+      karambit: { mounts: {}, parts: [] },
       shield: { mounts: {}, parts: [
         box(0, -.875, 0, .4, 3.25, 3.2, "body"), box(0, 2.075, 0, .4, .85, 3.2, "body"),
         box(0, 1.2, -1.25, .4, .9, .7, "body"), box(0, 1.2, 1.25, .4, .9, .7, "body"),
         box(0, 1.2, 0, .02, .9, 1.8, "glass"), box(-.3, 0, 0, .4, .3, 1, "dark"),
         box(.05, 2.55, 0, .5, .15, 3.3, "metal"), box(.05, -2.55, 0, .5, .15, 3.3, "metal"), box(.05, 0, 1.65, .5, 5.1, .15, "metal"), box(.05, 0, -1.65, .5, 5.1, .15, "metal") ] },
-      drone: { mounts: {}, parts: [
-        box(0, 0, 0, 1.6, .45, 1.6, "body"), box(0, 0, 0, 4.2, .12, .22, "dark"), box(0, 0, 0, .22, .12, 4.2, "dark"),
-        ...[[2, 0], [-2, 0], [0, 2], [0, -2]].flatMap(([x, z]) => [cyl("y", x, .15, z, .3, .22, "metal"), cyl("y", x, .35, z, .05, .85, "dark")]),
-        ball(.9, -.15, 0, .32, "glass"), box(0, -.35, 0, .8, .1, .8, "accent") ] },
+      drone: { mounts: {}, parts: [] },
       "steel-bars": { mounts: {}, parts: [
         ...[-2, -1, 0, 1, 2].map((x) => cyl("y", x * .8, 0, 0, 4.4, .15, "metal")),
         box(0, 1.7, 0, 4.2, .3, .4, "body"), box(0, -1.7, 0, 4.2, .3, .4, "body"), box(0, 0, 0, 4.2, .25, .35, "body"),
@@ -1437,22 +1419,29 @@
       ...keychains.filter((keychain) => keychain.id !== "none").map((keychain) => `keychain:${keychain.id}`),
       karambitRewardKey
     ];
-    let armorySave = { packs: 0, wraps: [], rewardedMatches: [], armoryResetVersion: 1 };
+    let armorySave = { packs: 0, wraps: [], rewardedMatches: [], armoryResetVersion: 1, initialPackGrantVersion: 2 };
     let armoryJustReset = false;
+    let armoryNeedsMigration = false;
+    let armoryJustRevoked = false;
     try {
       const savedValue = localStorage.getItem("c6-armory");
       const saved = JSON.parse(savedValue || "{}");
       armoryJustReset = savedValue !== null && saved.armoryResetVersion !== 1;
+      armoryJustRevoked = saved.initialPackGrantVersion === 1;
+      armoryNeedsMigration = saved.initialPackGrantVersion !== 2;
       armorySave = {
-        packs: armoryJustReset ? 0 : Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0,
+        packs: Math.max(0, (armoryJustReset ? 0 : Number.isSafeInteger(saved.packs) ? Math.max(0, saved.packs) : 0) -
+          (armoryJustRevoked ? 1000 : 0)),
         wraps: armoryJustReset ? [] : Array.isArray(saved.wraps) ? saved.wraps.filter((key) => packPairs.includes(key)) : [],
         rewardedMatches: Array.isArray(saved.rewardedMatches) ? saved.rewardedMatches.filter((id) => typeof id === "string") : [],
-        armoryResetVersion: 1
+        armoryResetVersion: 1,
+        initialPackGrantVersion: 2
       };
     } catch (error) {
       console.warn("Could not load Armory progress:", error);
       armoryJustReset = true;
-      armorySave = { packs: 0, wraps: [], rewardedMatches: [], armoryResetVersion: 1 };
+      armoryNeedsMigration = true;
+      armorySave = { packs: 0, wraps: [], rewardedMatches: [], armoryResetVersion: 1, initialPackGrantVersion: 2 };
     }
     let packs = armorySave.packs;
     const ownedWraps = new Set(armorySave.wraps);
@@ -1493,6 +1482,8 @@
         { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
     };
     const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c", wick: "#c5b99c",
+      mk18Body: "#121214", mk18Dark: "#33363b", mk18Silver: "#a6abb3", mk18Orange: "#ff660d",
+      karambitBlade: "#999ea8", karambitEdge: "#e6ebf2", karambitDark: "#2b2e33", karambitGrip: "#0e0e11", karambitBrass: "#bd8f38",
       canBody: "#f7f5ea", canLabel: "#397b83",
       medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b" };
 
@@ -1544,7 +1535,7 @@
     const keychainMounts = {
       mk18: [-2.2, -.55, .4], vector: [-1.25, -.55, .46], hammer: [-1.5, -.52, .4],
       longwatch: [-2.8, -.5, .34], p45: [-1, -1.05, .32], rattler: [-.85, -.95, .38],
-      magnum: [-1.25, -1.08, .3], sledgehammer: [-2, -.25, .28], karambit: [.95, -.2, .28]
+      magnum: [-1.25, -1.08, .3], sledgehammer: [-2, -.25, .28],       karambit: [.9, .25, .28]
     };
     function weaponKeychainParts(item, cfg) {
       if (!item.dmg) return [];
@@ -1580,7 +1571,7 @@
       const polys = [];
       const add = (v, m, c) => {
         const poly = { v, m, c };
-        if (m === "body" || m === "paint") {
+        if (m === "body" || m === "paint" || m === "mk18Body" || m === "mk18Orange") {
           const a = v[1].map((q, i) => q - v[0][i]), b = v[2].map((q, i) => q - v[0][i]);
           const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]].map(Math.abs);
           const axis = n.indexOf(Math.max(...n));
@@ -1602,6 +1593,8 @@
           const lo = ring(-h, p.r), hi = ring(h, p.r2);
           for (let i = 0; i < seg; i++) { const j = (i + 1) % seg; add([lo[i], lo[j], hi[j], hi[i]], p.m, p.c); }
           add(lo, p.m, p.c); add(hi, p.m, p.c);
+        } else if (p.k === "mesh") {
+          p.triangles.forEach((triangle) => add(triangle, p.m, p.c));
         } else {
           const lat = 7, lon = 14, pt = (a, b) => [p.c[0] + p.r * Math.sin(a) * Math.cos(b), p.c[1] + p.r * p.sy * Math.cos(a), p.c[2] + p.r * Math.sin(a) * Math.sin(b)];
           for (let i = 0; i < lat; i++) for (let j = 0; j < lon; j++) {
@@ -1613,12 +1606,148 @@
       return polys;
     }
 
+    function parseWeaponGlb(buffer, config) {
+      const fail = (message) => { throw new Error(`Invalid ${config.name} GLB: ${message}`); };
+      if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 20) fail("truncated file");
+      const header = new DataView(buffer);
+      if (header.getUint32(0, true) !== 0x46546c67 || header.getUint32(4, true) !== 2 ||
+          header.getUint32(8, true) !== buffer.byteLength) fail("invalid header");
+      let json = null, binary = null, offset = 12;
+      while (offset + 8 <= buffer.byteLength) {
+        const length = header.getUint32(offset, true), type = header.getUint32(offset + 4, true);
+        offset += 8;
+        if (offset + length > buffer.byteLength) fail("truncated chunk");
+        if (type === 0x4e4f534a) json = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, offset, length)).trim());
+        else if (type === 0x004e4942) binary = new DataView(buffer, offset, length);
+        offset += length;
+      }
+      if (!json || !binary || json.asset?.version !== "2.0" || json.buffers?.[0]?.byteLength > binary.byteLength) fail("missing glTF 2.0 data");
+
+      const materials = {}, primitives = [], magazinePrimitives = [];
+      const bounds = [[Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity]];
+      const readAccessor = (index, type) => {
+        const accessor = json.accessors?.[index], view = accessor && json.bufferViews?.[accessor.bufferView];
+        if (!accessor || !view || (view.buffer || 0) !== 0 || accessor.sparse) fail("unsupported accessor");
+        if (accessor.type !== type || !Number.isInteger(accessor.count) || accessor.count < 1) fail("invalid accessor shape");
+        const componentBytes = accessor.componentType === 5126 ? 4 :
+          accessor.componentType === 5125 ? 4 : accessor.componentType === 5123 ? 2 : accessor.componentType === 5121 ? 1 : 0;
+        if (!componentBytes || (type === "VEC3" && accessor.componentType !== 5126) ||
+            (type === "SCALAR" && accessor.componentType === 5126)) fail("unsupported accessor component type");
+        const componentCount = type === "VEC3" ? 3 : 1, elementBytes = componentBytes * componentCount;
+        const stride = view.byteStride || elementBytes, start = (view.byteOffset || 0) + (accessor.byteOffset || 0);
+        if (stride < elementBytes || start < 0 || start + (accessor.count - 1) * stride + elementBytes > binary.byteLength) fail("accessor outside binary chunk");
+        const getComponent = accessor.componentType === 5126 ? (at) => binary.getFloat32(at, true) :
+          accessor.componentType === 5125 ? (at) => binary.getUint32(at, true) :
+            accessor.componentType === 5123 ? (at) => binary.getUint16(at, true) : (at) => binary.getUint8(at);
+        return Array.from({ length: accessor.count }, (_, item) => {
+          const at = start + item * stride;
+          const value = Array.from({ length: componentCount }, (_, component) => getComponent(at + component * componentBytes));
+          if (!value.every(Number.isFinite)) fail("non-finite vertex data");
+          return type === "SCALAR" ? value[0] : value;
+        });
+      };
+
+      const meshNodes = (json.nodes || []).filter((node) => node.mesh !== undefined);
+      if (!meshNodes.length) fail("scene contains no meshes");
+      meshNodes.forEach((node) => {
+        if (config.skipNodeNames?.includes(node.name)) return;
+        const mesh = json.meshes?.[node.mesh];
+        if (!mesh || node.matrix || node.rotation || node.scale) fail("unsupported mesh node transform");
+        const translation = node.translation || [0, 0, 0];
+        if (translation.length !== 3 || !translation.every(Number.isFinite)) fail("invalid mesh node translation");
+        const isMagazine = Boolean(config.separateMeshName &&
+          (node.name === config.separateMeshName || mesh.name === config.separateMeshName));
+        const target = isMagazine ? magazinePrimitives : primitives;
+        (mesh.primitives || []).forEach((primitive) => {
+          if ((primitive.mode ?? 4) !== 4 || primitive.attributes?.POSITION === undefined || !Number.isInteger(primitive.material)) fail("unsupported primitive");
+          const material = json.materials?.[primitive.material], role = material && config.roles[material.name];
+          if (!role) fail(`unsupported material ${material?.name || primitive.material}`);
+          const factor = material.pbrMetallicRoughness?.baseColorFactor;
+          if (!Array.isArray(factor) || factor.length !== 4 || factor[3] !== 1 ||
+              factor.slice(0, 3).some((channel) => !Number.isFinite(channel) || channel < 0 || channel > 1)) fail("unsupported material color");
+          materials[role] = `#${factor.slice(0, 3).map((channel) => Math.round(channel * 255).toString(16).padStart(2, "0")).join("")}`;
+          const positions = readAccessor(primitive.attributes.POSITION, "VEC3");
+          const indices = primitive.indices === undefined ? positions.map((_, index) => index) : readAccessor(primitive.indices, "SCALAR");
+          if (indices.length % 3 || indices.some((index) => index >= positions.length)) fail("invalid triangle indices");
+          const translatedPositions = positions.map(([x, y, z]) => [x + translation[0], y + translation[1], z + translation[2]]);
+          if (!isMagazine) translatedPositions.forEach((point) => point.forEach((value, axis) => {
+            bounds[0][axis] = Math.min(bounds[0][axis], value);
+            bounds[1][axis] = Math.max(bounds[1][axis], value);
+          }));
+          target.push({ positions: translatedPositions, indices, nodeName: node.name || mesh.name, pivot: translation,
+            role: isMagazine && material.name === config.magazinePaintMaterial ? "paint" : role });
+        });
+      });
+      if (!primitives.length || !(bounds[1][2] > bounds[0][2])) fail("empty or unsupported mesh");
+      if (config.separateMeshName && !magazinePrimitives.length) fail(`missing separate ${config.separateMeshName} mesh`);
+
+      const center = bounds[0].map((value, axis) => (value + bounds[1][axis]) / 2);
+      const scale = config.length / (bounds[1][2] - bounds[0][2]);
+      const transform = (point) => config.transform(point, center, scale);
+      const buildParts = (source) => source.map(({ positions, indices, role, nodeName, pivot }) => {
+          const vertices = positions.map(transform);
+          const partCenter = vertices.reduce((sum, point) => sum.map((value, axis) => value + point[axis] / vertices.length), [0, 0, 0]);
+          const triangles = [];
+          for (let index = 0; index < indices.length; index += 3) {
+            triangles.push([vertices[indices[index]], vertices[indices[index + 2]], vertices[indices[index + 1]]]);
+          }
+          return { k: "mesh", triangles, m: role, c: partCenter, nodeName, pivot: transform(pivot || [0, 0, 0], center, scale) };
+        });
+      return { parts: buildParts(primitives), mag: buildParts(magazinePrimitives), colors: materials };
+    }
+
+    function parseMk18Glb(buffer) {
+      return parseWeaponGlb(buffer, {
+        name: "MK18",
+        roles: { body_black: "mk18Body", dark_gray: "mk18Dark", tank_silver: "mk18Silver", orange: "mk18Orange" },
+        length: 11.2,
+        separateMeshName: "Magazine",
+        magazinePaintMaterial: "body_black",
+        transform: ([x, y, z], center, scale) => [
+          (z - center[2]) * scale + .9,
+          (y - center[1]) * scale - .525,
+          (x - center[0]) * scale
+        ]
+      });
+    }
+
+    function parseKarambitGlb(buffer) {
+      return parseWeaponGlb(buffer, {
+        name: "Karambit",
+        roles: { blade_steel: "karambitBlade", blade_edge: "karambitEdge", steel_dark: "karambitDark",
+          grip_black: "karambitGrip", brass: "karambitBrass" },
+        length: 2.4,
+        transform: ([x, y, z], center, scale) => [
+          (center[2] - z) * scale,
+          (y - center[1]) * scale,
+          (x - center[0]) * scale
+        ]
+      });
+    }
+
+    function parseDroneGlb(buffer) {
+      return parseWeaponGlb(buffer, {
+        name: "Drone",
+        roles: {
+          body_gray: "droneBodyGray", body_light: "droneBodyLight", arm_black: "droneArmBlack", motor: "droneMotor",
+          prop_black: "dronePropBlack", accent_teal: "droneAccentTeal", lens: "droneLens", rubber: "droneRubber",
+          led_green: "droneLedGreen", led_red: "droneLedRed"
+        },
+        skipNodeNames: ["PropBlur_FR", "PropBlur_BR", "PropBlur_BL", "PropBlur_FL"],
+        length: .92,
+        transform: ([x, y, z], center, scale) => [
+          (x - center[0]) * scale, (y - center[1]) * scale, (z - center[2]) * scale
+        ]
+      });
+    }
+
     const inspector = { item: null, slot: null, polys: [], radius: 6, yaw: -.55, pitch: .22, dragging: false, running: false, key: "" };
     const inspectCanvas = document.querySelector("#inspect-canvas");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function buildInspectModel(item, includeMagazine = true) {
       const def = modelDefs[item.id], cfg = customOf(item);
+      if (["mk18", "karambit", "drone", "camera-drone"].includes(item.id) && !def.parts.length) return { polys: [], radius: 6 };
       const parts = [...def.parts, ...(includeMagazine ? (def.mag || []) : []), ...attachmentParts(item, cfg), ...weaponKeychainParts(item, cfg)];
       const base = buildPolys(includeMagazine ? parts : def.parts), pts = base.flatMap((poly) => poly.v);
       const lo = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
@@ -1633,6 +1762,45 @@
     function rebuildModel() {
       Object.assign(inspector, buildInspectModel(inspector.item));
     }
+
+    const mk18ModelReady = fetch("ItemModels/paintball_ar.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/paintball_ar.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseMk18Glb(buffer);
+        modelDefs.mk18.parts = model.parts;
+        modelDefs.mk18.mag = model.mag;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    mk18ModelReady.catch((error) => console.error("Failed to load MK18 GLB:", error));
+    const karambitModelReady = fetch("ItemModels/karambit.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/karambit.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseKarambitGlb(buffer);
+        modelDefs.karambit.parts = model.parts;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    karambitModelReady.catch((error) => console.error("Failed to load Karambit GLB:", error));
+    const droneModelReady = fetch("ItemModels/drone.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/drone.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseDroneGlb(buffer);
+        modelDefs.drone.parts = model.parts;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    droneModelReady.catch((error) => console.error("Failed to load Drone GLB:", error));
+    const weaponModelsReady = Promise.all([mk18ModelReady, karambitModelReady, droneModelReady]);
 
     function affineFromUv(uv, pts) {
       const [[u0, v0], [u1, v1], [u2, v2]] = uv, det = (u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0);
@@ -1657,8 +1825,9 @@
       const cfg = customOf(item), finish = finishes[cfg.finish] || finishes[0];
       const skin = item.dmg ? weaponSkin(item.id, cfg.skin) : null;
       const keychain = keychains.find((entry) => entry.id === cfg.keychain);
-      const color = (m) => m === "paint" ? paintColor(item) : m === "keychain" ? keychain.color :
-        skin ? (m === "metal" ? finish.c : materials[m]) : (m === "body" ? finish.c : materials[m]);
+      const color = (m) => m === "paint" || (m === "mk18Orange" && selectedPaintSkin()) ? paintColor(item) :
+        m === "keychain" ? keychain.color : skin ? (m === "metal" ? finish.c : materials[m]) :
+          (m === "body" ? finish.c : m === "mk18Body" && cfg.finish !== 0 ? finish.c : materials[m]);
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = ([x, y, z]) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cp - z1 * sp, y * sp + z1 * cp]; };
       ctx.fillStyle = "rgba(0,0,0,.35)";
@@ -1684,7 +1853,8 @@
         d.v.forEach((q, i) => { const f = 36 / (36 - q[2]); const x = w / 2 + q[0] * s * f, y = h * .5 - q[1] * s * f; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
         ctx.closePath();
         ctx.fillStyle = fill; ctx.strokeStyle = fill; ctx.fill(); ctx.stroke();
-        const surfaceSkin = d.m === "paint" && item.dmg ? selectedPaintSkin() : d.m === "body" ? skin : null;
+        const surfaceSkin = (d.m === "paint" || d.m === "mk18Orange") && item.dmg ? selectedPaintSkin() :
+          (d.m === "body" || d.m === "mk18Body") ? skin : null;
         const sc = surfaceSkin && d.uv && affineFromUv(d.uv, d.v.map((q) => { const f = 36 / (36 - q[2]); return [w / 2 + q[0] * s * f, h * .5 - q[1] * s * f]; }));
         if (sc) {
           ctx.save();
@@ -1886,15 +2056,19 @@
       try {
         localStorage.setItem("c6-armory", JSON.stringify({
           packs, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches].slice(-80),
-          armoryResetVersion: 1
+          armoryResetVersion: 1, initialPackGrantVersion: 2
         }));
       } catch (error) {
         console.warn("Could not save Armory progress:", error);
         showToast("Could not save Armory progress in this browser.");
       }
     }
-    if (armoryJustReset) {
+    if (armoryJustRevoked) {
+      packStatusText = "The 1,000-pack welcome grant was revoked.";
+    } else if (armoryJustReset) {
       packStatusText = "Armory reset: packs and unlocked skins cleared.";
+    }
+    if (armoryJustReset || armoryNeedsMigration) {
       saveArmory();
     }
     function renderArmory() {
@@ -2965,9 +3139,11 @@
       const weapons = {};
       let curSlot = "primary";
       const skinOf = (w) => weaponSkin(w.item.id, w.cfg.skin);
-      const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return m === "paint" ? paintColor(w.item) :
+      const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return m === "paint" ||
+        (m === "mk18Orange" && selectedPaintSkin()) ? paintColor(w.item) :
         m === "keychain" ? keychains.find((entry) => entry.id === w.cfg.keychain).color :
-          skinOf(w) ? (m === "metal" ? fin : materials[m]) : (m === "body" ? fin : materials[m]); };
+          skinOf(w) ? (m === "metal" ? fin : materials[m]) :
+            (m === "body" || (m === "mk18Body" && w.cfg.finish !== 0) ? fin : materials[m]); };
       function buildWeapon(item) {
         const def = modelDefs[item.id], cfg = customOf(item);
         const baseKind = kinds[item.type];
@@ -2988,7 +3164,8 @@
         const mag = kind.mag;
         const sight = cfg.optic !== "none" && def.mounts.optic ? def.mounts.optic : def.sight || def.mounts.optic || [0, 0, 0];
         return { item, kind, cfg, polys, magPolys, mid, tip, rear, stats, sight, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
-          ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0 };
+          ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1,
+          inspectStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0 };
       }
       const wpn = () => weapons[loadout[curSlot]];
       const shieldWeapon = (equipped) => equipped.item.id === "shield" && loadout.secondary === "p45" ? weapons.p45 : equipped;
@@ -3051,8 +3228,10 @@
             state.z - lateral * s + forward * c];
         };
         polys.forEach((poly) => list.push({ pts: poly.v.map(transform), uv: poly.uv,
-          color: poly.m === "paint" ? (paint || paintColors[0].c) : poly.m === "keychain" ? charm.color : materials[poly.m],
-          skin: poly.m === "paint" ? paintSkin : poly.m === "body" ? skin : undefined }));
+          color: poly.m === "paint" || (poly.m === "mk18Orange" && paintSkin) ? (paint || paintColors[0].c) :
+            poly.m === "keychain" ? charm.color : materials[poly.m],
+          skin: poly.m === "paint" || poly.m === "mk18Orange" ? paintSkin :
+            (poly.m === "body" || poly.m === "mk18Body") ? skin : undefined }));
       }
       function remoteEquippedItem(player) {
         const state = player.state;
@@ -3198,22 +3377,28 @@
             { skin: state.equippedSkin, keychain: state.equippedKeychain, paintSkin: state.paintSkin });
         }
       }
+      function droneModelQuads(list, transform) {
+        modelDefs.drone.parts.forEach((part) => {
+          const spinning = part.nodeName?.startsWith("Prop_");
+          const angle = spinning ? tNow * 32 : 0, ca = Math.cos(angle), sa = Math.sin(angle);
+          part.triangles.forEach((triangle) => {
+            const pts = triangle.map((point) => {
+              if (!spinning) return transform(point);
+              const x = point[0] - part.pivot[0], z = point[2] - part.pivot[2];
+              return transform([
+                part.pivot[0] + x * ca - z * sa, point[1], part.pivot[2] + x * sa + z * ca
+              ]);
+            });
+            list.push({ pts, color: materials[part.m] });
+          });
+        });
+      }
       function droneWorldQuads(list, state) {
         const c = Math.cos(state.yaw || 0), s = Math.sin(state.yaw || 0);
-        const transform = ([x, y, z]) => [state.x + x * c + z * s, state.y + y, state.z - x * s + z * c];
-        const box = (x, y, z, w, h, d, color, tf = transform) => qb(list, x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - d / 2, z + d / 2, color, tf);
-        box(0, .12, 0, .34, .12, .34, "#343a3b");
-        box(0, .13, 0, .92, .035, .06, "#262c2d"); box(0, .13, 0, .06, .035, .92, "#262c2d");
-        [[-.4, -.4], [-.4, .4], [.4, -.4], [.4, .4]].forEach(([x, z], index) => {
-          box(x, .18, z, .14, .05, .14, "#707a72");
-          const angle = tNow * 32 + index, rc = Math.cos(angle), rs = Math.sin(angle);
-          const rotor = ([px, py, pz]) => {
-            const rx = px * rc - pz * rs, rz = px * rs + pz * rc;
-            return transform([x + rx, py + .21, z + rz]);
-          };
-          box(0, 0, 0, .34, .012, .04, "#a9b5a2", rotor);
-        });
-        box(0, .1, .2, .12, .09, .06, "#d3ef59");
+        const transform = ([x, y, z]) => [
+          state.x + x * c + z * s, state.y + .2 + y, state.z - x * s + z * c
+        ];
+        droneModelQuads(list, transform);
       }
       function droneLaserQuads(list, companion, target, color = "#ff3030") {
         if (!target) return;
@@ -3825,12 +4010,21 @@
             if (distance < droneDistance) { droneDistance = distance; droneTarget = { ownerId: other.id, slot }; droneBox = box; }
           });
         });
+        let mineTarget = null, mineDistance = Infinity;
+        if (!w.kind.melee) projectiles.forEach((projectile) => {
+          if (!projectile.mine) return;
+          const box = { x0: projectile.x - .18, x1: projectile.x + .18, y0: projectile.y - .15,
+            y1: projectile.y + .15, z0: projectile.z - .18, z1: projectile.z + .18 };
+          const distance = rayBox(o, dr, box);
+          if (distance < mineDistance) { mineDistance = distance; mineTarget = projectile; }
+        });
+        let shieldDistance = Infinity;
         if (w.item.id !== "longwatch") {
-          let shieldDistance = Infinity;
           multiplayer.remotePlayers.forEach((other) => {
             if (other.health > 0) shieldDistance = Math.min(shieldDistance, shieldHitDistance(other.state, o, dr));
           });
-          if (shieldDistance <= reach && shieldDistance < tw && shieldDistance < bt && shieldDistance <= playerDistance && shieldDistance <= droneDistance) {
+          if (shieldDistance <= reach && shieldDistance < tw && shieldDistance < bt && shieldDistance <= playerDistance &&
+              shieldDistance <= droneDistance && shieldDistance <= mineDistance) {
             const point = o.map((v, i) => v + dr[i] * shieldDistance);
             showShieldImpact(o, point);
             if (!w.kind.melee) addPaint(point, dr.map((v) => -v), paintColor(w.item), w.kind.pellets ? .22 : .11, null, true, null, appearance.paintSkin);
@@ -3846,7 +4040,21 @@
             if (distance < hostageDistance) { hostageDistance = distance; hostageBox = box; }
           }
         });
-        if (hostageDistance <= reach && hostageDistance < tw && hostageDistance < bt && hostageDistance < playerDistance && hostageDistance <= droneDistance) {
+        if (mineTarget && mineDistance <= reach && mineDistance < tw && mineDistance < bt &&
+            mineDistance < playerDistance && mineDistance < droneDistance && mineDistance < hostageDistance &&
+            mineDistance < shieldDistance) {
+          if (multiplayer.match) {
+            sendMatch({ type: "mine_hit", id: mineTarget.pid, weaponId: w.item.id,
+              direction: { x: dr[0], y: dr[1], z: dr[2] } });
+          } else {
+            projectiles = projectiles.filter((projectile) => projectile.pid !== mineTarget.pid);
+            detonate(mineTarget);
+          }
+          recordHit(w.item.id); mark(false);
+          return;
+        }
+        if (hostageDistance <= reach && hostageDistance < tw && hostageDistance < bt && hostageDistance < playerDistance &&
+            hostageDistance <= droneDistance && hostageDistance < mineDistance) {
           const effectiveRange = reach / 2;
           const falloff = hostageDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (hostageDistance - effectiveRange) / effectiveRange * .65);
           const damage = w.item.id === "f451" ? 6 : Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul);
@@ -3855,12 +4063,14 @@
           recordHit(w.item.id); mark(false);
           return;
         }
-        if (droneTarget && droneDistance <= reach && droneDistance < tw && droneDistance < bt && droneDistance < playerDistance) {
+        if (droneTarget && droneDistance <= reach && droneDistance < tw && droneDistance < bt &&
+            droneDistance < playerDistance && droneDistance < mineDistance) {
           paintHit(w, o, dr, droneDistance, droneBox);
           sendMatch({ type: "drone_hit", ...droneTarget, direction: { x: dr[0], y: dr[1], z: dr[2] } });
           return;
         }
-        if (playerTarget && playerDistance < tw && playerDistance < bt && playerDistance <= reach) {
+        if (playerTarget && playerDistance < tw && playerDistance < bt && playerDistance <= reach &&
+            playerDistance < mineDistance) {
           const effectiveRange = reach / 2;
           const falloff = playerDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (playerDistance - effectiveRange) / effectiveRange * .65);
           const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && playerTarget.health >= 100 ? 1.5 : 1;
@@ -4607,7 +4817,7 @@
       function fire(w) {
         const k = w.kind;
         if (k.held) { w.next = tNow + 1 / k.rate; useHeld(w); return; }
-        if (k.melee) { w.swingStart = tNow; w.swingHit = false; w.next = tNow + 1 / k.rate; return; }
+        if (k.melee) { w.inspectStart = -1; w.swingStart = tNow; w.swingHit = false; w.next = tNow + 1 / k.rate; return; }
         if (w.ammo <= 0) { startReload(w); return; }
         if (w.item.id === "f451") {
           w.next = tNow + 1 / k.rate;
@@ -4640,6 +4850,7 @@
           if (t >= .3 && !w.swingHit) { w.swingHit = true; trace(w, 2.5 + w.stats.rng * .5 + 1, 1); }
           if (t >= 1) w.swingStart = -1;
         }
+        if (w.inspectStart >= 0 && tNow - w.inspectStart >= 1.5) w.inspectStart = -1;
         const sprinting = !crouched && isSprinting();
         if (sprinting) pressedAt = -1;
         const wantsFire = !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && locked() && canFire(w) && ((mouseDown && w.kind.auto) || tNow - pressedAt < .15);
@@ -4666,8 +4877,23 @@
       function meleeViewmodelPose(w, now) {
         const t = w.swingStart >= 0 ? Math.min(1, (now - w.swingStart) / .45) : 0;
         const arc = Math.sin(Math.PI * t);
-        if (w.item.id === "karambit") return { ang: 1.15 - 2.5 * arc, offX: .3, offY: -.12 + .1 * arc, offZ: .5 + .22 * arc };
+        if (w.item.id === "karambit") {
+          if (w.inspectStart >= 0 && w.swingStart < 0) {
+            const inspectT = Math.max(0, Math.min(1, (now - w.inspectStart) / 1.5));
+            const smooth = (value) => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+            const lift = smooth(inspectT / .18) * (1 - smooth((inspectT - .86) / .14));
+            const spin = smooth((inspectT - .18) / .5) * Math.PI * 2;
+            return { ang: 1.15 + spin, offX: .3 - .15 * lift,
+              offY: -.12 + .22 * lift + Math.sin(spin) * .035, offZ: .5 + .18 * lift };
+          }
+          return { ang: 1.15 - 2.5 * arc, offX: .3, offY: -.12 + .1 * arc, offZ: .5 + .22 * arc };
+        }
         return { ang: .9 - 1.8 * arc, offX: .3, offY: -.12, offZ: .55 + .15 * arc };
+      }
+      function beginKarambitInspect(w, now) {
+        if (w.item.id !== "karambit" || w.swingStart >= 0) return false;
+        w.inspectStart = now;
+        return true;
       }
       function viewmodelQuads(w, moving, shieldSidearm = false) {
         const k = w.kick, bob = moving ? Math.sin(tNow * 10) * .014 : Math.sin(tNow * 1.5) * .004;
@@ -4708,7 +4934,8 @@
         };
         const list = w.polys.filter((poly) => w.item.id !== "shield" || poly.m !== "glass" || poly.v.every((point) => point[0] === -.01))
           .map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv,
-            skin: poly.m === "paint" && w.item.dmg ? selectedPaintSkin() : poly.m === "body" ? skinOf(w) : null,
+            skin: (poly.m === "paint" || poly.m === "mk18Orange") && w.item.dmg ? selectedPaintSkin() :
+              (poly.m === "body" || poly.m === "mk18Body") ? skinOf(w) : null,
             shieldGlass: w.item.id === "shield" && poly.m === "glass" }));
         if (w.magPolys.length) {
           const removing = w.reloadEnd && reloadProgress <= .32;
@@ -4723,7 +4950,8 @@
               return [p[0] + magazineOffset[0], p[1] + magazineOffset[1], p[2] + magazineOffset[2]];
             };
             w.magPolys.forEach((poly) => list.push({ pts: poly.v.map(placeMagazine), color: colorOf(w, poly.m), uv: poly.uv,
-              skin: poly.m === "paint" && w.item.dmg ? selectedPaintSkin() : poly.m === "body" ? skinOf(w) : null }));
+              skin: (poly.m === "paint" || poly.m === "mk18Orange") && w.item.dmg ? selectedPaintSkin() :
+                (poly.m === "body" || poly.m === "mk18Body") ? skinOf(w) : null }));
           }
           if (w.reloadEnd) {
             const vertices = w.magPolys.flatMap((poly) => poly.v.map(place));
@@ -5141,20 +5369,8 @@
         return list;
       }
       function droneViewmodelQuads() {
-        const list = [], y = -.55, z = 1.25;
-        qb(list, -.2, .2, y - .07, y + .07, z - .2, z + .2, "#343a3b");
-        qb(list, -.48, .48, y - .025, y + .025, z - .035, z + .035, "#262c2d");
-        qb(list, -.035, .035, y - .025, y + .025, z - .48, z + .48, "#262c2d");
-        [[-.4, -.4], [-.4, .4], [.4, -.4], [.4, .4]].forEach(([x, dz], index) => {
-          qb(list, x - .07, x + .07, y - .01, y + .02, z + dz - .07, z + dz + .07, "#707a72");
-          const angle = tNow * 32 + index;
-          const transform = ([px, py, pz]) => {
-            const dx = px * Math.cos(angle) - pz * Math.sin(angle), dz2 = px * Math.sin(angle) + pz * Math.cos(angle);
-            return [x + dx, y + py + .035, z + dz + dz2];
-          };
-          qb(list, -.19, .19, -.006, .006, -.025, .025, "#a9b5a2", transform);
-        });
-        qb(list, -.055, .055, y - .09, y - .015, z + .16, z + .23, "#d3ef59");
+        const list = [];
+        droneModelQuads(list, ([x, y, z]) => [x, y - .55, z + 1.25]);
         return list;
       }
       const skinTex = {};
@@ -5649,7 +5865,11 @@
             crouched = !crouched; eyeHeight = crouched ? CROUCH_EYE : EYE; cam.y = feet + eyeHeight;
           }
           const slotIndex = [currentKeybinds.switchWeapon1, currentKeybinds.switchWeapon2, currentKeybinds.switchWeapon3, currentKeybinds.switchWeapon4].indexOf(key);
-          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; curSlot = id; wpn().equippedAt = tNow; } }
+          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; o.inspectStart = -1; curSlot = id; wpn().equippedAt = tNow; } }
+          if (key === "i" && !e.repeat && beginKarambitInspect(wpn(), tNow)) {
+            e.preventDefault();
+            wpn().inspectStart = tNow;
+          }
           if (key === currentKeybinds.reload) startReload(shieldWeapon(wpn()));
           if (key === currentKeybinds.barricade && !e.repeat) placeBarricade();
           if (key === currentKeybinds.scan && grounded) cam.vy = 6.5;
@@ -5679,7 +5899,7 @@
         freeplayMode = practice;
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);
-        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
+        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · I inspect Karambit · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
         cancelDroneDeploy();
         if (drone.active) recallDrone();
         clearBarricades();
@@ -5712,8 +5932,16 @@
         canvas.requestPointerLock && canvas.requestPointerLock();
       } };
     })();
-    function openField() { fieldView.open(); }
-    function openFreeplay() { fieldView.open({ practice: true }); }
+    async function openField(options) {
+      try { await weaponModelsReady; }
+      catch (error) {
+        console.error("Could not start without the item models:", error);
+        showToast("An item model could not be loaded. Check the ItemModels folder.");
+        return;
+      }
+      fieldView.open(options);
+    }
+    function openFreeplay() { openField({ practice: true }); }
 
     setSection("PLAY");
 

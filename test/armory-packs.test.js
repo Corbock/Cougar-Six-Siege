@@ -65,9 +65,9 @@ test("packs include every paint, finish, and keychain reward but exclude factory
   ]);
 });
 
-test("existing Armory saves are reset once without granting packs", () => {
+test("the 1,000-pack grant is revoked once while earned packs are preserved", () => {
   const initialization = section("    let armorySave =", "    const karambitUnlocked =");
-  const save = section("    function saveArmory() {", "    if (armoryJustReset)");
+  const save = section("    function saveArmory() {", "    if (armoryJustRevoked)");
   let stored = JSON.stringify({ packs: 24, wraps: ["weapon:karambit"], rewardedMatches: ["match-1"] });
   const createArmory = () => {
     const context = {
@@ -76,24 +76,36 @@ test("existing Armory saves are reset once without granting packs", () => {
       console, showToast() {}
     };
     vm.runInNewContext(`${initialization}\n${save}
-      if (armoryJustReset) saveArmory();
-      globalThis.state = () => ({ packs, armoryJustReset, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches] });`, context);
+      if (armoryJustReset || armoryNeedsMigration) saveArmory();
+      globalThis.state = () => ({ packs, armoryJustReset, armoryNeedsMigration, armoryJustRevoked, wraps: [...ownedWraps], rewardedMatches: [...rewardedMatches] });`, context);
     return context;
   };
   const firstLoad = createArmory(), firstState = firstLoad.state();
   assert.equal(firstState.packs, 0);
   assert.equal(firstState.armoryJustReset, true);
+  assert.equal(firstState.armoryJustRevoked, false);
   assert.deepEqual([...firstState.wraps], []);
   assert.deepEqual([...firstState.rewardedMatches], ["match-1"]);
   assert.deepEqual(JSON.parse(stored), {
-    packs: 0, wraps: [], rewardedMatches: ["match-1"], armoryResetVersion: 1
+    packs: 0, wraps: [], rewardedMatches: ["match-1"], armoryResetVersion: 1, initialPackGrantVersion: 2
   });
   const secondLoad = createArmory();
   assert.equal(secondLoad.state().armoryJustReset, false);
+  assert.equal(secondLoad.state().packs, 0);
+  assert.equal(secondLoad.state().armoryNeedsMigration, false);
+  stored = JSON.stringify({ packs: 1003, wraps: ["weapon:karambit"], rewardedMatches: [], armoryResetVersion: 1, initialPackGrantVersion: 1 });
+  const grantSave = createArmory();
+  assert.equal(grantSave.state().packs, 3);
+  assert.equal(grantSave.state().armoryJustRevoked, true);
+  assert.equal(JSON.parse(stored).initialPackGrantVersion, 2);
+  stored = JSON.stringify({ packs: 3, wraps: ["weapon:karambit"], rewardedMatches: [], armoryResetVersion: 1, initialPackGrantVersion: 2 });
+  const postRevocation = createArmory();
+  assert.equal(postRevocation.state().packs, 3);
+  assert.equal(postRevocation.state().armoryJustRevoked, false);
   stored = JSON.stringify({ packs: 3, wraps: ["weapon:karambit"], rewardedMatches: [], armoryResetVersion: 1 });
-  const currentSave = createArmory();
-  assert.equal(currentSave.state().packs, 3);
-  assert.deepEqual([...currentSave.state().wraps], ["weapon:karambit"]);
+  const legacySave = createArmory();
+  assert.equal(legacySave.state().packs, 3);
+  assert.deepEqual([...legacySave.state().wraps], ["weapon:karambit"]);
   stored = null;
   const newSave = createArmory();
   assert.equal(newSave.state().packs, 0);

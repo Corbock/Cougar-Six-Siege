@@ -12,7 +12,7 @@ function section(start, end) {
 
 function simulation() {
   const testSkin = { id: "test-skin" };
-  const context = { Math, EYE: 1.8, CROUCH_EYE: 1.05, tNow: 0, barricadeBuildDuration: 1.35,
+  const context = { Math, ArrayBuffer, DataView, Uint8Array, TextDecoder, EYE: 1.8, CROUCH_EYE: 1.05, tNow: 0, barricadeBuildDuration: 1.35,
     remoteBarricadeActions: new Map(), paintColors: [{ c: "#f6df35" }],
     faceSkin: { id: "face", img: { width: 256, height: 256 } },
     skins: [{ id: "circuit", img: { complete: true, naturalWidth: 512 } }], materials: {
@@ -30,8 +30,101 @@ function simulation() {
     section("    function buildPolys(parts)", "    const inspector =") +
     section("      const qb =", "      function dummyQuads(") +
     section("      const worldItemModels =", "      function droneWorldQuads("), context);
+  const { parts, mag, colors } = context.parseMk18Glb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_ar.glb")).buffer);
+  context.glbParts = parts;
+  context.glbMagazine = mag;
+  Object.assign(context.materials, colors);
+  const karambit = context.parseKarambitGlb(Uint8Array.from(fs.readFileSync("ItemModels/karambit.glb")).buffer);
+  context.karambitParts = karambit.parts;
+  Object.assign(context.materials, karambit.colors);
+  const drone = context.parseDroneGlb(Uint8Array.from(fs.readFileSync("ItemModels/drone.glb")).buffer);
+  context.droneParts = drone.parts;
+  Object.assign(context.materials, drone.colors);
+  vm.runInNewContext("modelDefs.mk18.parts = glbParts; modelDefs.mk18.mag = glbMagazine; modelDefs.karambit.parts = karambitParts; modelDefs.drone.parts = droneParts", context);
+  vm.runInNewContext(section("      function droneModelQuads(", "      function droneLaserQuads(") +
+    section("      function droneViewmodelQuads()", "      const skinTex"), context);
   return context;
 }
+
+test("MK18 uses the supplied GLB triangles and material colors", () => {
+  const sim = simulation(), parts = vm.runInNewContext("modelDefs.mk18.parts", sim);
+  assert.equal(parts.every((part) => part.k === "mesh"), true);
+  assert.equal(parts.reduce((count, part) => count + part.triangles.length, 0), 440);
+  const magazine = vm.runInNewContext("modelDefs.mk18.mag", sim);
+  assert.equal(magazine.every((part) => part.k === "mesh"), true);
+  assert.equal(magazine.reduce((count, part) => count + part.triangles.length, 0), 24);
+  assert.ok(magazine.some((part) => part.m === "paint"), "Magazine body retains paint customization");
+  const magazinePoints = magazine.flatMap((part) => part.triangles.flat());
+  const magazineMinX = Math.min(...magazinePoints.map((point) => point[0]));
+  const magazineMaxY = Math.max(...magazinePoints.map((point) => point[1]));
+  assert.ok(magazineMinX > .1 && magazineMinX < .2, "Magazine node translation should be applied");
+  assert.ok(magazineMaxY > -.5 && magazineMaxY < -.4, "Magazine should sit below the receiver");
+  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(),
+    ["mk18Body", "mk18Dark", "mk18Orange", "mk18Silver"]);
+  const points = parts.flatMap((part) => part.triangles.flat());
+  const bounds = [0, 1, 2].map((axis) => [
+    Math.min(...points.map((point) => point[axis])),
+    Math.max(...points.map((point) => point[axis]))
+  ]);
+  assert.ok(Math.abs(bounds[0][0] + 4.7) < .01 && Math.abs(bounds[0][1] - 6.5) < .01);
+  assert.equal(sim.materials.mk18Body, "#121214");
+  assert.equal(sim.materials.mk18Orange, "#ff660d");
+});
+
+test("the drone uses the supplied GLB mesh for world and first-person models", () => {
+  const sim = simulation(), parts = vm.runInNewContext("modelDefs.drone.parts", sim);
+  assert.equal(parts.every((part) => part.k === "mesh"), true);
+  assert.equal(parts.reduce((count, part) => count + part.triangles.length, 0), 1764);
+  assert.deepEqual([...new Set(parts.map((part) => part.nodeName))].sort(),
+    ["DroneBody", "Prop_BL", "Prop_BR", "Prop_FL", "Prop_FR"]);
+  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(),
+    ["droneAccentTeal", "droneArmBlack", "droneBodyGray", "droneBodyLight", "droneLedGreen",
+      "droneLedRed", "droneLens", "droneMotor", "dronePropBlack", "droneRubber"]);
+  assert.ok(parts.some((part) => part.m === "droneLens"));
+
+  const world = [];
+  sim.droneWorldQuads(world, { x: 10, y: 1, z: 3, yaw: 0 });
+  assert.equal(world.length, 1764);
+  const worldPoints = world.flatMap((quad) => quad.pts);
+  assert.ok(worldPoints.every((point) => point.every(Number.isFinite)));
+  assert.ok(Math.max(...worldPoints.map(([x]) => x)) - Math.min(...worldPoints.map(([x]) => x)) > .9);
+  assert.ok(worldPoints.every(([x, y, z]) => Math.hypot(x - 10, z - 3) < .7 && y > 1 && y < 1.5));
+
+  sim.tNow = .5;
+  const spinning = [];
+  sim.droneWorldQuads(spinning, { x: 10, y: 1, z: 3, yaw: 0 });
+  assert.ok(world.some((quad, index) => quad.pts.some((point, pointIndex) =>
+    point.some((value, axis) => value !== spinning[index].pts[pointIndex][axis]))),
+  "GLB propeller meshes should rotate");
+  const viewmodel = sim.droneViewmodelQuads();
+  assert.equal(viewmodel.length, 1764);
+  assert.ok(viewmodel.flatMap((quad) => quad.pts).every((point) => point.every(Number.isFinite)));
+});
+
+test("MK18's GLB magazine separates and returns during the existing reload animation", () => {
+  const context = { Math, ArrayBuffer, DataView, Uint8Array, TextDecoder, K: .06, tNow: 0,
+    sprintPose: 0, ads: 0, skinOf: () => null, colorOf: (_weapon, material) => material };
+  vm.runInNewContext(section("    function buildPolys(parts)", "    const inspector =") +
+    section("    function parseMk18Glb(buffer)", "    const inspector =") +
+    section("      function viewmodelQuads(", "      function droneViewmodelQuads("), context);
+  const { parts, mag } = context.parseMk18Glb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_ar.glb")).buffer);
+  const polys = context.buildPolys(parts), magPolys = context.buildPolys(mag);
+  const points = [...polys, ...magPolys].flatMap((poly) => poly.v);
+  const mid = [0, 1, 2].map((axis) =>
+    (Math.min(...points.map((point) => point[axis])) + Math.max(...points.map((point) => point[axis]))) / 2);
+  const weapon = { item: { id: "mk18" }, kind: { reload: 2 }, kick: 0, rear: 0, reloadEnd: 0,
+    reloadStart: 0, flash: 0, mid, polys, magPolys };
+  const magazineQuads = () => context.viewmodelQuads(weapon, false).filter((quad) => quad.color === "paint");
+  const seated = magazineQuads();
+  assert.ok(seated.length > 0, "The GLB magazine should render as separate geometry");
+  weapon.reloadEnd = 2;
+  context.tNow = .8;
+  assert.equal(magazineQuads().length, 0, "Reload should leave the magazine well empty");
+  context.tNow = 1.2;
+  assert.ok(magazineQuads().length > 0, "Reload should animate the detached magazine back into the weapon");
+  context.tNow = 1.98;
+  assert.equal(magazineQuads().length, seated.length, "Reload should finish with the GLB magazine seated");
+});
 
 test("all equipped item types produce world geometry at the player", () => {
   const sim = simulation();
@@ -51,24 +144,20 @@ test("all equipped item types produce world geometry at the player", () => {
   }
 });
 
-test("karambit blade sits on the handle side and both ends face down", () => {
-  const sim = simulation();
-  const [bladeTipY, guardY, handleTipY, bladeX, handleX, guardX] = vm.runInNewContext(`(() => {
-    const parts = modelDefs.karambit.parts;
-    const blade = buildPolys(parts.filter((part) => part.m === "blade"));
-    const screenY = ([x, y]) => x * Math.sin(.9) + y * Math.cos(.9);
-    const bladeTip = Math.min(...blade.flatMap((poly) => poly.v.map((point) => screenY(point))));
-    const guard = parts.find((part) => part.m === "metal");
-    const handleParts = parts.filter((part) => part.m === "accent");
-    const handleTip = Math.min(...handleParts.map((part) => part.c[1]));
-    const bladeX = parts.filter((part) => part.m === "blade").reduce((sum, part) => sum + part.c[0], 0) / 4;
-    const handleX = handleParts.reduce((sum, part) => sum + part.c[0], 0) / handleParts.length;
-    return [bladeTip, screenY(guard.c), handleTip, bladeX, handleX, guard.c[0]];
-  })()`, sim);
-  assert.ok(bladeTipY < guardY - .25, "Karambit blade should angle down from the hand guard");
-  assert.ok(handleTipY < -.29, "Karambit handle hook should angle down");
-  assert.ok(bladeX < guardX && handleX > guardX, "Blade should be on the former handle side");
-  assert.equal(vm.runInNewContext("modelDefs.karambit.parts.filter((part) => part.m === 'blade').length", sim), 4);
+test("Karambit GLB supplies its full detailed mesh and a reverse-grip orientation", () => {
+  const sim = simulation(), parts = vm.runInNewContext("modelDefs.karambit.parts", sim);
+  assert.ok(parts.length > 0);
+  assert.equal(parts.every((part) => part.k === "mesh"), true);
+  assert.equal(parts.reduce((count, part) => count + part.triangles.length, 0), 494);
+  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(),
+    ["karambitBlade", "karambitBrass", "karambitDark", "karambitEdge", "karambitGrip"]);
+  const centerX = (role) => {
+    const points = parts.filter((part) => part.m === role).flatMap((part) => part.triangles.flat());
+    return points.reduce((sum, point) => sum + point[0] / points.length, 0);
+  };
+  assert.ok(centerX("karambitBlade") < 0, "Blade should point away from the hand in reverse grip");
+  assert.ok(centerX("karambitGrip") > 0, "Grip and ring should remain on the hand side");
+  assert.equal(sim.materials.karambitBrass, "#bd8f38");
 });
 
 test("karambit is held in reverse grip and swings up through the hit", () => {
@@ -80,6 +169,22 @@ test("karambit is held in reverse grip and swings up through the hit", () => {
   assert.ok(idle.ang > .9, "Karambit should rest in a steeper reverse-grip pose");
   assert.ok(impact.ang < 0, "Blade should rotate upward at the strike");
   assert.ok(impact.offY > idle.offY && impact.offZ > idle.offZ, "Strike should lift and extend the blade");
+});
+
+test("I starts a timed Karambit inspection flourish only while the knife is idle", () => {
+  const poseSection = section("      function meleeViewmodelPose(", "      function viewmodelQuads(");
+  const inspectSection = section("      function beginKarambitInspect(", "      function viewmodelQuads(");
+  const context = { Math };
+  vm.runInNewContext(`${poseSection}${inspectSection}`, context);
+  const knife = { item: { id: "karambit" }, swingStart: -1, inspectStart: -1 };
+  assert.equal(context.beginKarambitInspect(knife, 2), true);
+  assert.equal(knife.inspectStart, 2);
+  const idle = context.meleeViewmodelPose({ ...knife, inspectStart: -1 }, 2);
+  const flourish = context.meleeViewmodelPose(knife, 2.85);
+  assert.ok(flourish.ang > idle.ang + Math.PI, "Inspection should visibly spin the knife");
+  assert.ok(flourish.offY > idle.offY, "Inspection should bring the knife up to view");
+  assert.equal(context.beginKarambitInspect({ item: { id: "karambit" }, swingStart: 2 }, 3), false);
+  assert.equal(context.beginKarambitInspect({ item: { id: "mk18" }, swingStart: -1 }, 3), false);
 });
 
 test("medkit world model has a light case, medical cross and reinforced trim", () => {
