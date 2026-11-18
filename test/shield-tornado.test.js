@@ -18,6 +18,12 @@ function shieldModel() {
   return vm.runInNewContext(`const box = (x,y,z,w,h,d,m) => ({c:[x,y,z],s:[w,h,d],m}); ({${source}}).shield`);
 }
 
+function medkitModel() {
+  const context = { ArrayBuffer, DataView, Uint8Array, TextDecoder, Math };
+  vm.runInNewContext(section("    function parseWeaponGlb(", "    const inspector ="), context);
+  return context.parseMedkitGlb(Uint8Array.from(fs.readFileSync("ItemModels/medkit.glb")).buffer);
+}
+
 test("shield window has an unobstructed opening surrounded by a solid frame", () => {
   const parts = shieldModel().parts;
   const glass = parts.find((part) => part.m === "glass");
@@ -115,7 +121,11 @@ test("reload removes the magazine, leaves the well empty, and seats it again", (
 });
 
 test("compact medkit opens away from the player, shows remaining bandages, then wraps the forearm", () => {
+  const model = medkitModel();
+  const bodyTriangles = model.bodyParts.reduce((count, part) => count + part.triangles.length, 0);
+  const lidTriangles = model.lidParts.reduce((count, part) => count + part.triangles.length, 0);
   const context = { Math, tNow: 0, medkitActionStart: 0, medkitActionDuration: 4.2, charges: { medkit: 3 },
+    medkitBodyParts: model.bodyParts, medkitLidParts: model.lidParts, materials: model.colors,
     qb(list, x0, x1, y0, y1, z0, z1, color, transform = (point) => point) {
       const points = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
         [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]].map(transform);
@@ -124,19 +134,12 @@ test("compact medkit opens away from the player, shows remaining bandages, then 
     } };
   vm.runInNewContext(section("      function medkitActionQuads()", "      function droneViewmodelQuads("), context);
   const drawAt = (time) => { context.tNow = time; return context.medkitActionQuads(); };
-  const average = (quads, color, axis) => {
-    const points = quads.filter((quad) => quad.color === color).flatMap((quad) => quad.pts);
-    return points.reduce((sum, point) => sum + point[axis], 0) / points.length;
-  };
-  const closed = drawAt(.5), open = drawAt(.9);
-  assert.ok(average(open, "#f1f2eb", 1) - average(open, "#d9ded5", 1) >
-    average(closed, "#f1f2eb", 1) - average(closed, "#d9ded5", 1) + .04, "Lid should hinge upward");
-  assert.ok(average(open, "#f1f2eb", 2) - average(open, "#d9ded5", 2) >
-    average(closed, "#f1f2eb", 2) - average(closed, "#d9ded5", 2) + .04, "Lid should swing away from the player");
-  const casePoints = open.filter((quad) => quad.color === "#d9ded5").flatMap((quad) => quad.pts);
-  const caseSpans = [0, 1, 2].map((axis) => Math.max(...casePoints.map((point) => point[axis])) -
-    Math.min(...casePoints.map((point) => point[axis])));
-  assert.ok(Math.max(...caseSpans) <= .38, "Medkit case should stay compact");
+  const lidCenter = (time, axis) => drawAt(time).slice(bodyTriangles, bodyTriangles + lidTriangles)
+    .flatMap((quad) => quad.pts).reduce((sum, point) => sum + point[axis], 0) /
+    (lidTriangles * 3);
+  assert.ok(lidCenter(1.3, 1) > lidCenter(.5, 1) + .04, "GLB lid should hinge upward");
+  assert.ok(lidCenter(1.3, 2) < lidCenter(.5, 2) - .02, "GLB lid should flip away from the medkit front");
+  const open = drawAt(1.3);
   const remainingRollCaps = (count) => {
     context.charges.medkit = count;
     return drawAt(1.5).filter((quad) => quad.color === "#d3d8d0").length;
@@ -144,6 +147,10 @@ test("compact medkit opens away from the player, shows remaining bandages, then 
   assert.equal(remainingRollCaps(3), 6, "Three bandage rolls should be visible before using a charge");
   assert.equal(remainingRollCaps(2), 4, "One roll should disappear after using a charge");
   assert.equal(remainingRollCaps(1), 2, "Only one roll should remain after two uses");
+  assert.ok(drawAt(1.5).some((quad) => quad.color === "#303a34"),
+    "Bandages should sit inside a visible recessed tray");
+  const grabbed = drawAt(2.1).filter((quad) => quad.color === "#d3d8d0");
+  assert.equal(grabbed.length, 4, "A roll should leave the tray and move with the reaching hand");
   const wrapped = drawAt(3.8);
   assert.equal(wrapped.some((quad) => quad.color === "#d9ded5"), false, "Medkit should drop out of view");
   assert.ok(wrapped.filter((quad) => quad.color === "#f7f5ea").length >= 60,

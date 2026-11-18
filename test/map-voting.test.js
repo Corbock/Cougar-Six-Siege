@@ -22,9 +22,12 @@ test("the play menu enables every listed map for every multiplayer mode", () => 
   const html = fs.readFileSync("index.html", "utf8");
   const start = html.indexOf("    const multiplayerMaps ="), end = html.indexOf("    const selection =", start);
   assert.ok(start >= 0 && end > start);
-  const catalog = vm.runInNewContext(html.slice(start, end) + "\ncatalogs.PLAY");
-  assert.deepEqual(Array.from(catalog.maps, (map) => map.id), maps);
-  for (const mode of catalog.modes) assert.deepEqual(Array.from(mode.maps), maps, mode.id);
+  const catalogs = vm.runInNewContext(html.slice(start, end) + "\n({ play: catalogs.PLAY, training: catalogs.TRAINING })");
+  assert.deepEqual(Array.from(catalogs.play.maps, (map) => map.id), maps);
+  for (const mode of catalogs.play.modes) assert.deepEqual(Array.from(mode.maps), maps, mode.id);
+  const trainingDefuse = catalogs.training.modes.find((mode) => mode.id === "defuse");
+  assert.ok(trainingDefuse, "Training should offer Bomb Defusal");
+  assert.deepEqual(Array.from(trainingDefuse.maps), ["field", "harbor"]);
 });
 
 test("every map can be voted for in each matchmaking mode and selected for a match", async (t) => {

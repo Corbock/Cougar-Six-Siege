@@ -71,7 +71,7 @@ test("Longwatch takes two body hits or one uncovered headshot, including beyond 
   sim.shooter.state.y = 1.3;
   sim.target.state.z = 150;
   sim.fire();
-  assert.equal(sim.target.health, 50);
+  assert.equal(sim.target.health, 25);
   sim.setNow(1400);
   sim.fire();
   assert.equal(sim.target.health, 0);
@@ -79,13 +79,31 @@ test("Longwatch takes two body hits or one uncovered headshot, including beyond 
   const headshot = shooting();
   headshot.shooter.customPrimary = "longwatch";
   headshot.shooter.customLoadout.primary = "longwatch";
+  headshot.target.state.z = 150;
   headshot.fire();
   assert.equal(headshot.target.health, 0);
+
+  const exactHeadDamage = shooting();
+  exactHeadDamage.shooter.customPrimary = "longwatch";
+  exactHeadDamage.shooter.customLoadout.primary = "longwatch";
+  exactHeadDamage.target.state.z = 150;
+  exactHeadDamage.target.health = 150;
+  exactHeadDamage.fire();
+  assert.equal(exactHeadDamage.target.health, 50, "A Longwatch headshot deals exactly 100 damage at any range");
 
   const otherWeapon = shooting();
   otherWeapon.target.state.z = 150;
   otherWeapon.fire();
   assert.equal(otherWeapon.target.health, 100);
+});
+
+test("Magnum body hits deal 25 damage regardless of client-reported damage", () => {
+  const sim = shooting();
+  sim.shooter.state.activeSlot = "secondary";
+  sim.shooter.customLoadout.secondary = "magnum";
+  sim.shooter.state.y = 1.3;
+  sim.fire();
+  assert.equal(sim.target.health, 75);
 });
 
 test("fastest configured gun cadence and current shooter aim are accepted", () => {
@@ -180,12 +198,24 @@ test("inspect models retain paint surfaces in their weapon-specific geometry", (
   context.glbParts = glb.parts;
   context.glbMagazine = glb.mag;
   vm.runInNewContext("modelDefs.mk18.parts = glbParts; modelDefs.mk18.mag = glbMagazine", context);
+  const longwatch = context.parseLongwatchGlb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_sniper.glb")).buffer);
+  context.longwatchParts = longwatch.parts;
+  context.longwatchMounts = longwatch.mounts;
+  context.longwatchSight = longwatch.sight;
+  vm.runInNewContext("modelDefs.longwatch.parts = longwatchParts; modelDefs.longwatch.mounts = longwatchMounts; modelDefs.longwatch.sight = longwatchSight", context);
+  const magnum = context.parseMagnumGlb(Uint8Array.from(fs.readFileSync("ItemModels/magnum44.glb")).buffer);
+  assert.ok(magnum.parts.length > 0);
+  assert.ok(magnum.colors.magnumBody && magnum.colors.magnumSteel);
+  context.magnumParts = magnum.parts;
+  vm.runInNewContext("modelDefs.magnum.parts = magnumParts", context);
   for (const id of ["mk18", "vector", "longwatch", "p45", "rattler"]) {
     const model = context.buildInspectModel({ id });
     const paintSurface = id === "mk18" ? "mk18Orange" : "paint";
     assert.ok(model.polys.some((poly) => poly.m === paintSurface && poly.uv), id);
   }
-  assert.equal(context.buildInspectModel({ id: "magnum" }).polys.some((poly) => poly.m === "paint"), false);
+  const magnumModel = context.buildInspectModel({ id: "magnum" });
+  assert.ok(magnumModel.polys.length > 0);
+  assert.ok(magnumModel.polys.every((poly) => ["magnumBody", "magnumSteel"].includes(poly.m)));
 });
 
 test("operator paint skins are not unlocked by eliminations", () => {

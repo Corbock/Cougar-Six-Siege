@@ -25,7 +25,7 @@ function flameSimulation(targetOperator = "custom", targetDistance = 10) {
     Math, Number, String, Set, Date: { now: () => now },
     players: new Map([[attacker.id, attacker], [target.id, target]]),
     matches: new Map([[match.id, match]]),
-    operatorKits: { pyromaniac: { primary: "f451", secondary: "sledgehammer", gadget: "paint-can", equipment: "molotov" } },
+    operatorKits: { pyromaniac: { primary: "f451", secondary: "p45", breaching: "sledgehammer", gadget: "paint-can", equipment: "molotov" } },
     sendPlayer: (_player, message) => events.push(message),
     nearestShieldHit: () => Infinity,
     relayShieldImpact() {},
@@ -56,13 +56,14 @@ test("Pyromaniac has the requested locked kit and both incendiary items have usa
   vm.runInNewContext(`${roster}\nglobalThis.slots = loadoutSlots; globalThis.operators = operatorRoster;`, context);
   const pyromaniac = context.operators.find((operator) => operator.id === "pyromaniac");
   assert.deepEqual({ ...pyromaniac.loadout }, {
-    primary: "f451", secondary: "sledgehammer", gadget: "paint-can", equipment: "molotov"
+    primary: "f451", secondary: "p45", breaching: "sledgehammer", gadget: "paint-can", equipment: "molotov"
   });
   const serverKit = section(server, "const operatorIds =", "const customItems =");
   vm.runInNewContext(`${serverKit}\nglobalThis.ids = operatorIds; globalThis.kits = operatorKits;`, context);
   assert.equal(context.ids.has("pyromaniac"), true);
   assert.deepEqual({ ...context.kits.pyromaniac }, { ...pyromaniac.loadout });
   assert.equal(context.slots.find((slot) => slot.id === "primary").items.find((item) => item.id === "f451").type, "FLAMETHROWER");
+  assert.deepEqual([...context.slots.find((slot) => slot.id === "breaching").items.map((item) => item.id)], ["sledgehammer", "karambit"]);
   assert.equal(context.slots.find((slot) => slot.id === "equipment").items.find((item) => item.id === "molotov").type, "INCENDIARY");
   assert.equal(context.slots.find((slot) => slot.id === "primary").items.find((item) => item.id === "f451").presetOnly, true);
   assert.equal(context.slots.find((slot) => slot.id === "equipment").items.find((item) => item.id === "molotov").presetOnly, true);
@@ -74,6 +75,8 @@ test("Pyromaniac has the requested locked kit and both incendiary items have usa
   vm.runInNewContext(`${customCatalog}\nglobalThis.customItems = customItems;`, context);
   assert.equal(context.customItems.primary.includes("f451"), false);
   assert.equal(context.customItems.equipment.includes("molotov"), false);
+  assert.equal(context.customItems.secondary.includes("sledgehammer"), false);
+  assert.equal(context.customItems.breaching.includes("sledgehammer"), true);
   const loadoutFilter = section(html, "const loadoutItemsFor =", "if (!karambitUnlocked())");
   const filterContext = { selectedOperatorId: "custom", karambitUnlocked: () => true };
   vm.runInNewContext(`${loadoutFilter}\nglobalThis.filter = loadoutItemsFor;`, filterContext);

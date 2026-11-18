@@ -379,10 +379,10 @@
     @keyframes pack-progress { 0% { width: 0; } 70% { width: 72%; } 88%, 100% { width: 100%; } }
     @keyframes pack-reveal { 0% { opacity: 0; filter: brightness(2.4) blur(4px); transform: translateY(66px) scale(.42) rotate(-8deg); } 58% { opacity: 1; filter: brightness(1.5) blur(0); transform: translateY(-13px) scale(1.08) rotate(2deg); } 76% { transform: translateY(5px) scale(.98) rotate(-1deg); } 100% { opacity: 1; filter: brightness(1); transform: translateY(0) scale(1) rotate(0); } }
     @keyframes pack-ready-pulse { 50% { box-shadow: 0 0 24px #d3ef5966, 0 5px 18px #d3ef5926; } }
-    .slot-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+    .slot-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
     .slot-tab { padding: 8px 4px 7px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); cursor: pointer; text-align: left; }
     .slot-tab.active { border-color: var(--acid); background: rgba(47,53,34,.78); }
-    .slot-label { display: block; color: #a9ada2; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; }
+    .slot-label { display: block; color: #a9ada2; font-size: 7px; font-weight: 700; letter-spacing: .5px; }
     .slot-value { display: block; overflow: hidden; margin-top: 4px; font: 600 14px/1 "Barlow Condensed", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
     .items { display: grid; gap: 7px; }
     .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 9px 11px; border: 1px solid rgba(230,235,220,.19); background: rgba(17,19,17,.72); color: #e7e8e1; cursor: pointer; text-align: left; transition: border-color .2s ease, background .2s ease; }
@@ -800,7 +800,8 @@
       TRAINING: {
         label: "Training mode",
         modes: [
-          { id: "freeplay", name: "Freeplay", detail: "SOLO · EXPLORE", maps: ["field", "harbor"] }
+          { id: "freeplay", name: "Freeplay", detail: "SOLO · EXPLORE", maps: ["field", "harbor"] },
+          { id: "defuse", name: "Bomb Defusal", detail: "SOLO · PLANT & DISARM", maps: ["field", "harbor"] }
         ],
         maps: [
           { id: "field", name: "The Field", threat: "SOLO", copy: "Explore the live field map at your own pace. Moving targets are active; no matchmaking or other players are loaded.", window: "FREEPLAY" },
@@ -1135,9 +1136,7 @@
       { id: "secondary", label: "SECONDARY", stats: true, items: [
         { id: "p45", name: "P45 Sidearm", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
         { id: "rattler", name: "Rattler", type: "MACHINE PISTOL", desc: "Automatic fire in a compact frame.", dmg: 3, rng: 3, mob: 9 },
-        { id: "magnum", name: "Magnum .44", type: "REVOLVER", desc: "Heavy hitting, slow to reload.", dmg: 8, rng: 6, mob: 7 },
-        { id: "sledgehammer", name: "Sledgehammer", type: "MELEE", desc: "Heavy close-range tool for smashing barriers.", dmg: 8, rng: 1, mob: 4 },
-        { id: "karambit", name: "Karambit", type: "KARAMBIT", desc: "Rare curved blade with a fast, close-range strike.", dmg: 5, rng: 2, mob: 10, packCamos: false }
+        { id: "magnum", name: "Magnum .44", type: "REVOLVER", desc: "Heavy hitting, slow to reload.", dmg: 8, rng: 6, mob: 7 }
       ] },
       { id: "gadget", label: "GADGET", items: [
         { id: "shield", name: "Ballistic Shield", type: "DEFENSE", desc: "Deployable cover that absorbs incoming fire." },
@@ -1153,17 +1152,21 @@
         { id: "smoke", name: "Smoke Grenade", type: "TACTICAL", desc: "Blocks line of sight for a short time." },
         { id: "claymore", name: "Proximity Mine", type: "LETHAL", desc: "Detonates when an enemy crosses its sensor." },
         { id: "molotov", name: "Molotov Cocktail", type: "INCENDIARY", desc: "Ignites an area and burns enemies who remain in the flames.", presetOnly: true }
+      ] },
+      { id: "breaching", label: "BREACHING", stats: true, items: [
+        { id: "sledgehammer", name: "Sledgehammer", type: "MELEE", desc: "Heavy close-range tool for smashing barriers.", dmg: 8, rng: 1, mob: 4 },
+        { id: "karambit", name: "Karambit", type: "KARAMBIT", desc: "Rare curved blade with a fast, close-range strike.", dmg: 5, rng: 2, mob: 10, packCamos: false }
       ] }
     ];
     const operatorRoster = [
-      { id: "mr-m", name: "Mr M", ability: "THE ALL-SEEING · Deploy three autonomous drones: scanner, attacker, scanner. Scanners mark enemies every 45 seconds; the attacker fires after 2 seconds of laser tracking. Flash grenades mark enemies.", loadout: { primary: "vector", secondary: "p45", gadget: "drone", equipment: "flash" } },
-      { id: "mr-l", name: "Mr L", ability: "RA · Shotguns have wider spread. Smoke grenades become pulling tornadoes and recharge every 15 seconds.", loadout: { primary: "hammer", secondary: "rattler", gadget: "medkit", equipment: "smoke" } },
-      { id: "ms-c", name: "Ms C", ability: "COVER FIRE · Ballistic Shield includes a P45 sidearm. Frag grenades recharge every 15 seconds.", loadout: { primary: "mk18", secondary: "p45", gadget: "shield", equipment: "frag" } },
-      { id: "ms-a", name: "Ms A", ability: "RAPID FIRE · Reloads faster and carries larger magazines with more reserve ammunition.", loadout: { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" } },
-      { id: "hallway-monitor", name: "Hallway Monitor", ability: "Moves faster and deploys a camera drone. Longwatch comes with a scope.", loadout: { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" } },
-      { id: "skanska", name: "Skanska", ability: "CONSTRUCTION · Can place unlimited barricades. Hammer weapons deal bonus damage to full-health enemies.", loadout: { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" } },
-      { id: "pyromaniac", name: "Pyromaniac", ability: "FIRE IMMUNITY · Stronger F 451 flames and a paint can that leaves ignitable white paint; Molotovs recharge over time.", loadout: { primary: "f451", secondary: "sledgehammer", gadget: "paint-can", equipment: "molotov" } },
-      { id: "custom", name: "Custom", ability: "Base stats and weapons. Choose any primary, secondary, gadget, and equipment.", loadout: { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" } }
+      { id: "mr-m", name: "Mr M", ability: "THE ALL-SEEING · Deploy three autonomous drones: scanner, attacker, scanner. Scanners mark enemies every 45 seconds; the attacker fires after 2 seconds of laser tracking. Flash grenades mark enemies.", loadout: { primary: "vector", secondary: "p45", breaching: "sledgehammer", gadget: "drone", equipment: "flash" } },
+      { id: "mr-l", name: "Mr L", ability: "RA · Shotguns have wider spread. Smoke grenades become pulling tornadoes and recharge every 15 seconds.", loadout: { primary: "hammer", secondary: "rattler", breaching: "sledgehammer", gadget: "medkit", equipment: "smoke" } },
+      { id: "ms-c", name: "Ms C", ability: "COVER FIRE · Ballistic Shield includes a P45 sidearm. Frag grenades recharge every 15 seconds.", loadout: { primary: "mk18", secondary: "p45", breaching: "sledgehammer", gadget: "shield", equipment: "frag" } },
+      { id: "ms-a", name: "Ms A", ability: "RAPID FIRE · Reloads faster and carries larger magazines with more reserve ammunition.", loadout: { primary: "vector", secondary: "rattler", breaching: "sledgehammer", gadget: "medkit", equipment: "flash" } },
+      { id: "hallway-monitor", name: "Hallway Monitor", ability: "Moves faster and deploys a camera drone. Longwatch comes with a scope.", loadout: { primary: "longwatch", secondary: "magnum", breaching: "sledgehammer", gadget: "camera-drone", equipment: "smoke" } },
+      { id: "skanska", name: "Skanska", ability: "CONSTRUCTION · Can place unlimited barricades. Hammer weapons deal bonus damage to full-health enemies.", loadout: { primary: "hammer", secondary: "p45", breaching: "sledgehammer", gadget: "steel-bars", equipment: "claymore" } },
+      { id: "pyromaniac", name: "Pyromaniac", ability: "FIRE IMMUNITY · Stronger F 451 flames and a paint can that leaves ignitable white paint; Molotovs recharge over time.", loadout: { primary: "f451", secondary: "p45", breaching: "sledgehammer", gadget: "paint-can", equipment: "molotov" } },
+      { id: "custom", name: "Custom", ability: "Base stats and weapons. Choose a primary, secondary, breaching weapon, gadget, and equipment.", loadout: { primary: "mk18", secondary: "p45", breaching: "sledgehammer", gadget: "drone", equipment: "frag" } }
     ];
     const defaultOperatorId = "mr-m";
     let selectedOperatorId = defaultOperatorId;
@@ -1174,6 +1177,10 @@
     const operatorInfo = () => operatorRoster.find((operator) => operator.id === selectedOperatorId) || operatorRoster[0];
     const customLoadout = { ...operatorRoster.find((operator) => operator.id === "custom").loadout };
     try { Object.assign(customLoadout, JSON.parse(localStorage.getItem("c6-loadout") || "{}")); } catch (error) {}
+    if (["sledgehammer", "karambit"].includes(customLoadout.secondary)) {
+      customLoadout.breaching = customLoadout.secondary;
+      customLoadout.secondary = "p45";
+    }
     loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === customLoadout[slot.id] && !item.presetOnly)) customLoadout[slot.id] = operatorRoster.find((operator) => operator.id === "custom").loadout[slot.id]; });
     const loadout = { ...operatorRoster.find((operator) => operator.id === selectedOperatorId).loadout };
     loadoutSlots.forEach((slot) => { if (!slot.items.some((item) => item.id === loadout[slot.id])) loadout[slot.id] = operatorRoster[0].loadout[slot.id]; });
@@ -1231,36 +1238,9 @@
 
     const modelDefs = {
       mk18: { mounts: { optic: [.5, .45, 0], muzzle: [6.5, 0, 0], grip: [3.6, -.4, 0] }, sight: [1.5, .6, 0], parts: [], mag: [] },
-      vector: { mounts: { optic: [0, .55, 0], muzzle: [3.2, 0, 0], grip: [1.3, -.55, 0] }, sight: [-.45, .55, 0], parts: [
-        box(0, 0, 0, 3.4, 1.1, .8, "body"), cyl("x", 2.45, 0, 0, 1.5, .14, "metal"),
-        box(-1, -1, 0, .5, 1, .5, "dark"), box(-2.4, .1, 0, 1.6, .3, .2, "metal"), box(-3.2, -.3, 0, .3, 1.2, .5, "dark"), box(1.2, .6, 0, .3, .25, .1, "dark") ], mag: [box(.2, -1.5, 0, .55, 2, .5, "paint")] },
-      hammer: { mounts: { optic: [0, .5, 0], muzzle: [7, 0, 0], grip: [4, -.9, 0] }, sight: [0, .52, 0], parts: [
-        box(0, 0, 0, 3, .9, .7, "body"), cyl("x", 4.25, 0, 0, 5.5, .22, "metal"), cyl("x", 4, -.45, 0, 5, .18, "dark"),
-        box(4, -.75, 0, 2, .5, .6, "body"), box(-2.6, -.2, 0, 2.6, .8, .6, "body"), box(-4, -.3, 0, .3, 1.2, .6, "dark"), box(-1, -.9, 0, .5, .9, .5, "dark") ] },
-      longwatch: { mounts: { optic: [.5, .4, 0], muzzle: [8, 0, 0], grip: [4, -.35, 0] }, sight: [-3.2, .5, 0], parts: [
-        box(0, 0, 0, 3.8, .78, .68, "body"), box(.15, .3, 0, 2.5, .28, .72, "dark"),
-        box(3.5, -.02, 0, 3.2, .64, .7, "body"), box(3.5, .35, 0, 3.1, .12, .76, "metal"),
-        cyl("x", 5, .02, 0, 6, .13, "metal"), cyl("x", 8.05, .02, 0, .35, .22, "dark"),
-        cyl("x", 8.28, .02, 0, .12, .18, "metal"),
-        box(-3.55, -.08, 0, 2.9, .82, .62, "body"), box(-5.08, -.08, 0, .22, 1.02, .72, "dark"),
-        box(-3.35, .42, 0, 1.8, .22, .58, "dark"), box(-3.48, .54, 0, 1.35, .12, .44, "metal"),
-        box(-3.1, .68, 0, .72, .12, .42, "body"),
-        box(-1.04, -.92, 0, .68, 1.16, .5, "dark", -.12), box(-1.04, -.98, .27, .48, .72, .05, "metal", -.12),
-        box(-.72, -.58, 0, .78, .09, .42, "metal"), box(-.56, -.63, 0, .48, .08, .3, "dark"),
-        cyl("y", -.58, -.35, .45, .48, .075, "metal"), ball(-.58, -.62, .48, .12, "dark"),
-        ...[2.65, 3.15, 3.65, 4.15].flatMap((x) => [
-          box(x, .02, .37, .25, .09, .035, "dark"), box(x, .02, -.37, .25, .09, .035, "dark")
-        ]),
-        box(2.95, -.38, 0, 1.45, .1, .78, "dark"),
-        ...[-.92, -.28, .36, 1].map((y) => cyl("y", -2.35, y, 0, .13, .8, "metal")),
-        cyl("y", 6.05, -.68, .28, 1.12, .07, "metal"), cyl("y", 6.05, -.68, -.28, 1.12, .07, "metal"),
-        box(6.05, -1.24, .28, .32, .1, .14, "dark"), box(6.05, -1.24, -.28, .32, .1, .14, "dark"),
-        box(5.5, -.4, .25, .1, .8, .1, "metal"), box(5.5, -.4, -.25, .1, .8, .1, "metal"),
-        cyl("y", -2.35, 1.48, 0, .24, .34, "metal"), cyl("y", -2.35, 1.69, 0, .15, .16, "red"),
-        box(-2.35, .02, .835, .8, .5, .04, "accent"), box(-2.35, .02, .86, .42, .16, .025, "dark"),
-        ...[3.1, 3.42, 3.74, 4.06].map((x) => cyl("x", x, .05, 0, .07, .32, "dark")) ],
-        mag: [box(.45, -.88, 0, .62, 1.02, .48, "paint", -.08), box(.45, -1.35, 0, .56, .12, .44, "dark"),
-          box(.45, -.9, .25, .36, .65, .035, "dark", -.08), box(.45, -.9, -.25, .36, .65, .035, "dark", -.08)] },
+      vector: { mounts: {}, sight: [0, 0, 0], parts: [], mag: [] },
+      hammer: { mounts: { optic: [0, .5, 0], muzzle: [7, 0, 0], grip: [4, -.9, 0] }, sight: [0, .52, 0], parts: [] },
+      longwatch: { mounts: { optic: [0, 0, 0], muzzle: [0, 0, 0], grip: [0, 0, 0] }, sight: [0, 0, 0], parts: [], mag: [] },
       f451: { mounts: { optic: [0, .85, 0], muzzle: [5.4, .05, 0], grip: [2.4, -.65, 0] }, sight: [0, .85, 0], parts: [
         box(.2, 0, 0, 3.3, 1.05, .86, "body"), box(.25, .53, 0, 2.9, .16, .92, "dark"),
         box(2.15, -.02, 0, 1.2, .78, .72, "dark"), cyl("x", 3.6, .05, 0, 2.6, .22, "metal"),
@@ -1281,12 +1261,8 @@
       rattler: { mounts: { optic: [0, .6, 0], muzzle: [1.8, .2, 0] }, sight: [-.35, .68, 0], parts: [
         box(0, .2, 0, 2.6, .8, .7, "body"), box(-.9, -.8, 0, .7, 1.4, .55, "dark"),
         cyl("x", 1.6, .2, 0, .5, .16, "metal"), box(.5, -.3, 0, .8, .1, .4, "dark"), box(-1.1, .75, 0, .5, .15, .4, "metal") ], mag: [box(.4, -1.5, 0, .45, 1.8, .4, "paint")] },
-      magnum: { mounts: { optic: [.8, .6, 0], muzzle: [3.5, .1, 0] }, sight: [.1, .6, 0], parts: [
-        box(-.5, 0, 0, 1.6, .8, .5, "body"), cyl("x", 0, .05, 0, 1.4, .5, "body"), cyl("x", 2, .1, 0, 3, .2, "metal"),
-        box(2, .35, 0, 3, .12, .2, "metal"), box(-1.5, -1, 0, .8, 1.9, .55, "dark"), box(-1.3, .55, 0, .3, .35, .2, "metal"), box(.3, -.5, 0, .8, .12, .4, "dark") ] },
-      sledgehammer: { mounts: {}, parts: [
-        cyl("x", 0, 0, 0, 6, .18, "dark"), cyl("x", -2, 0, 0, 2, .23, "accent"), box(3.2, 0, 0, 1.6, 1.3, 1.1, "body"),
-        box(3.2, 0, 0, 1.7, .6, 1.2, "metal"), box(-3.1, 0, 0, .25, .5, .5, "dark") ] },
+      magnum: { mounts: { optic: [0, 0, 0], muzzle: [0, 0, 0] }, sight: [0, 0, 0], parts: [], mag: [] },
+      sledgehammer: { mounts: {}, parts: [] },
       karambit: { mounts: {}, parts: [] },
       shield: { mounts: {}, parts: [
         box(0, -.875, 0, .4, 3.25, 3.2, "body"), box(0, 2.075, 0, .4, .85, 3.2, "body"),
@@ -1303,13 +1279,7 @@
         cyl("y", 0, -1.25, 0, .1, .76, "metal"), box(0, 0, .37, 1.5, 1.05, .06, "canLabel"),
         box(0, .72, 0, 1.5, .08, .68, "metal"), box(0, .9, 0, .8, .08, .4, "dark"),
         cyl("x", 0, 1.04, 0, 1.25, .06, "metal") ] },
-      medkit: { mounts: {}, parts: [
-        box(0, 0, 0, 2.4, 1.35, 1.0, "medical"), box(0, -.6, .52, 2.2, .12, .05, "medicalTrim"),
-        box(0, 0, .52, 2.15, 1.12, .03, "medicalWhite"), box(0, 0, .55, .76, .76, .04, "medicalRed"),
-        box(0, 0, .58, .18, .52, .04, "medicalWhite"), box(0, 0, .58, .52, .18, .04, "medicalWhite"),
-        box(0, .78, 0, .9, .18, .4, "medicalTrim"), box(0, .9, 0, .54, .1, .24, "medicalTrim"),
-        box(-1.0, -.14, .55, .18, .28, .05, "medicalTrim"), box(1.0, -.14, .55, .18, .28, .05, "medicalTrim"),
-        box(-.64, -.46, .58, .1, .06, .02, "metal"), box(.64, -.46, .58, .1, .06, .02, "metal") ] },
+      medkit: { mounts: {}, parts: [] },
       frag: { mounts: {}, parts: [
         ball(0, 0, 0, 1, "body", 1.25), cyl("y", 0, 1.35, 0, .4, .3, "metal"), box(.55, 1.4, 0, 1.1, .1, .3, "metal"),
         cyl("y", 0, 1.7, 0, .15, .18, "dark"), cyl("y", 0, .2, 0, .14, 1.02, "dark"), cyl("y", 0, -.4, 0, .14, 1.02, "dark") ] },
@@ -1450,8 +1420,8 @@
     const loadoutItemsFor = (slot) => slot.items.filter((item) =>
       (item.id !== "karambit" || karambitUnlocked()) && (selectedOperatorId !== "custom" || !item.presetOnly));
     if (!karambitUnlocked()) {
-      if (customLoadout.secondary === "karambit") customLoadout.secondary = "p45";
-      if (loadout.secondary === "karambit") loadout.secondary = "p45";
+      if (customLoadout.breaching === "karambit") customLoadout.breaching = "sledgehammer";
+      if (loadout.breaching === "karambit") loadout.breaching = "sledgehammer";
     }
     const paintSkinUnlocked = (skin) => ownedWraps.has(playerPaintUnlockKey(skin.id));
     const paintColorUnlocked = (color) => color.free || ownedWraps.has(`paint:${color.id}`);
@@ -1482,15 +1452,17 @@
         { id: "vertical", name: "Vertical", mod: { rng: 1, mob: -1 } } ] }
     };
     const materials = { body: "#3d413c", dark: "#252825", metal: "#80857a", blade: "#9da8ad", edge: "#e5eaeb", accent: "#d3ef59", glass: "#4fa3b8", red: "#df563c", wick: "#c5b99c",
-      mk18Body: "#121214", mk18Dark: "#33363b", mk18Silver: "#a6abb3", mk18Orange: "#ff660d",
+      mk18Body: "#121214", mk18Dark: "#33363b", mk18Silver: "#a6abb3", mk18Orange: "#ff660d", sledgehammerBody: "#ffffff",
       karambitBlade: "#999ea8", karambitEdge: "#e6ebf2", karambitDark: "#2b2e33", karambitGrip: "#0e0e11", karambitBrass: "#bd8f38",
-      canBody: "#f7f5ea", canLabel: "#397b83",
-      medical: "#d9ded5", medicalWhite: "#f7f5ea", medicalRed: "#c42a30", medicalTrim: "#68716b" };
+      canBody: "#f7f5ea", canLabel: "#397b83" };
 
     const custom = {};
     try { Object.assign(custom, JSON.parse(localStorage.getItem("c6-custom") || "{}")); } catch (error) {}
+    function defaultOpticFor(item) {
+      return item.id === "longwatch" ? "scope" : "none";
+    }
     const customOf = (item) => {
-      const cfg = custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", keychain: "none", optic: "none", muzzle: "none", grip: "none" });
+      const cfg = custom[item.id] || (custom[item.id] = { finish: 0, skin: "none", keychain: "none", optic: defaultOpticFor(item), muzzle: "none", grip: "none" });
       const selectedSkin = skins.find((skin) => skin.id === cfg.skin);
       if (cfg.skin !== "none" && (!selectedSkin || !skinUnlocked(selectedSkin, item.id))) cfg.skin = "none";
       const selectedPaint = paintColors.find((color) => color.c === cfg.paint);
@@ -1571,7 +1543,7 @@
       const polys = [];
       const add = (v, m, c) => {
         const poly = { v, m, c };
-        if (m === "body" || m === "paint" || m === "mk18Body" || m === "mk18Orange") {
+        if (m === "body" || m === "paint" || m === "mk18Body" || m === "mk18Orange" || m === "sledgehammerBody") {
           const a = v[1].map((q, i) => q - v[0][i]), b = v[2].map((q, i) => q - v[0][i]);
           const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]].map(Math.abs);
           const axis = n.indexOf(Math.max(...n));
@@ -1652,9 +1624,24 @@
       meshNodes.forEach((node) => {
         if (config.skipNodeNames?.includes(node.name)) return;
         const mesh = json.meshes?.[node.mesh];
-        if (!mesh || node.matrix || node.rotation || node.scale) fail("unsupported mesh node transform");
+        if (!mesh || node.matrix || (!config.applyNodeTransforms && (node.rotation || node.scale))) fail("unsupported mesh node transform");
         const translation = node.translation || [0, 0, 0];
         if (translation.length !== 3 || !translation.every(Number.isFinite)) fail("invalid mesh node translation");
+        const nodeScale = node.scale || [1, 1, 1], rotation = node.rotation || [0, 0, 0, 1];
+        if (nodeScale.length !== 3 || !nodeScale.every(Number.isFinite) ||
+            rotation.length !== 4 || !rotation.every(Number.isFinite)) fail("invalid mesh node transform");
+        const rotationLength = Math.hypot(...rotation);
+        if (!rotationLength) fail("invalid mesh node rotation");
+        const q = rotation.map((value) => value / rotationLength), [qx, qy, qz, qw] = q;
+        const transformNode = ([x, y, z]) => {
+          const point = [x * nodeScale[0], y * nodeScale[1], z * nodeScale[2]];
+          const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+          const axis = [qx, qy, qz], first = cross(axis, point), second = cross(axis, first);
+          const rotated = config.applyNodeTransforms
+            ? point.map((value, index) => value + 2 * (qw * first[index] + second[index]))
+            : [x, y, z];
+          return rotated.map((value, index) => value + translation[index]);
+        };
         const isMagazine = Boolean(config.separateMeshName &&
           (node.name === config.separateMeshName || mesh.name === config.separateMeshName));
         const target = isMagazine ? magazinePrimitives : primitives;
@@ -1669,12 +1656,12 @@
           const positions = readAccessor(primitive.attributes.POSITION, "VEC3");
           const indices = primitive.indices === undefined ? positions.map((_, index) => index) : readAccessor(primitive.indices, "SCALAR");
           if (indices.length % 3 || indices.some((index) => index >= positions.length)) fail("invalid triangle indices");
-          const translatedPositions = positions.map(([x, y, z]) => [x + translation[0], y + translation[1], z + translation[2]]);
+          const translatedPositions = positions.map(transformNode);
           if (!isMagazine) translatedPositions.forEach((point) => point.forEach((value, axis) => {
             bounds[0][axis] = Math.min(bounds[0][axis], value);
             bounds[1][axis] = Math.max(bounds[1][axis], value);
           }));
-          target.push({ positions: translatedPositions, indices, nodeName: node.name || mesh.name, pivot: translation,
+          target.push({ positions: translatedPositions, indices, nodeName: node.name || mesh.name, pivot: transformNode([0, 0, 0]),
             role: isMagazine && material.name === config.magazinePaintMaterial ? "paint" : role });
         });
       });
@@ -1711,12 +1698,128 @@
       });
     }
 
+    function parseLongwatchGlb(buffer) {
+      const model = parseWeaponGlb(buffer, {
+        name: "Longwatch",
+        roles: {
+          Brown_Sniper01: "paint", Black_sniper01: "dark",
+          Gray_Sniper_01: "metal", White_Sniper01: "longwatchLight"
+        },
+        length: 11.2,
+        transform: ([x, y, z], center, scale) => [
+          (center[2] - z) * scale,
+          (y - center[1]) * scale,
+          (x - center[0]) * scale
+        ]
+      });
+      const points = model.parts.flatMap((part) => part.triangles.flat());
+      const lo = [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis])));
+      const hi = [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis])));
+      const centerX = (lo[0] + hi[0]) / 2;
+      model.mounts = {
+        optic: [centerX - (hi[0] - lo[0]) * .05, hi[1], 0],
+        muzzle: [hi[0], lo[1] + (hi[1] - lo[1]) * .5, 0],
+        grip: [lo[0] + (hi[0] - lo[0]) * .32, lo[1], 0]
+      };
+      model.sight = [centerX - (hi[0] - lo[0]) * .05, hi[1], 0];
+      return model;
+    }
+
+    function parseVectorGlb(buffer) {
+      const model = parseWeaponGlb(buffer, {
+        name: "V-9 Vector",
+        roles: {
+          M_PCL_Flat_Grey_Dark: "vectorBody",
+          M_PCL_Flat_Black: "vectorBlack",
+          "M_PCL_Flat_Brown.Chestnut": "vectorBrown",
+          "M_PCL_Flat_Yellow.Brass": "vectorBrass",
+          M_PCL_Flat_Grey_Darker: "vectorDark",
+          M_PCL_Flat_Black_Lighter: "vectorBlackLight",
+          M_PCL_Flat_White: "vectorWhite"
+        },
+        applyNodeTransforms: true,
+        length: 6,
+        transform: ([x, y, z], center, scale) => [
+          (center[2] - z) * scale,
+          (y - center[1]) * scale,
+          (x - center[0]) * scale
+        ]
+      });
+      const points = model.parts.flatMap((part) => part.triangles.flat());
+      const lo = [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis])));
+      const hi = [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis])));
+      const centerX = (lo[0] + hi[0]) / 2;
+      model.mounts = {
+        optic: [centerX, hi[1], 0],
+        muzzle: [hi[0], (lo[1] + hi[1]) / 2, 0],
+        grip: [lo[0] + (hi[0] - lo[0]) * .65, lo[1], 0]
+      };
+      model.sight = [centerX, hi[1], 0];
+      return model;
+    }
+
+    function parseMagnumGlb(buffer) {
+      const model = parseWeaponGlb(buffer, {
+        name: "Magnum .44",
+        roles: { Brown_Revolver02: "magnumBody", Gray_Revolver02: "magnumSteel" },
+        length: 4.8,
+        transform: ([x, y, z], center, scale) => [
+          (z - center[2]) * scale,
+          (y - center[1]) * scale,
+          (x - center[0]) * scale
+        ]
+      });
+      const points = model.parts.flatMap((part) => part.triangles.flat());
+      const lo = [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis])));
+      const hi = [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis])));
+      model.mounts = { optic: [0, hi[1] * .75, 0], muzzle: [hi[0], lo[1] + (hi[1] - lo[1]) * .62, 0] };
+      model.sight = [0, hi[1] * .55, 0];
+      return model;
+    }
+
+    function parseHammer12Glb(buffer) {
+      const model = parseWeaponGlb(buffer, {
+        name: "Hammer 12",
+        roles: { DarkBlue_Shotgun03: "dark", Brown_Shotgun03: "body" },
+        length: 11.2,
+        transform: ([x, y, z], center, scale) => [
+          (center[2] - z) * scale,
+          (y - center[1]) * scale,
+          (x - center[0]) * scale
+        ]
+      });
+      const points = model.parts.flatMap((part) => part.triangles.flat());
+      const lo = [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis])));
+      const hi = [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis])));
+      model.mounts = {
+        optic: [(lo[0] + hi[0]) * .25, hi[1], 0],
+        muzzle: [hi[0], (lo[1] + hi[1]) * .5, 0],
+        grip: [lo[0] + (hi[0] - lo[0]) * .65, lo[1], 0]
+      };
+      model.sight = [(lo[0] + hi[0]) * .25, hi[1], 0];
+      return model;
+    }
+
     function parseKarambitGlb(buffer) {
       return parseWeaponGlb(buffer, {
         name: "Karambit",
         roles: { blade_steel: "karambitBlade", blade_edge: "karambitEdge", steel_dark: "karambitDark",
           grip_black: "karambitGrip", brass: "karambitBrass" },
         length: 2.4,
+        transform: ([x, y, z], center, scale) => [
+          (center[2] - z) * scale,
+          (y - center[1]) * scale,
+          (x - center[0]) * scale
+        ]
+      });
+    }
+
+    function parseSledgehammerGlb(buffer) {
+      return parseWeaponGlb(buffer, {
+        name: "Sledgehammer",
+        roles: { Diffuse_Color: "sledgehammerBody" },
+        applyNodeTransforms: true,
+        length: 8,
         transform: ([x, y, z], center, scale) => [
           (center[2] - z) * scale,
           (y - center[1]) * scale,
@@ -1741,13 +1844,65 @@
       });
     }
 
+    function parseBombDefuserGlb(buffer) {
+      return parseWeaponGlb(buffer, {
+        name: "Bomb and defuser",
+        roles: {
+          c4_colour: "c4Body", circuts: "c4Circuits", grey_shade1: "c4Dark",
+          screen: "c4Screen", tape: "c4Tape", cream: "c4Cream", red: "c4Red",
+          gray_shade2: "c4Gray", black: "c4Black", yellow: "c4Yellow"
+        },
+        applyNodeTransforms: true,
+        length: .75,
+        transform: ([x, y, z], center, scale) => [
+          (x - center[0]) * scale,
+          (z - center[2]) * scale,
+          (y - center[1]) * scale
+        ]
+      });
+    }
+
+    function parseMedkitGlb(buffer) {
+      const model = parseWeaponGlb(buffer, {
+        name: "Medkit",
+        roles: {
+          "Material.005": "medkitWhite",
+          "Material.007": "medkitGreen",
+          "Material.006": "medkitRed",
+          "Material.008": "medkitBlack",
+          "Material.003": "medkitMetal",
+          "Material.012": "medkitDetail"
+        },
+        applyNodeTransforms: true,
+        length: 1.75,
+        transform: ([x, y, z], center, scale) => [
+          (x - center[0]) * scale,
+          (center[2] - z) * scale,
+          (y - center[1]) * scale
+        ]
+      });
+      const bodyParts = [], lidParts = [];
+      model.parts.forEach((part) => {
+        const body = [], lid = [];
+        part.triangles.forEach((triangle) => {
+          const target = triangle.reduce((sum, point) => sum + point[1] / 3, 0) > .65 ? lid : body;
+          target.push(triangle);
+        });
+        if (body.length) bodyParts.push({ ...part, triangles: body });
+        if (lid.length) lidParts.push({ ...part, triangles: lid });
+      });
+      model.bodyParts = bodyParts;
+      model.lidParts = lidParts;
+      return model;
+    }
+
     const inspector = { item: null, slot: null, polys: [], radius: 6, yaw: -.55, pitch: .22, dragging: false, running: false, key: "" };
     const inspectCanvas = document.querySelector("#inspect-canvas");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function buildInspectModel(item, includeMagazine = true) {
       const def = modelDefs[item.id], cfg = customOf(item);
-      if (["mk18", "karambit", "drone", "camera-drone"].includes(item.id) && !def.parts.length) return { polys: [], radius: 6 };
+      if (["mk18", "longwatch", "magnum", "hammer", "medkit", "sledgehammer", "karambit", "drone", "camera-drone"].includes(item.id) && !def.parts.length) return { polys: [], radius: 6 };
       const parts = [...def.parts, ...(includeMagazine ? (def.mag || []) : []), ...attachmentParts(item, cfg), ...weaponKeychainParts(item, cfg)];
       const base = buildPolys(includeMagazine ? parts : def.parts), pts = base.flatMap((poly) => poly.v);
       const lo = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i]))), hi = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
@@ -1763,6 +1918,7 @@
       Object.assign(inspector, buildInspectModel(inspector.item));
     }
 
+    let bombDefuserParts = [], medkitBodyParts = [], medkitLidParts = [];
     const mk18ModelReady = fetch("ItemModels/paintball_ar.glb")
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/paintball_ar.glb`);
@@ -1776,6 +1932,66 @@
         if (activeSection === "LOADOUT") renderLoadout();
       });
     mk18ModelReady.catch((error) => console.error("Failed to load MK18 GLB:", error));
+    const longwatchModelReady = fetch("ItemModels/paintball_sniper.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/paintball_sniper.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseLongwatchGlb(buffer);
+        modelDefs.longwatch.parts = model.parts;
+        modelDefs.longwatch.mag = model.mag;
+        modelDefs.longwatch.mounts = model.mounts;
+        modelDefs.longwatch.sight = model.sight;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    longwatchModelReady.catch((error) => console.error("Failed to load Longwatch GLB:", error));
+    const vectorModelReady = fetch("ItemModels/V9_vector.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/V9_vector.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseVectorGlb(buffer);
+        modelDefs.vector.parts = model.parts;
+        modelDefs.vector.mag = model.mag;
+        modelDefs.vector.mounts = model.mounts;
+        modelDefs.vector.sight = model.sight;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    vectorModelReady.catch((error) => console.error("Failed to load V-9 Vector GLB:", error));
+    const magnumModelReady = fetch("ItemModels/magnum44.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/magnum44.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseMagnumGlb(buffer);
+        modelDefs.magnum.parts = model.parts;
+        modelDefs.magnum.mag = model.mag;
+        modelDefs.magnum.mounts = model.mounts;
+        modelDefs.magnum.sight = model.sight;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    magnumModelReady.catch((error) => console.error("Failed to load Magnum GLB:", error));
+    const hammer12ModelReady = fetch("ItemModels/hammer12.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/hammer12.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseHammer12Glb(buffer);
+        modelDefs.hammer.parts = model.parts;
+        modelDefs.hammer.mag = model.mag;
+        modelDefs.hammer.mounts = model.mounts;
+        modelDefs.hammer.sight = model.sight;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    hammer12ModelReady.catch((error) => console.error("Failed to load Hammer 12 GLB:", error));
     const karambitModelReady = fetch("ItemModels/karambit.glb")
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/karambit.glb`);
@@ -1788,6 +2004,18 @@
         if (activeSection === "LOADOUT") renderLoadout();
       });
     karambitModelReady.catch((error) => console.error("Failed to load Karambit GLB:", error));
+    const sledgehammerModelReady = fetch("ItemModels/sledgehammer.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/sledgehammer.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseSledgehammerGlb(buffer);
+        modelDefs.sledgehammer.parts = model.parts;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    sledgehammerModelReady.catch((error) => console.error("Failed to load Sledgehammer GLB:", error));
     const droneModelReady = fetch("ItemModels/drone.glb")
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/drone.glb`);
@@ -1800,7 +2028,32 @@
         if (activeSection === "LOADOUT") renderLoadout();
       });
     droneModelReady.catch((error) => console.error("Failed to load Drone GLB:", error));
-    const weaponModelsReady = Promise.all([mk18ModelReady, karambitModelReady, droneModelReady]);
+    const bombDefuserModelReady = fetch("ItemModels/bomb_and_defuser.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/bomb_and_defuser.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseBombDefuserGlb(buffer);
+        bombDefuserParts = model.parts;
+        Object.assign(materials, model.colors);
+      });
+    bombDefuserModelReady.catch((error) => console.error("Failed to load bomb and defuser GLB:", error));
+    const medkitModelReady = fetch("ItemModels/medkit.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ItemModels/medkit.glb`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        const model = parseMedkitGlb(buffer);
+        modelDefs.medkit.parts = model.parts;
+        medkitBodyParts = model.bodyParts;
+        medkitLidParts = model.lidParts;
+        Object.assign(materials, model.colors);
+        if (activeSection === "LOADOUT") renderLoadout();
+      });
+    medkitModelReady.catch((error) => console.error("Failed to load Medkit GLB:", error));
+    const weaponModelsReady = Promise.all([mk18ModelReady, longwatchModelReady, vectorModelReady, magnumModelReady, hammer12ModelReady, karambitModelReady, sledgehammerModelReady, droneModelReady, bombDefuserModelReady, medkitModelReady]);
 
     function affineFromUv(uv, pts) {
       const [[u0, v0], [u1, v1], [u2, v2]] = uv, det = (u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0);
@@ -1826,8 +2079,10 @@
       const skin = item.dmg ? weaponSkin(item.id, cfg.skin) : null;
       const keychain = keychains.find((entry) => entry.id === cfg.keychain);
       const color = (m) => m === "paint" || (m === "mk18Orange" && selectedPaintSkin()) ? paintColor(item) :
-        m === "keychain" ? keychain.color : skin ? (m === "metal" ? finish.c : materials[m]) :
-          (m === "body" ? finish.c : m === "mk18Body" && cfg.finish !== 0 ? finish.c : materials[m]);
+        m === "keychain" ? keychain.color : skin ? (m === "metal" || m === "magnumSteel" ? finish.c : materials[m]) :
+          (m === "body" || (m === "magnumBody" && cfg.finish !== 0) || (m === "vectorBody" && cfg.finish !== 0) ||
+            (m === "sledgehammerBody" && cfg.finish !== 0) ? finish.c :
+            m === "mk18Body" && cfg.finish !== 0 ? finish.c : materials[m]);
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = ([x, y, z]) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cp - z1 * sp, y * sp + z1 * cp]; };
       ctx.fillStyle = "rgba(0,0,0,.35)";
@@ -1854,7 +2109,7 @@
         ctx.closePath();
         ctx.fillStyle = fill; ctx.strokeStyle = fill; ctx.fill(); ctx.stroke();
         const surfaceSkin = (d.m === "paint" || d.m === "mk18Orange") && item.dmg ? selectedPaintSkin() :
-          (d.m === "body" || d.m === "mk18Body") ? skin : null;
+          (d.m === "body" || d.m === "mk18Body" || d.m === "magnumBody" || d.m === "sledgehammerBody") ? skin : null;
         const sc = surfaceSkin && d.uv && affineFromUv(d.uv, d.v.map((q) => { const f = 36 / (36 - q[2]); return [w / 2 + q[0] * s * f, h * .5 - q[1] * s * f]; }));
         if (sc) {
           ctx.save();
@@ -2091,7 +2346,7 @@
         const [category, rewardId] = key.split(":");
         const specialCategory = ["operator", "paint", "finish", "keychain", "weapon"].includes(category);
         const item = specialCategory ? null : packWeapons.find((entry) => entry.id === category);
-        const cosmetic = category === "weapon" ? loadoutSlots.find((slot) => slot.id === "secondary").items.find((entry) => entry.id === rewardId) :
+        const cosmetic = category === "weapon" ? loadoutSlots.find((slot) => slot.id === "breaching").items.find((entry) => entry.id === rewardId) :
           category === "paint" ? paintColors.find((entry) => entry.id === rewardId) :
           category === "finish" ? finishes.find((entry) => entry.id === rewardId) :
           category === "keychain" ? keychains.find((entry) => entry.id === rewardId) : skins.find((entry) => entry.id === rewardId);
@@ -2100,23 +2355,23 @@
         const name = document.createElement("span");
         name.textContent = cosmetic.name;
         const weapon = document.createElement("span");
-        weapon.textContent = category === "weapon" ? "RARE SECONDARY" : category === "operator" ? "OPERATOR CAMO" : category === "paint" ? "PAINT COLOR" :
+        weapon.textContent = category === "weapon" ? "RARE BREACHING" : category === "operator" ? "OPERATOR CAMO" : category === "paint" ? "PAINT COLOR" :
           category === "finish" ? "WEAPON COLOR" : category === "keychain" ? "KEYCHAIN" : weaponName(item.id);
         if (category === "operator" || category === "weapon" || !specialCategory) {
           const equip = document.createElement("button");
           equip.className = "pack-equip";
-          const equipped = category === "weapon" ? customLoadout.secondary === cosmetic.id :
+          const equipped = category === "weapon" ? customLoadout.breaching === cosmetic.id :
             category === "operator" ? appearance.paintSkin === cosmetic.id : customOf(item).skin === cosmetic.id;
-          equip.textContent = category === "weapon" && !equipped ? "EQUIP SECONDARY" : equipped ? "EQUIPPED" : "EQUIP";
+          equip.textContent = category === "weapon" && !equipped ? "EQUIP BREACHING" : equipped ? "EQUIPPED" : "EQUIP";
           equip.disabled = equipped;
-          equip.setAttribute("aria-label", `${equipped ? "Equipped" : "Equip"} ${cosmetic.name} ${category === "weapon" ? "as your secondary" : `on ${category === "operator" ? "operator" : weaponName(item.id)}`}`);
+          equip.setAttribute("aria-label", `${equipped ? "Equipped" : "Equip"} ${cosmetic.name} ${category === "weapon" ? "as your breaching weapon" : `on ${category === "operator" ? "operator" : weaponName(item.id)}`}`);
           equip.addEventListener("click", () => {
             if (category === "weapon") {
-              customLoadout.secondary = cosmetic.id;
+              customLoadout.breaching = cosmetic.id;
               try { localStorage.setItem("c6-loadout", JSON.stringify(customLoadout)); }
               catch (error) { console.warn("Could not save loadout:", error); showToast("Could not save your loadout in this browser."); }
               if (selectedOperatorId === "custom") {
-                loadout.secondary = cosmetic.id;
+                loadout.breaching = cosmetic.id;
                 if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "select_operator", operatorId: selectedOperatorId, loadout }));
                 renderLoadout();
               }
@@ -2207,8 +2462,8 @@
         const [category, rewardId] = key.split(":");
         ownedWraps.add(key);
         if (category === "weapon") {
-          const item = loadoutSlots.find((slot) => slot.id === "secondary").items.find((entry) => entry.id === rewardId);
-          reward = { title: item.name, detail: "Rare secondary melee · Equip it in LOADOUT", type: "RARE WEAPON UNLOCKED", previewLabel: "RARE // KARAMBIT", color: "#b78be5", rarity: "rare" };
+          const item = loadoutSlots.find((slot) => slot.id === "breaching").items.find((entry) => entry.id === rewardId);
+          reward = { title: item.name, detail: "Rare breaching weapon · Equip it in LOADOUT", type: "RARE WEAPON UNLOCKED", previewLabel: "RARE // KARAMBIT", color: "#b78be5", rarity: "rare" };
         } else if (category === "operator") {
           const skin = skins.find((entry) => entry.id === rewardId);
           reward = { title: skin.name, detail: "Operator camo · Equip it in LOADOUT", type: "OPERATOR CAMO UNLOCKED", previewLabel: "OPERATOR CAMO", skin };
@@ -2365,6 +2620,7 @@
       switchWeapon2: "2",
       switchWeapon3: "3",
       switchWeapon4: "4",
+      switchWeapon5: "5",
       sprint: "shift",
       scan: " ",
       recallDrone: "g",
@@ -2386,6 +2642,7 @@
       switchWeapon2: "Switch to Weapon 2",
       switchWeapon3: "Switch to Gadget",
       switchWeapon4: "Switch to Equipment",
+      switchWeapon5: "Switch to Breaching Weapon",
       sprint: "Sprint",
       scan: "Jump / Scan (Drone)",
       recallDrone: "Recall Drone",
@@ -2805,6 +3062,12 @@
       const isCanyon = () => activeMap === "harbor";
       const cam = { x: -30, y: 1.8, z: HW + 4, yaw: Math.atan2(30, -(HW + 4)), pitch: -.05, vy: 0 };
       let renderCam = cam, viewScale = 1.8, ads = 0, lean = 0, crouched = false, eyeHeight = 1.8;
+      function adsViewScale(amount, scope, weaponId) {
+        return 1.8 * (scope || weaponId === "longwatch" ? 1 - .75 * amount : 1 + .2 * amount);
+      }
+      function adsOpticFor(weaponId, optic) {
+        return weaponId === "longwatch" ? "scope" : optic;
+      }
       const keys = new Set();
       const heldCodes = new Map();
       const isSprinting = () => keys.has(currentKeybinds.sprint) && (keys.has(currentKeybinds.moveForward) || keys.has("arrowup") || keys.has(currentKeybinds.moveBackward) || keys.has("arrowdown") || keys.has(currentKeybinds.moveLeft) || keys.has(currentKeybinds.moveRight));
@@ -3142,8 +3405,10 @@
       const colorOf = (w, m) => { const fin = (finishes[w.cfg.finish] || finishes[0]).c; return m === "paint" ||
         (m === "mk18Orange" && selectedPaintSkin()) ? paintColor(w.item) :
         m === "keychain" ? keychains.find((entry) => entry.id === w.cfg.keychain).color :
-          skinOf(w) ? (m === "metal" ? fin : materials[m]) :
-            (m === "body" || (m === "mk18Body" && w.cfg.finish !== 0) ? fin : materials[m]); };
+          skinOf(w) ? (m === "metal" || m === "magnumSteel" ? fin : materials[m]) :
+            (m === "body" || (m === "magnumBody" && w.cfg.finish !== 0) || (m === "vectorBody" && w.cfg.finish !== 0) ||
+              (m === "sledgehammerBody" && w.cfg.finish !== 0) ||
+              (m === "mk18Body" && w.cfg.finish !== 0) ? fin : materials[m]); };
       function buildWeapon(item) {
         const def = modelDefs[item.id], cfg = customOf(item);
         const baseKind = kinds[item.type];
@@ -3165,12 +3430,12 @@
         const sight = cfg.optic !== "none" && def.mounts.optic ? def.mounts.optic : def.sight || def.mounts.optic || [0, 0, 0];
         return { item, kind, cfg, polys, magPolys, mid, tip, rear, stats, sight, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
           ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1,
-          inspectStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0 };
+          inspectStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0, lastShot: -1 };
       }
       const wpn = () => weapons[loadout[curSlot]];
       const shieldWeapon = (equipped) => equipped.item.id === "shield" && loadout.secondary === "p45" ? weapons.p45 : equipped;
       function refreshWeapons() {
-        ["primary", "secondary", "gadget", "equipment"].forEach((id) => { const item = loadoutSlots.find((sl) => sl.id === id).items.find((it) => it.id === loadout[id]); weapons[item.id] = buildWeapon(item); });
+        ["primary", "secondary", "breaching", "gadget", "equipment"].forEach((id) => { const item = loadoutSlots.find((sl) => sl.id === id).items.find((it) => it.id === loadout[id]); weapons[item.id] = buildWeapon(item); });
       }
 
       // ---- Target dummies ----
@@ -3213,7 +3478,7 @@
           worldItemModels.set(itemId, { polys, mid: lo.map((v, i) => (v + hi[i]) / 2),
             span: Math.max(...hi.map((v, i) => v - lo[i])) });
         }
-        const model = worldItemModels.get(itemId), size = state.activeSlot === "primary" ? .85 : state.activeSlot === "secondary" ? .48 : .38;
+        const model = worldItemModels.get(itemId), size = state.activeSlot === "primary" ? .85 : ["secondary", "breaching"].includes(state.activeSlot) ? .48 : .38;
         const scale = size / model.span, c = Math.cos(state.yaw), s = Math.sin(state.yaw);
         const pitch = state.pitch || 0, cp = Math.cos(pitch), sp = Math.sin(pitch), lean = state.lean || 0;
         const base = state.y - (state.crouched ? CROUCH_EYE : EYE);
@@ -3231,7 +3496,7 @@
           color: poly.m === "paint" || (poly.m === "mk18Orange" && paintSkin) ? (paint || paintColors[0].c) :
             poly.m === "keychain" ? charm.color : materials[poly.m],
           skin: poly.m === "paint" || poly.m === "mk18Orange" ? paintSkin :
-            (poly.m === "body" || poly.m === "mk18Body") ? skin : undefined }));
+            (poly.m === "body" || poly.m === "mk18Body" || poly.m === "sledgehammerBody") ? skin : undefined }));
       }
       function remoteEquippedItem(player) {
         const state = player.state;
@@ -3463,12 +3728,15 @@
       // ---- Match rounds: barrier, health and spectating ----
       const BARRIER_HALF = .4, BARRIER_LIMIT = BARRIER_HALF + R;
       const spectate = { id: null };
+      let freeplayMode = false, trainingDefuseMode = false, practiceSpawn;
+      const trainingPlayerId = "training-player";
       const ownEntry = () => multiplayer.match?.players.find((player) => player.id === multiplayer.playerId);
       const isDead = () => Boolean(multiplayer.match) && (ownEntry()?.health ?? 100) <= 0;
       const barrierOn = () => Boolean(multiplayer.match) && multiplayer.round?.phase === "prep";
       const canFire = (w) => !isDead() && true;
-      const objectiveMatch = () => ["defuse", "rescue"].includes(multiplayer.match?.mode);
-      const defending = () => objectiveMatch() && multiplayer.match.team === 1;
+      const objectiveMatch = () => trainingDefuseMode || ["defuse", "rescue"].includes(multiplayer.match?.mode);
+      const defending = () => trainingDefuseMode ? Boolean(multiplayer.objectives.find((objective) => objective.kind === "bomb")?.armed) :
+        objectiveMatch() && multiplayer.match?.team === 1;
       const clampToSide = (value, margin, reverse = false) => multiplayer.match?.team === 1
         ? (reverse ? Math.max(value, margin) : Math.min(value, -margin))
         : (reverse ? Math.min(value, -margin) : Math.max(value, margin));
@@ -3494,17 +3762,38 @@
         cam.yaw = angleStep(cam.yaw, state.yaw, .5); cam.pitch += (state.pitch - cam.pitch) * .5;
       }
       const objectiveView = new Map(), interactState = { id: null };
+      let practiceInteractStartedAt = 0, practiceInteractBlocked = false;
       function nearbyObjective() {
-        if (!objectiveMatch() || multiplayer.round?.phase !== "live" || isDead() || drone.active) return null;
-        const team = multiplayer.match.team;
+        if (!objectiveMatch() || (!trainingDefuseMode && multiplayer.round?.phase !== "live") || isDead() || drone.active) return null;
+        const team = trainingDefuseMode ? 2 : multiplayer.match.team;
         return (multiplayer.objectives || []).find((o) => Math.hypot(cam.x - o.x, cam.z - o.z) <= 2.2 && Math.abs(cam.y - eyeHeight - o.y) <= 2.5 &&
-          (o.kind === "bomb" ? (o.armed ? team === 1 : team === 2) : o.alive && !o.followerId && team === 2)) || null;
+          (o.kind === "bomb" ? (trainingDefuseMode || (o.armed ? team === 1 : team === 2)) : o.alive && !o.followerId && team === 2)) || null;
       }
       function updateInteract() {
-        const id = keys.has(currentKeybinds.interact) ? nearbyObjective()?.id || null : null;
-        if (id === interactState.id) return;
-        interactState.id = id;
-        sendMatch({ type: "interact", holding: Boolean(id), id });
+        const holding = keys.has(currentKeybinds.interact);
+        if (trainingDefuseMode && !holding) practiceInteractBlocked = false;
+        const id = holding && !(trainingDefuseMode && practiceInteractBlocked) ? nearbyObjective()?.id || null : null;
+        if (id !== interactState.id) {
+          if (trainingDefuseMode) {
+            const previous = multiplayer.objectives.find((objective) => objective.id === interactState.id);
+            if (previous?.actor === trainingPlayerId) { previous.actor = null; previous.progress = 0; }
+            const next = multiplayer.objectives.find((objective) => objective.id === id);
+            if (next) { next.actor = trainingPlayerId; next.progress = 0; practiceInteractStartedAt = tNow; }
+          } else sendMatch({ type: "interact", holding: Boolean(id), id });
+          interactState.id = id;
+        }
+        if (!trainingDefuseMode || !id) return;
+        const objective = multiplayer.objectives.find((entry) => entry.id === id);
+        if (!objective || objective.actor !== trainingPlayerId) return;
+        objective.progress = Math.min(1, (tNow - practiceInteractStartedAt) / 5);
+        if (objective.progress < 1) return;
+        objective.armed = !objective.armed;
+        objective.defuseMs = 25000;
+        objective.actor = null;
+        objective.progress = 0;
+        interactState.id = null;
+        practiceInteractBlocked = true;
+        say(objective.armed ? "DEFUSER PLANTED" : "DEFUSER DISARMED");
       }
       function objectiveQuads(list) {
         (multiplayer.objectives || []).forEach((o) => {
@@ -3527,6 +3816,53 @@
             qb(list, v.x - .06, v.x + .06, v.y + .65, v.y + .72, v.z - .06, v.z + .06, on ? "#58d65c" : "#1b3a1c");
           }
         });
+      }
+      function currentBombAction() {
+        const objective = nearbyObjective();
+        const actorId = trainingDefuseMode ? trainingPlayerId : multiplayer.playerId;
+        return objective?.kind === "bomb" && objective.actor === actorId && objective.progress > 0
+          ? objective : null;
+      }
+      function bombDefuserActionQuads(action) {
+        const list = [], progress = Math.max(0, Math.min(1, action.progress));
+        const smooth = (value) => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+        const tapNumber = Math.floor(progress * 10), cycle = progress * 10 - tapNumber;
+        const press = smooth((cycle - .12) / .12) * (1 - smooth((cycle - .38) / .12));
+        const randomPosition = (seed) => {
+          const value = Math.sin((tapNumber + 1) * seed) * 43758.5453;
+          return value - Math.floor(value);
+        };
+        const placeModel = (point) => [point[0] * .72 - .04, -point[1] * .72 + .05, -point[2] * .72 + .72];
+        bombDefuserParts.forEach((part) => part.triangles.forEach((triangle) =>
+          list.push({ pts: triangle.map(placeModel), color: materials[part.m] })));
+        const box = (center, size, color, angle = 0) => {
+          const rotate = (point) => {
+            const x = point[0] - center[0], y = point[1] - center[1];
+            return [center[0] + x * Math.cos(angle) - y * Math.sin(angle),
+              center[1] + x * Math.sin(angle) + y * Math.cos(angle), point[2]];
+          };
+          qb(list, center[0] - size[0] / 2, center[0] + size[0] / 2,
+            center[1] - size[1] / 2, center[1] + size[1] / 2,
+            center[2] - size[2] / 2, center[2] + size[2] / 2, color, rotate);
+        };
+        const arm = (start, end, width, depth, color) => {
+          const dx = end[0] - start[0], dy = end[1] - start[1];
+          box([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2, (start[2] + end[2]) / 2],
+            [Math.hypot(dx, dy), width, depth], color, Math.atan2(dy, dx));
+        };
+        arm([-.7, -.5, .76], [-.24, -.3, .61], .17, .14, "#394a5d");
+        box([-.21, -.3, .57], [.2, .22, .12], "#c89170", -.2);
+        arm([.72, -.1, .78], [.3, .23, .74], .17, .14, "#394a5d");
+        box([.28, .24, .7], [.14, .11, .08], "#c89170", -.32);
+        const fingerBase = [.3, .3, .79];
+        const fingertip = [
+          -.1 + randomPosition(78.233) * .19,
+          .1 + randomPosition(12.989) * .065,
+          .79 - press * .08
+        ];
+        arm(fingerBase, fingertip, .042, .038, "#c89170");
+        box(fingertip, [.045, .04, .04], "#d9a07c", -.65);
+        return list;
       }
       function beginRound(spawn) {
         objectiveView.clear(); interactState.id = null;
@@ -4074,7 +4410,8 @@
           const effectiveRange = reach / 2;
           const falloff = playerDistance <= effectiveRange ? 1 : Math.max(.35, 1 - (playerDistance - effectiveRange) / effectiveRange * .65);
           const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && playerTarget.health >= 100 ? 1.5 : 1;
-          const damage = w.item.id === "f451" ? 7 : Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
+          const damage = w.item.id === "f451" ? 7 : w.item.id === "longwatch" ? 75 : w.item.id === "magnum" ? 25 :
+            Math.min(55, w.stats.dmg * w.kind.mult * falloff * damageMul * fullHealthBonus);
           paintHit(w, o, dr, playerDistance, playerBox, playerTarget.id);
           multiplayer.socket?.send(JSON.stringify({ type: "shoot", targetId: playerTarget.id, damage,
             weaponId: w.item.id,
@@ -4102,8 +4439,8 @@
         const fall = bt <= eff || w.kind.melee ? 1 : Math.max(.35, 1 - (bt - eff) / eff * .65);
         const fullHealthBonus = selectedOperatorId === "skanska" && ["hammer", "sledgehammer"].includes(w.item.id) && best.hp >= 100 ? 1.5 : 1;
         const instantHeadshot = head && !w.kind.melee && (curSlot === "primary" || w.item.id === "magnum");
-        const dmg = w.item.id === "f451" ? 7 : instantHeadshot ? best.hp : w.item.id === "longwatch" ? 50 :
-          w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul * fullHealthBonus;
+        const dmg = w.item.id === "f451" ? 7 : w.item.id === "longwatch" ? (head ? 100 : 75) : instantHeadshot ? best.hp :
+          w.item.id === "magnum" ? 25 : w.stats.dmg * w.kind.mult * fall * (head ? 2 : 1) * damageMul * fullHealthBonus;
         paintHit(w, o, dr, bt, bestBox, `dummy-${dummies.indexOf(best)}`);
         recordHit(w.item.id);
         hurtDummy(best, dmg, head);
@@ -4826,6 +5163,7 @@
           return;
         }
         w.ammo--; w.next = tNow + 1 / k.rate; w.kick = 1; w.flash = .05;
+        if (w.item.id === "longwatch") w.lastShot = tNow;
         if (k.pellets) w.shotId = `${multiplayer.playerId}:s${++projSeq}`;
         const reach = w.item.id === "longwatch" ? Infinity : w.item.id === "f451" ? 9 : (12 + w.stats.rng * 10) * 2;
         for (let i = 0; i < (k.pellets || 1); i++) trace(w, reach, 1);
@@ -4900,7 +5238,6 @@
         let ang = k * .12, offY = -.2 + bob, offX = .17 + Math.cos(tNow * 5) * (moving ? .012 : .003), offZ = .22 + w.rear * K - k * .11;
         if (moving) offX += Math.sin(tNow * 10) * .008;
         const reloadProgress = w.reloadEnd ? Math.max(0, Math.min(1, (tNow - w.reloadStart) / w.kind.reload)) : 1;
-        const reloadDip = w.reloadEnd ? Math.sin(Math.PI * reloadProgress) : 0;
         if (w.kind.melee) {
           const pose = meleeViewmodelPose(w, tNow);
           ang = pose.ang; offX = pose.offX; offY = pose.offY; offZ = pose.offZ;
@@ -4908,17 +5245,13 @@
         let vs = 1;
         if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
         if (shieldSidearm) { offX = .24; offY = -.24 + bob; offZ = .43 + w.rear * K - k * .05; }
-        if (w.reloadEnd) {
-          ang -= .36 * reloadDip;
-          offY += .1 * reloadDip;
-          offX += .04 * reloadDip;
-          offZ -= .1 * reloadDip;
-        }
+        if (["PISTOL", "MACHINE PISTOL", "REVOLVER"].includes(w.item.type) && w.item.id !== "magnum") offY += .18;
+        if (shieldSidearm && w.reloadEnd) offY += .1 * Math.sin(Math.PI * reloadProgress);
         offY += sprintPose * .02;
         offX += sprintPose * .09;
         offZ += sprintPose * .05;
         ang += sprintPose * .32;
-        const aim = w.kind.held || w.kind.melee || shieldSidearm ? 0 : ads * (1 - sprintPose) * (1 - reloadDip);
+        const aim = w.kind.held || w.kind.melee || shieldSidearm ? 0 : ads * (1 - sprintPose);
         vs = 1 - aim * .18;
         if (aim) {
           const sx = w.sight[0] - w.mid[0], sy = w.sight[1] - w.mid[1], sz = w.sight[2] - w.mid[2];
@@ -4935,7 +5268,7 @@
         const list = w.polys.filter((poly) => w.item.id !== "shield" || poly.m !== "glass" || poly.v.every((point) => point[0] === -.01))
           .map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv,
             skin: (poly.m === "paint" || poly.m === "mk18Orange") && w.item.dmg ? selectedPaintSkin() :
-              (poly.m === "body" || poly.m === "mk18Body") ? skinOf(w) : null,
+              (poly.m === "body" || poly.m === "mk18Body" || poly.m === "magnumBody" || poly.m === "sledgehammerBody") ? skinOf(w) : null,
             shieldGlass: w.item.id === "shield" && poly.m === "glass" }));
         if (w.magPolys.length) {
           const removing = w.reloadEnd && reloadProgress <= .32;
@@ -4986,6 +5319,71 @@
                 appendBox([hand[0] + x + .04, hand[1] - .115, hand[2] - .02], [.035, .09, .1], "#c89170"));
               appendBox([hand[0] - .065, hand[1] - .005, hand[2] - .01], [.06, .12, .1], "#c89170");
             }
+          }
+        }
+        if (w.item.id === "longwatch" && w.reloadEnd) {
+          const clamp = (value) => Math.max(0, Math.min(1, value));
+          const smooth = (value) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+          const reach = smooth((reloadProgress - .16) / .22);
+          const cock = smooth((reloadProgress - .38) / .24);
+          const returnHand = smooth((reloadProgress - .62) / .24);
+          const trigger = place([w.mid[0] - 1.05, w.mid[1] - .38, w.mid[2] + .24]);
+          const boltRest = place([w.mid[0] - .05, w.mid[1] + .12, w.mid[2] + .38]);
+          const boltPulled = place([w.mid[0] - .55, w.mid[1] + .12, w.mid[2] + .38]);
+          let hand = trigger;
+          if (reach > 0 && cock === 0) hand = trigger.map((value, axis) => value + (boltRest[axis] - value) * reach);
+          else if (cock > 0 && returnHand === 0) {
+            hand = boltRest.map((value, axis) => value + (boltPulled[axis] - value) * cock);
+          } else if (returnHand > 0) {
+            hand = boltPulled.map((value, axis) => value + (trigger[axis] - value) * returnHand);
+          }
+          const appendBox = (center, size, color) => {
+            const [x, y, z] = center, [width, height, depth] = size;
+            const x0 = x - width / 2, x1 = x + width / 2, y0 = y - height / 2, y1 = y + height / 2;
+            const z0 = z - depth / 2, z1 = z + depth / 2;
+            const vertices = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+              [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+            [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [3, 2, 6, 7], [0, 3, 7, 4], [1, 2, 6, 5]]
+              .forEach((face) => list.push({ pts: face.map((index) => vertices[index]), color }));
+          };
+          if (reloadProgress > .12 && reloadProgress < .88) {
+            appendBox([hand[0] + .09, hand[1] - .12, hand[2] + .02], [.11, .22, .09], "#394a5d");
+            appendBox(hand, [.11, .09, .09], "#c89170");
+            [-.032, 0, .032].forEach((offset) =>
+              appendBox([hand[0] + offset, hand[1] - .055, hand[2] + .012], [.024, .075, .075], "#c89170"));
+          }
+        }
+        if (w.item.id === "longwatch" && !w.reloadEnd && w.lastShot >= 0) {
+          const elapsed = tNow - w.lastShot;
+          if (elapsed >= 0 && elapsed < .65) {
+            const clamp = (value) => Math.max(0, Math.min(1, value));
+            const smooth = (value) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+            const reach = smooth(elapsed / .14);
+            const cock = smooth((elapsed - .16) / .18);
+            const returnHand = smooth((elapsed - .38) / .21);
+            const trigger = place([w.mid[0] - 1.05, w.mid[1] - .38, w.mid[2] + .24]);
+            const boltRest = place([w.mid[0] - .05, w.mid[1] + .12, w.mid[2] + .38]);
+            const boltPulled = place([w.mid[0] - .55, w.mid[1] + .12, w.mid[2] + .38]);
+            let hand = trigger;
+            if (reach > 0 && cock === 0) hand = trigger.map((value, axis) => value + (boltRest[axis] - value) * reach);
+            else if (cock > 0 && returnHand === 0) {
+              hand = boltRest.map((value, axis) => value + (boltPulled[axis] - value) * cock);
+            } else if (returnHand > 0) {
+              hand = boltPulled.map((value, axis) => value + (trigger[axis] - value) * returnHand);
+            }
+            const appendBox = (center, size, color) => {
+              const [x, y, z] = center, [width, height, depth] = size;
+              const x0 = x - width / 2, x1 = x + width / 2, y0 = y - height / 2, y1 = y + height / 2;
+              const z0 = z - depth / 2, z1 = z + depth / 2;
+              const vertices = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+                [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+              [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [3, 2, 6, 7], [0, 3, 7, 4], [1, 2, 6, 5]]
+                .forEach((face) => list.push({ pts: face.map((index) => vertices[index]), color }));
+            };
+            appendBox([hand[0] + .09, hand[1] - .12, hand[2] + .02], [.11, .22, .09], "#394a5d");
+            appendBox(hand, [.11, .09, .09], "#c89170");
+            [-.032, 0, .032].forEach((offset) =>
+              appendBox([hand[0] + offset, hand[1] - .055, hand[2] + .012], [.024, .075, .075], "#c89170"));
           }
         }
         if (w.flash > 0 && !w.kind.melee) {
@@ -5065,55 +5463,56 @@
         const caseY = mix(mix(-.78, -.2, pull), -1.12, drop);
         const caseZ = .76;
         const lidOpen = smooth((elapsed - .62) / .48);
-        const lidAngle = 1.45 * lidOpen;
-        const hinge = [caseX, caseY + .1, caseZ + .075];
-        const lidCenter = [caseX, caseY + .125, caseZ - .005];
+        const lidAngle = -1.8 * lidOpen;
+        const modelScale = [.09, .09, .1], hingeY = .65 * modelScale[1], hingeZ = -.76 * modelScale[2];
+        const medkitPoint = (point, lid = false) => {
+          const local = [point[0] * modelScale[0], point[1] * modelScale[1], point[2] * modelScale[2]];
+          if (!lid) return [caseX + local[0], caseY + local[1], caseZ + local[2]];
+          const y = local[1] - hingeY, z = local[2] - hingeZ;
+          return [caseX + local[0], caseY + hingeY + y * Math.cos(lidAngle) - z * Math.sin(lidAngle),
+            caseZ + hingeZ + y * Math.sin(lidAngle) + z * Math.cos(lidAngle)];
+        };
+        const drawModelParts = (parts, lid = false) => parts.forEach((part) => part.triangles.forEach((triangle) => {
+          list.push({ pts: triangle.map((point) => medkitPoint(point, lid)), color: materials[part.m] });
+        }));
+        const addBandageRoll = (center, radius = .022, halfLength = .048) => {
+          const sides = 8;
+          const ring = (angle, z) => [center[0] + Math.cos(angle) * radius,
+            center[1] + Math.sin(angle) * radius, z];
+          const sections = [
+            [center[2] - halfLength, center[2] - .008, "#f7f6ed"],
+            [center[2] - .008, center[2] + .008, "#c8cec1"],
+            [center[2] + .008, center[2] + halfLength, "#f7f6ed"]
+          ];
+          sections.forEach(([z0, z1, color]) => {
+            for (let side = 0; side < sides; side++) {
+              const a0 = side / sides * Math.PI * 2, a1 = (side + 1) / sides * Math.PI * 2;
+              list.push({ pts: [ring(a0, z0), ring(a1, z0), ring(a1, z1), ring(a0, z1)], color });
+            }
+          });
+          [center[2] - halfLength, center[2] + halfLength].forEach((z) => {
+            list.push({ pts: [[center[0], center[1], z],
+              ...Array.from({ length: sides }, (_, side) => ring(side / sides * Math.PI * 2, z))], color: "#d3d8d0" });
+          });
+        };
 
         if (elapsed < 2.32) {
-          box([caseX, caseY - .008, caseZ], [.28, .15, .15], "#919b91");
-          box([caseX, caseY, caseZ], [.29, .16, .16], "#d9ded5");
-          box([caseX, caseY, caseZ + .082], [.26, .13, .01], "#f7f5ea");
-          box([caseX, caseY - .07, caseZ + .09], [.25, .012, .01], "#c42a30");
-          box([caseX, caseY + .063, caseZ - .09], [.24, .008, .01], "#b9c1b8");
-          box([caseX, caseY, caseZ - .09], [.09, .09, .01], "#c42a30");
-          box([caseX, caseY, caseZ - .098], [.024, .064, .008], "#f7f5ea");
-          box([caseX, caseY, caseZ - .098], [.064, .024, .008], "#f7f5ea");
-          [-.11, .11].forEach((x) => {
-            box([caseX + x, caseY - .044, caseZ - .094], [.028, .022, .01], "#68716b");
-            box([caseX + x, caseY - .044, caseZ - .102], [.014, .008, .005], "#d2d7cf");
+          drawModelParts(medkitBodyParts);
+          drawModelParts(medkitLidParts, true);
+          box([caseX, caseY - .05, caseZ], [.21, .006, .105], "#303a34");
+          box([caseX, caseY - .045, caseZ], [.19, .004, .085], "#515b50");
+          [-.095, .095].forEach((x) => box([caseX + x, caseY - .005, caseZ], [.008, .006, .095], "#d5d9d0"));
+          box([caseX, caseY - .005, caseZ - .045], [.19, .006, .008], "#d5d9d0");
+          box([caseX, caseY - .005, caseZ + .045], [.19, .006, .008], "#d5d9d0");
+          [-.055, .055].forEach((x) => {
+            box([caseX + x, caseY + hingeY, caseZ + hingeZ + .012], [.025, .018, .025], "#353b37");
+            box([caseX + x, caseY + hingeY, caseZ + hingeZ + .026], [.01, .01, .01], "#9aa398");
           });
-          box(lidCenter, [.31, .04, .17], "#f1f2eb", lidAngle, hinge, "x");
-          box([lidCenter[0], lidCenter[1] + .022, lidCenter[2]], [.03, .01, .08], "#c42a30", lidAngle, hinge, "x");
-          box([lidCenter[0], lidCenter[1] + .022, lidCenter[2]], [.08, .01, .03], "#c42a30", lidAngle, hinge, "x");
-          [-.035, .035].forEach((x) =>
-            box([caseX + x, lidCenter[1] + .038, lidCenter[2] - .036], [.014, .024, .02], "#68716b", lidAngle, hinge, "x"));
-          box([caseX, lidCenter[1] + .048, lidCenter[2] - .036], [.08, .014, .02], "#aeb7ad", lidAngle, hinge, "x");
           if (elapsed > .92) {
-            box([caseX, caseY + .085, caseZ], [.24, .01, .12], "#68716b");
-            const addBandageRoll = (center) => {
-              const radius = .022, halfLength = .048, sides = 8;
-              const ring = (angle, z) => [center[0] + Math.cos(angle) * radius,
-                center[1] + Math.sin(angle) * radius, z];
-              const sections = [
-                [center[2] - halfLength, center[2] - .008, "#f7f5ea"],
-                [center[2] - .008, center[2] + .008, "#c42a30"],
-                [center[2] + .008, center[2] + halfLength, "#f7f5ea"]
-              ];
-              sections.forEach(([z0, z1, color]) => {
-                for (let side = 0; side < sides; side++) {
-                  const a0 = side / sides * Math.PI * 2, a1 = (side + 1) / sides * Math.PI * 2;
-                  list.push({ pts: [ring(a0, z0), ring(a1, z0), ring(a1, z1), ring(a0, z1)], color });
-                }
-              });
-              [center[2] - halfLength, center[2] + halfLength].forEach((z) => {
-                list.push({ pts: [[center[0], center[1], z],
-                  ...Array.from({ length: sides }, (_, side) => ring(side / sides * Math.PI * 2, z))], color: "#d3d8d0" });
-              });
-            };
             const remainingBandages = Math.min(3, Math.max(0, charges.medkit ?? 3));
-            const spacing = remainingBandages === 3 ? .085 : .075;
+            const spacing = remainingBandages === 3 ? .065 : .075;
             for (let index = 0; index < remainingBandages; index++) {
-              addBandageRoll([caseX + (index - (remainingBandages - 1) / 2) * spacing, caseY + .11, caseZ]);
+              addBandageRoll([caseX + (index - (remainingBandages - 1) / 2) * spacing, caseY - .027, caseZ]);
             }
           }
         }
@@ -5151,8 +5550,13 @@
         }
         arm(rightStart, rightEnd, .48, "#394a5d");
 
-        if (elapsed >= 1.18 && elapsed < 2.75) {
-          box([rightEnd[0] - .035, rightEnd[1] - .045, .405], [.13, .055, .045], "#f7f5ea");
+        if (elapsed >= 1.72 && elapsed < 2.75) {
+          const pickup = smooth((elapsed - 1.72) / .62);
+          const heldRoll = [mix(caseX, rightEnd[0] - .045, pickup),
+            mix(caseY - .027, rightEnd[1] + .02, pickup), mix(caseZ, .425, pickup)];
+          addBandageRoll(heldRoll, .016, .034);
+          box([rightEnd[0] - .065, rightEnd[1] + .035, .4], [.07, .022, .025], "#c89170", -.32);
+          box([rightEnd[0] + .005, rightEnd[1] + .012, .4], [.06, .02, .025], "#c89170", .25);
         }
         if (elapsed >= 2.75) {
           const fullWrapTurns = 3.75;
@@ -5458,13 +5862,13 @@
       const fieldPos = document.querySelector("#field-pos");
       const fieldTags = document.querySelector("#field-tags");
       const minimapCanvas = document.querySelector("#minimap-canvas");
-      let minimap, practiceSpawn, freeplayMode = false;
+      let minimap;
       function updateMinimap() {
         const match = multiplayer.match;
         const teammates = match ? [...multiplayer.remotePlayers.values()]
           .filter((player) => player.team === match.team && player.health > 0 && player.state)
           .map((player) => player.state) : [];
-        const objectives = match && !["roundEnd", "over"].includes(multiplayer.round?.phase) ? multiplayer.objectives || [] : [];
+        const objectives = (match || trainingDefuseMode) && !["roundEnd", "over"].includes(multiplayer.round?.phase) ? multiplayer.objectives || [] : [];
         minimap.draw({
           player: drone.active ? drone.returnTo : isDead() ? ownEntry()?.state : cam,
           drone: drone.active ? cam : null,
@@ -5539,7 +5943,7 @@
           ? `${(charges[w.item.id] ?? k.uses).toFixed(1)}%` : k.held ? (k.uses === Infinity ? "READY" : `${charges[w.item.id] ?? k.uses} LEFT`) : k.melee ? "MELEE" : w.reloadEnd ? "RELOADING…" : `${ammoCount} / ${w.reserve}`;
         const droneCount = selectedOperatorId === "mr-m" ? ` · DRONES ${drone.companions.length} ACTIVE / ${drone.uses} LEFT` : "";
         const fragCount = selectedOperatorId === "ms-c" ? ` · FRAGS ${charges.frag ?? 3}/3` : "";
-        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">${operatorInfo().name.toUpperCase()}${droneCount}${fragCount} · [${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · ELIMINATIONS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount === Infinity ? "INF" : barCount}</div>`;
+        weaponHud.innerHTML = `<div style="font-size:30px;color:#d3ef59">${ammo}</div><div>${w.item.name} · ${w.item.type}</div><div>${k.held ? w.item.desc : `DMG ${w.stats.dmg} · RNG ${w.stats.rng} · MOB ${w.stats.mob}`}</div><div style="opacity:.75">${operatorInfo().name.toUpperCase()}${droneCount}${fragCount} · [${bindLabel(currentKeybinds.switchWeapon1)}] ${weapons[loadout.primary].item.name} · [${bindLabel(currentKeybinds.switchWeapon2)}] ${weapons[loadout.secondary].item.name} · [${bindLabel(currentKeybinds.switchWeapon3)}] ${weapons[loadout.gadget].item.name} · [${bindLabel(currentKeybinds.switchWeapon4)}] ${weapons[loadout.equipment].item.name} · [${bindLabel(currentKeybinds.switchWeapon5)}] ${weapons[loadout.breaching].item.name} · ELIMINATIONS ${kills}</div><div style="opacity:.75">[${bindLabel(currentKeybinds.barricade)}] BARRICADES ${barCount === Infinity ? "INF" : barCount}</div>`;
         if (multiplayer.match) {
           const players = multiplayer.match.players || [];
           const first = players.filter((player) => player.team === 1), second = players.filter((player) => player.team === 2);
@@ -5573,7 +5977,7 @@
           : `${siteName(o)} HOSTAGE · ${!o.alive ? "DEAD" : o.followerId ? "ESCORTED" : o.released ? "ABANDONED" : "HELD"}`)];
         const target = round.phase === "live" ? nearbyObjective() : null;
         if (target) {
-          const mine = target.actor === multiplayer.playerId;
+          const mine = target.actor === (trainingDefuseMode ? trainingPlayerId : multiplayer.playerId);
           const verb = target.kind === "bomb" ? (target.armed ? "REMOVE DEFUSER" : "PLACE DEFUSER") : "FREE HOSTAGE";
           lines.push(`<span style="color:#d3ef59">HOLD [${bindLabel(currentKeybinds.interact)}] TO ${verb}${mine ? ` · ${Math.round(target.progress * 100)}%` : ""}</span>`);
         }
@@ -5583,7 +5987,12 @@
       function updateRoundHud() {
         const round = multiplayer.round, match = multiplayer.match;
         healthEl.style.display = match ? "block" : "none";
-        if (!match || !round) { roundEl.textContent = ""; objectiveEl.style.display = "none"; spectateEl.style.display = "none"; damageEl.style.opacity = 0; hudPhase = null; hudHealth = 100; hudDead = false; return; }
+        if (!match || !round) {
+          roundEl.textContent = "";
+          if (trainingDefuseMode) updateObjectiveHud({ mode: "defuse", team: multiplayer.objectives.find((objective) => objective.kind === "bomb")?.armed ? 1 : 2 }, { phase: "live" });
+          else objectiveEl.style.display = "none";
+          spectateEl.style.display = "none"; damageEl.style.opacity = 0; hudPhase = null; hudHealth = 100; hudDead = false; return;
+        }
         const health = Math.max(0, Math.round(ownEntry()?.health ?? 100)), dead = health <= 0;
         healthText.textContent = dead ? "ELIMINATED" : `HP ${health}`;
         healthBar.style.width = `${health}%`;
@@ -5621,7 +6030,8 @@
         sprintPose += ((sprinting ? 1 : 0) - sprintPose) * Math.min(1, dt * 8);
         lean += (((!drone.active && !drone.deploying && k(currentKeybinds.leanRight) ? 1 : 0) -
           (!drone.active && !drone.deploying && k(currentKeybinds.leanLeft) ? 1 : 0)) - lean) * Math.min(1, dt * 10);
-        viewScale = 1.8 * (1 + (drone.deploying ? 0 : ads) * .2);
+        const aimedWeapon = weapons[loadout[curSlot]];
+        viewScale = adsViewScale(drone.deploying || sprinting ? 0 : ads, aimedWeapon?.cfg.optic === "scope", aimedWeapon?.item.id);
         tNow = now / 1000;
         if (!lastT) lastT = tNow;
         updatePaintPuddles();
@@ -5637,8 +6047,9 @@
         if (dead) { grenadeThrowAction = null; cancelDroneDeploy(); if (drone.active) recallDrone(); followSpectate(); }
         else { advanceGrenadeThrow(); finishDroneDeploy(); }
         collectPickups();
-        if (multiplayer.match) updateInteract();
+        if (multiplayer.match || trainingDefuseMode) updateInteract();
         const cw = wpn();
+        const bombAction = currentBombAction();
         const speedBonus = (selectedOperatorId === "hallway-monitor" ? 1.3 : 1) * (cw.item.id === "karambit" ? 1.15 : 1);
         const droneSpeed = drone.mode === "camera" ? 12 : 8;
         const sp = drone.active ? droneSpeed * dt : (sprinting ? 8.5 : 5.5) * speedBonus * (crouched ? .65 : 1) * dt * (.85 + cw.stats.mob * .03);
@@ -5795,13 +6206,14 @@
         gl.uniform3f(u("cam"), 0, 0, 0);
         gl.uniform4f(u("rot"), 1, 0, 1, 0);
         setSmoke(prog, false);
-        const optic = !dead && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
+        const optic = !dead && !bombAction && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() && !sprinting && !cw.reloadEnd && !cw.kind.held && !cw.kind.melee &&
           (mouseAim || k(currentKeybinds.ads)) && ads > .5 && modelDefs[cw.item.id].mounts.optic &&
-          (cw.cfg.optic === "dot" || cw.cfg.optic === "scope") ? cw.cfg.optic : null;
+          (adsOpticFor(cw.item.id, cw.cfg.optic) === "dot" || adsOpticFor(cw.item.id, cw.cfg.optic) === "scope")
+          ? adsOpticFor(cw.item.id, cw.cfg.optic) : null;
         if (optic) el.dataset.optic = optic;
         else delete el.dataset.optic;
         const moving = fwd !== 0 || str !== 0;
-        const vm = dead || optic ? [] : drone.active ? droneViewmodelQuads() : drone.deploying ? tabletActionQuads() : grenadeThrowActionActive()
+        const vm = dead ? [] : bombAction ? bombDefuserActionQuads(bombAction) : optic ? [] : drone.active ? droneViewmodelQuads() : drone.deploying ? tabletActionQuads() : grenadeThrowActionActive()
           ? grenadeThrowActionQuads() : medkitActionActive() ? medkitActionQuads() : barricadeActionActive() ? barricadeActionQuads()
             : cw.item.id === "paint-can" && paintCanActionActive() ? paintCanActionQuads() : viewmodelQuads(cw, moving);
         if (!dead && !drone.active && !drone.deploying && !grenadeThrowActionActive() && !medkitActionActive() && !barricadeActionActive() &&
@@ -5864,8 +6276,8 @@
             const feet = cam.y - eyeHeight;
             crouched = !crouched; eyeHeight = crouched ? CROUCH_EYE : EYE; cam.y = feet + eyeHeight;
           }
-          const slotIndex = [currentKeybinds.switchWeapon1, currentKeybinds.switchWeapon2, currentKeybinds.switchWeapon3, currentKeybinds.switchWeapon4].indexOf(key);
-          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; o.inspectStart = -1; curSlot = id; wpn().equippedAt = tNow; } }
+          const slotIndex = [currentKeybinds.switchWeapon1, currentKeybinds.switchWeapon2, currentKeybinds.switchWeapon3, currentKeybinds.switchWeapon4, currentKeybinds.switchWeapon5].indexOf(key);
+          if (slotIndex !== -1) { const id = ["primary", "secondary", "gadget", "equipment", "breaching"][slotIndex]; if (id !== curSlot) { const o = wpn(); o.reloadEnd = 0; o.swingStart = -1; o.inspectStart = -1; curSlot = id; wpn().equippedAt = tNow; } }
           if (key === "i" && !e.repeat && beginKarambitInspect(wpn(), tNow)) {
             e.preventDefault();
             wpn().inspectStart = tNow;
@@ -5891,15 +6303,17 @@
         if (drone.active) recallDrone();
         drone.companions = [];
         if (multiplayer.match && multiplayer.connected) multiplayer.socket.send(JSON.stringify({ type: "leave_match" }));
-        multiplayer.match = null; multiplayer.remotePlayers.clear();
+        multiplayer.match = null; multiplayer.round = null; multiplayer.objectives = []; multiplayer.remotePlayers.clear();
+        freeplayMode = false; trainingDefuseMode = false; interactState.id = null; objectiveView.clear();
         if (locked()) document.exitPointerLock();
       }
       document.querySelector("#field-exit").addEventListener("click", close);
-      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, remotePaintSpill, remotePaintSpillUpdate, remotePaintIgnited, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false } = {}) {
+      return { close, beginRound, say, addDrop, dropTaken, remoteThrow, remoteExplosion, remotePaintSpill, remotePaintSpillUpdate, remotePaintIgnited, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false, mode = "freeplay" } = {}) {
         freeplayMode = practice;
+        trainingDefuseMode = practice && mode === "defuse";
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);
-        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · I inspect Karambit · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
+        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · I inspect Karambit · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")}/${b("switchWeapon5")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
         cancelDroneDeploy();
         if (drone.active) recallDrone();
         clearBarricades();
@@ -5917,10 +6331,17 @@
         crouched = false; eyeHeight = EYE; lean = 0;
         el.classList.add("open"); if (!gl) initGL();
         if (practice) {
-          multiplayer.match = null; multiplayer.remotePlayers.clear();
+          multiplayer.match = null; multiplayer.round = null; multiplayer.remotePlayers.clear();
           if (isCanyon()) Object.assign(cam, GrandCanyon.spawns[1][0], { pitch: 0, vy: 0 });
           else { cam.x = -30; cam.y = EYE; cam.z = HW + 4; cam.yaw = Math.atan2(30, -(HW + 4)); cam.pitch = -.05; cam.vy = 0; }
           practiceSpawn = { x: cam.x, z: cam.z };
+          multiplayer.objectives = trainingDefuseMode ? [{
+            id: "training-bomb", kind: "bomb", site: "training",
+            x: cam.x + Math.sin(cam.yaw) * 1.35, y: cam.y - eyeHeight,
+            z: cam.z + Math.cos(cam.yaw) * 1.35,
+            armed: false, defuseMs: 25000, actor: null, progress: 0
+          }] : [];
+          objectiveView.clear(); interactState.id = null; practiceInteractStartedAt = 0; practiceInteractBlocked = false;
           kills = 0;
         } else if (multiplayer.match) {
           const spawn = multiplayer.match.spawn;
@@ -5941,7 +6362,7 @@
       }
       fieldView.open(options);
     }
-    function openFreeplay() { openField({ practice: true }); }
+    function openFreeplay() { openField({ practice: true, mode: selection.TRAINING.mode.id }); }
 
     setSection("PLAY");
 

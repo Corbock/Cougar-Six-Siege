@@ -27,19 +27,20 @@ const matchOverSeconds = 8;
 const roundsToWin = 2;
 const operatorIds = new Set(["mr-m", "mr-l", "ms-c", "ms-a", "hallway-monitor", "skanska", "pyromaniac", "custom"]);
 const operatorKits = {
-  "mr-m": { primary: "vector", secondary: "p45", gadget: "drone", equipment: "flash" },
-  "mr-l": { primary: "hammer", secondary: "rattler", gadget: "medkit", equipment: "smoke" },
-  "ms-c": { primary: "mk18", secondary: "p45", gadget: "shield", equipment: "frag" },
-  "ms-a": { primary: "vector", secondary: "rattler", gadget: "medkit", equipment: "flash" },
-  "hallway-monitor": { primary: "longwatch", secondary: "magnum", gadget: "camera-drone", equipment: "smoke" },
-  "skanska": { primary: "hammer", secondary: "sledgehammer", gadget: "steel-bars", equipment: "claymore" },
-  pyromaniac: { primary: "f451", secondary: "sledgehammer", gadget: "paint-can", equipment: "molotov" }
+  "mr-m": { primary: "vector", secondary: "p45", breaching: "sledgehammer", gadget: "drone", equipment: "flash" },
+  "mr-l": { primary: "hammer", secondary: "rattler", breaching: "sledgehammer", gadget: "medkit", equipment: "smoke" },
+  "ms-c": { primary: "mk18", secondary: "p45", breaching: "sledgehammer", gadget: "shield", equipment: "frag" },
+  "ms-a": { primary: "vector", secondary: "rattler", breaching: "sledgehammer", gadget: "medkit", equipment: "flash" },
+  "hallway-monitor": { primary: "longwatch", secondary: "magnum", breaching: "sledgehammer", gadget: "camera-drone", equipment: "smoke" },
+  "skanska": { primary: "hammer", secondary: "p45", breaching: "sledgehammer", gadget: "steel-bars", equipment: "claymore" },
+  pyromaniac: { primary: "f451", secondary: "p45", breaching: "sledgehammer", gadget: "paint-can", equipment: "molotov" }
 };
 const customItems = {
   primary: ["mk18", "vector", "hammer", "longwatch"],
-  secondary: ["p45", "rattler", "magnum", "sledgehammer", "karambit"],
+  secondary: ["p45", "rattler", "magnum"],
   gadget: ["shield", "drone", "camera-drone", "steel-bars", "medkit"],
-  equipment: ["frag", "flash", "smoke", "claymore"]
+  equipment: ["frag", "flash", "smoke", "claymore"],
+  breaching: ["sledgehammer", "karambit"]
 };
 const paintColors = ["#f6df35", "#f04c9b", "#32a6ef", "#70df45", "#f78a30", "#a765e9", "#d6dad2"];
 const weaponSkins = new Set(["none", "night-digital", "tiger-stripe", "circuit", "ember"]);
@@ -887,6 +888,7 @@ function handleMessage(player, raw) {
     });
     const damage = Number(message.damage);
     const sniper = hasActiveSniper(player, shooterState);
+    const magnum = shooterState.activeSlot === "secondary" && kit.secondary === "magnum";
     if (!Number.isFinite(distance) || (!sniper && distance > 100) || !Number.isFinite(damage) || (flamethrower && distance > flamethrowerRange)) return;
     if (pelletId) {
       if (volley) player.shotgunVolley.count++;
@@ -914,7 +916,8 @@ function handleMessage(player, raw) {
       }
       return;
     }
-    applyDamage(match, player, target, instantHeadshot ? target.health : sniper ? 50 : Math.min(55, Math.max(1, damage)));
+    applyDamage(match, player, target, sniper ? (instantHeadshot ? 100 : 75) :
+      instantHeadshot ? target.health : magnum ? 25 : Math.min(55, Math.max(1, damage)));
     return;
   }
   if (message.type === "paint" && player.matchId) {
@@ -1096,7 +1099,7 @@ function handleMessage(player, raw) {
     const match = matches.get(player.matchId), id = String(message.id || "");
     const mine = match?.projectiles.get(id), state = player.state;
     const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
-    const weaponId = ["primary", "secondary"].includes(state?.activeSlot) ? kit?.[state.activeSlot] : null;
+    const weaponId = ["primary", "secondary", "breaching"].includes(state?.activeSlot) ? kit?.[state.activeSlot] : null;
     const now = Date.now(), snapshotAt = Number(message.snapshotAt), snapshotShooterState = stateAt(player, snapshotAt, now);
     const aim = message.direction || {}, length = Math.hypot(aim.x, aim.y, aim.z);
     if (!match || match.phase !== "live" || player.health <= 0 || !mine?.mine || mine.kind !== "claymore" ||
@@ -1268,7 +1271,7 @@ function handleMessage(player, raw) {
     else if (!player.droneLock || player.droneLock.targetId !== targetId || now - player.droneLock.lastSeen > 300)
       player.droneLock = { targetId, since: now, lastSeen: now };
     else player.droneLock.lastSeen = now;
-    const activeSlot = ["primary", "secondary", "gadget", "equipment"].includes(state.activeSlot) ? state.activeSlot : null;
+    const activeSlot = ["primary", "secondary", "gadget", "equipment", "breaching"].includes(state.activeSlot) ? state.activeSlot : null;
     player.state = {
       ...body,
       equippedPaint: validPaint(state.equippedPaint),
@@ -1332,7 +1335,7 @@ webSockets.on("connection", (socket) => {
     operatorId: "mr-m",
     customPrimary: "mk18",
     customGadget: "drone",
-    customLoadout: { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag" },
+    customLoadout: { primary: "mk18", secondary: "p45", breaching: "sledgehammer", gadget: "drone", equipment: "frag" },
     socket,
     partyCode: null,
     queuedMode: null,

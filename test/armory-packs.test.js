@@ -116,14 +116,14 @@ test("Karambit is hidden until unlocked and can drop at a rare 2% rate", () => {
   const helpers = section("    const karambitUnlocked =", "    const paintSkinUnlocked =");
   const context = {
     karambitRewardKey: "weapon:karambit", ownedWraps: new Set(), selectedOperatorId: "custom",
-    customLoadout: { secondary: "karambit" }, loadout: { secondary: "karambit" }
+    customLoadout: { breaching: "karambit" }, loadout: { breaching: "karambit" }
   };
   vm.runInNewContext(`${helpers}
     globalThis.visible = loadoutItemsFor;
     globalThis.isUnlocked = karambitUnlocked;`, context);
   assert.equal(context.isUnlocked(), false);
   assert.deepEqual([...context.visible({ items: [{ id: "p45" }, { id: "karambit" }] })].map(({ id }) => id), ["p45"]);
-  assert.equal(context.customLoadout.secondary, "p45");
+  assert.equal(context.customLoadout.breaching, "sledgehammer");
   context.ownedWraps.add("weapon:karambit");
   assert.equal(context.isUnlocked(), true);
   assert.deepEqual([...context.visible({ items: [{ id: "p45" }, { id: "karambit" }] })].map(({ id }) => id), ["p45", "karambit"]);
@@ -255,7 +255,7 @@ test("a rare Karambit pack reveal unlocks the weapon with a distinct rare presen
   const reward = { hidden: true };
   const context = {
     packs: 1, packOpening: false, packPairs: ["weapon:karambit"], packWeapons: [],
-    loadoutSlots: [{ id: "secondary", items: [{ id: "karambit", name: "Karambit" }] }],
+    loadoutSlots: [{ id: "breaching", items: [{ id: "karambit", name: "Karambit" }] }],
     ownedWraps: new Set(), packRewardPool: () => ["weapon:karambit"], choosePackReward: (pool) => pool[0],
     packReward: reward, packRewardSwatch: { style: {}, firstElementChild: { textContent: "" } },
     packStage: { className: "" }, packStageState: { textContent: "" }, packStatusText: "",
