@@ -36,12 +36,26 @@ const operatorKits = {
   pyromaniac: { primary: "f451", secondary: "p45", breaching: "sledgehammer", gadget: "paint-can", equipment: "molotov" }
 };
 const customItems = {
-  primary: ["mk18", "vector", "hammer", "longwatch"],
-  secondary: ["p45", "rattler", "magnum"],
-  gadget: ["shield", "drone", "camera-drone", "steel-bars", "medkit"],
-  equipment: ["frag", "flash", "smoke", "claymore"],
-  breaching: ["sledgehammer", "karambit"]
+  primary: ["mk18", "mk19", "burst3", "vector", "horn-chopper-2000", "hammer", "slug-v", "double-pump", "longwatch", "cmr", "loudwatch", "cougar-blade"],
+  secondary: ["p45", "dualies", "rattler", "magnum", "blunder-b", "cougar-blade"],
+  gadget: ["shield", "drone", "camera-drone", "steel-bars", "medkit", "cougar-blade"],
+  equipment: ["frag", "blast", "flash", "smoke", "toxic", "claymore", "cougar-blade"],
+  breaching: ["sledgehammer", "crowbar", "lunchbox", "karambit", "pencil-2", "cougar-blade"]
 };
+const weaponFamilies = {
+  mk18: "Assault Rifle", mk19: "Assault Rifle", burst3: "Assault Rifle",
+  vector: "SMG", rattler: "SMG", "horn-chopper-2000": "SMG",
+  hammer: "Shotgun", "slug-v": "Shotgun", "double-pump": "Shotgun", "blunder-b": "Shotgun",
+  longwatch: "Rifle", cmr: "Rifle", loudwatch: "Rifle",
+  p45: "Pistol", dualies: "Pistol", magnum: "Pistol",
+  f451: "Flamethrower",
+  sledgehammer: "Blunt Melee", crowbar: "Blunt Melee", lunchbox: "Blunt Melee",
+  karambit: "Knife", "pencil-2": "Knife", "cougar-blade": "Knife",
+  frag: "Hand Grenade", blast: "Hand Grenade", smoke: "Gas Grenade", toxic: "Gas Grenade"
+};
+const playerLoadout = (player) => player.operatorId === "custom" ? player.customLoadout :
+  player.operatorLoadout || operatorKits[player.operatorId];
+const playerMaxHealth = (player) => Object.values(playerLoadout(player) || {}).includes("cougar-blade") ? 300 : 100;
 const paintColors = ["#f6df35", "#f04c9b", "#32a6ef", "#70df45", "#f78a30", "#a765e9", "#d6dad2"];
 const weaponSkins = new Set(["none", "night-digital", "tiger-stripe", "circuit", "ember"]);
 const weaponKeychains = new Set(["none", "cougar-tag", "lucky-star", "lucky-dice", "mini-drone"]);
@@ -285,7 +299,7 @@ function applyDamage(match, attacker, target, amount) {
   checkRound(match);
 }
 
-const blastRadius = { frag: 6, claymore: 5 };
+const blastRadius = { frag: 6, blast: 9, claymore: 5 };
 const flamethrowerDamage = 7;
 const flamethrowerRange = 10;
 const fireTickDamage = 5;
@@ -391,6 +405,24 @@ function tickFireEffects(match, now) {
       zone.ignitedPlayers.add(target.id);
     }
   }
+  match.toxicZones ||= new Map();
+  for (const [zoneId, zone] of match.toxicZones) {
+    if (now >= zone.expiresAt) { match.toxicZones.delete(zoneId); continue; }
+    if (now < zone.nextTickAt) continue;
+    zone.nextTickAt += 500;
+    const attacker = players.get(zone.ownerId);
+    if (!attacker || attacker.matchId !== match.id) continue;
+    zone.exposure ||= new Map();
+    for (const id of match.players) {
+      const target = players.get(id);
+      if (!target || target.team === attacker.team || target.health <= 0 || !target.state) continue;
+      const distance = Math.hypot(target.state.x - zone.x, target.state.z - zone.z);
+      if (distance >= zone.radius) { zone.exposure.delete(id); continue; }
+      const exposure = (zone.exposure.get(id) || 0) + 1;
+      zone.exposure.set(id, exposure);
+      applyDamage(match, attacker, target, Math.min(12, exposure * 2));
+    }
+  }
 }
 const finite = (value, limit) => Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0;
 
@@ -404,6 +436,7 @@ function startRound(match, type) {
   match.projectiles = new Map();
   match.tornadoes = new Map();
   match.fireZones = new Map();
+  match.toxicZones = new Map();
   match.paintPuddles = new Map();
   match.phase = "prep";
   const objective = objectiveModes.has(match.mode);
@@ -415,7 +448,7 @@ function startRound(match, type) {
   for (const player of members) {
     player.team = match.swapped ? 3 - player.group : player.group;
     player.interact = null;
-    player.health = 100;
+    player.health = playerMaxHealth(player);
     player.medkits = 3;
     player.paintCanRemaining = 100;
     player.lastHealAt = 0;
@@ -432,7 +465,7 @@ function startRound(match, type) {
     player.stateHistory = [{ at: Date.now(), state: player.state }];
   }
   match.objectives = buildObjectives(match, members);
-  const roster = members.map(({ id, name, team, operatorId }) => ({ id, name, team, operatorId }));
+  const roster = members.map(({ id, name, team, operatorId, health }) => ({ id, name, team, operatorId, health }));
   for (const player of members) {
     sendPlayer(player, { type, ...matchInfo(match), team: player.team, spawn: player.spawn, players: roster });
   }
@@ -679,6 +712,8 @@ function uncoveredHeadHit(state, origin, direction) {
 
 function isInstantHeadshotWeapon(player, kit, state = player?.state) {
   if (!state?.activeSlot) return false;
+  const weaponId = kit?.[state.activeSlot];
+  if (["slug-v", "loudwatch"].includes(weaponId)) return false;
   return state.activeSlot === "primary" ||
     (state.activeSlot === "secondary" && kit?.secondary === "magnum");
 }
@@ -698,12 +733,14 @@ function shootHostage(match, player, message, now, state = player.state) {
     const distance = rayBox(origin, direction, { x0: o.x - .4, x1: o.x + .4, y0: o.y, y1: o.y + 1.9, z0: o.z - .4, z1: o.z + .4 });
     if (distance < bestDistance) { best = o; bestDistance = distance; }
   }
-  const damage = Number(message.damage);
+  const damage = Number(message.damage), kit = playerLoadout(player), weaponId = kit?.[state.activeSlot];
   if (!best || bestDistance > 100 || !Number.isFinite(damage)) return;
   player.lastShotAt = now;
   const shieldDistance = hasActiveSniper(player, state) ? Infinity : nearestShieldHit(match, player, origin, direction, bestDistance);
   if (Number.isFinite(shieldDistance)) return relayShieldImpact(match, player, origin, direction, shieldDistance, true);
-  hostageHurt(match, player, best, Math.min(55, Math.max(1, damage)));
+  const amount = weaponId === "slug-v" ? 90 : weaponId === "loudwatch" ? Math.min(12, Math.max(1, damage)) :
+    Math.min(55, Math.max(1, damage));
+  hostageHurt(match, player, best, amount);
 }
 
 function shieldHitDistance(state, origin, direction) {
@@ -748,13 +785,14 @@ function relayShieldImpact(match, player, origin, direction, distance, includeSe
 }
 
 function hasActiveShield(player, state) {
+  const kit = playerLoadout(player);
   return !state.droneState && state.activeSlot === "gadget" &&
-    (player.operatorId === "ms-c" || (player.operatorId === "custom" && player.customGadget === "shield"));
+    (player.operatorId === "ms-c" || kit?.gadget === "shield");
 }
 
 function hasActiveSniper(player, state = player.state) {
-  return state.activeSlot === "primary" &&
-    (player.operatorId === "hallway-monitor" || (player.operatorId === "custom" && player.customPrimary === "longwatch"));
+  const kit = playerLoadout(player);
+  return state.activeSlot === "primary" && ["longwatch", "cmr", "loudwatch"].includes(kit?.primary);
 }
 
 function removePlayer(player) {
@@ -779,12 +817,16 @@ function handleMessage(player, raw) {
   if (message.type === "select_operator") {
     if (!player.matchId && operatorIds.has(message.operatorId)) {
       player.operatorId = message.operatorId;
-      if (message.operatorId === "custom" && message.loadout && typeof message.loadout === "object") {
+      player.operatorLoadout = { ...operatorKits[message.operatorId] };
+      if (message.loadout && typeof message.loadout === "object") {
         for (const [slot, allowed] of Object.entries(customItems)) {
-          if (allowed.includes(message.loadout[slot])) player.customLoadout[slot] = message.loadout[slot];
+          const itemId = message.loadout[slot];
+          if (!allowed.includes(itemId)) continue;
+          if (message.operatorId === "custom") player.customLoadout[slot] = itemId;
+          else if (!(message.operatorId === "ms-c" && itemId === "dualies") &&
+            weaponFamilies[itemId] && weaponFamilies[itemId] === weaponFamilies[operatorKits[message.operatorId][slot]])
+            player.operatorLoadout[slot] = itemId;
         }
-        player.customPrimary = player.customLoadout.primary;
-        player.customGadget = player.customLoadout.gadget;
       }
     }
     return;
@@ -836,18 +878,41 @@ function handleMessage(player, raw) {
   }
   if (message.type === "leave_queue") return removeFromQueue(player);
   if (message.type === "leave_match") return leaveMatch(player);
+  if (message.type === "loudwatch_impact" && player.matchId) {
+    const match = matches.get(player.matchId), state = player.state, point = message.point;
+    if (!match || match.phase !== "live" || player.health <= 0 ||
+        playerLoadout(player).primary !== "loudwatch" || state.activeSlot !== "primary" ||
+        !Array.isArray(point) || point.length !== 3 || !point.every(Number.isFinite) ||
+        point.some((value) => Math.abs(value) > (match.map === "harbor" ? 240 : 150)) ||
+        Math.hypot(point[0] - state.x, point[1] - state.y, point[2] - state.z) > 140) return;
+    const now = Date.now();
+    if (now - (player.lastLoudwatchImpactAt || 0) < 358) return;
+    player.lastLoudwatchImpactAt = now;
+    for (const id of match.players) {
+      const target = players.get(id);
+      if (!target || target.team === player.team || target.health <= 0 || !target.state ||
+          Math.hypot(target.state.x - point[0], target.state.y - point[1], target.state.z - point[2]) > 8) continue;
+      target.markedUntil = now + 6000;
+      sendPlayer(target, { type: "player_blinded", duration: 1200 });
+    }
+    return;
+  }
   if (message.type === "shoot" && player.matchId) {
     const now = Date.now();
     const match = matches.get(player.matchId);
     if (!match || match.phase !== "live" || player.health <= 0) return;
     const snapshotAt = Number(message.snapshotAt);
     const shooterState = player.state;
-    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
-    const flamethrower = player.state.activeSlot === "primary" && kit.primary === "f451";
-    const pelletId = player.state.activeSlot === "primary" && kit.primary === "hammer" &&
+    const kit = playerLoadout(player);
+    const activeWeaponId = kit?.[shooterState.activeSlot];
+    const flamethrower = shooterState.activeSlot === "primary" && kit.primary === "f451";
+    const groupedWeapon = ["hammer", "double-pump", "blunder-b", "burst3"].includes(activeWeaponId) &&
       typeof message.shotId === "string" && message.shotId.length > 0 && message.shotId.length <= 48 ? message.shotId : null;
-    const volley = pelletId && player.shotgunVolley?.id === pelletId && now - player.shotgunVolley.started < 100;
-    if (volley ? player.shotgunVolley.count >= 8 : flamethrower ? now - player.lastFlameShotAt < 180 : now - player.lastShotAt < 60) return;
+    const volley = groupedWeapon && player.shotgunVolley?.id === groupedWeapon && now - player.shotgunVolley.started < 100;
+    const volleyLimit = activeWeaponId === "double-pump" ? 12 : activeWeaponId === "blunder-b" ? 6 : activeWeaponId === "burst3" ? 3 : 8;
+    const minimumShotInterval = activeWeaponId === "horn-chopper-2000" ? 50 : 60;
+    if (volley ? player.shotgunVolley.count >= volleyLimit : flamethrower ? now - player.lastFlameShotAt < 180 :
+        now - player.lastShotAt < minimumShotInterval) return;
     if (message.targetId === "hostage") {
       if (!volley) {
         if (flamethrower) player.lastFlameShotAt = now;
@@ -890,9 +955,9 @@ function handleMessage(player, raw) {
     const sniper = hasActiveSniper(player, shooterState);
     const magnum = shooterState.activeSlot === "secondary" && kit.secondary === "magnum";
     if (!Number.isFinite(distance) || (!sniper && distance > 100) || !Number.isFinite(damage) || (flamethrower && distance > flamethrowerRange)) return;
-    if (pelletId) {
+    if (groupedWeapon) {
       if (volley) player.shotgunVolley.count++;
-      else player.shotgunVolley = { id: pelletId, started: now, count: 1 };
+      else player.shotgunVolley = { id: groupedWeapon, started: now, count: 1 };
     }
     if (!volley) player.lastShotAt = now;
     if (flamethrower) player.lastFlameShotAt = now;
@@ -902,7 +967,7 @@ function handleMessage(player, raw) {
       return;
     }
     const instantHeadshot = isInstantHeadshotWeapon(player, kit, shooterState) && uncoveredHeadHit(targetState, origin, direction);
-    if (volley && !instantHeadshot) return;
+    if (volley && activeWeaponId !== "burst3" && !instantHeadshot) return;
     if (flamethrower) {
       if (fireImmune(target)) return;
       applyDamage(match, player, target, flamethrowerDamage);
@@ -916,8 +981,15 @@ function handleMessage(player, raw) {
       }
       return;
     }
-    applyDamage(match, player, target, sniper ? (instantHeadshot ? 100 : 75) :
-      instantHeadshot ? target.health : magnum ? 25 : Math.min(55, Math.max(1, damage)));
+    const specialMeleeHeadshot = ["lunchbox", "pencil-2"].includes(activeWeaponId) &&
+      uncoveredHeadHit(targetState, origin, direction);
+    const appliedDamage = activeWeaponId === "slug-v" ? 90 :
+      activeWeaponId === "loudwatch" ? Math.min(12, Math.max(1, damage)) :
+        activeWeaponId === "cougar-blade" ? 40 :
+          specialMeleeHeadshot ? target.health :
+            sniper && activeWeaponId === "longwatch" ? (instantHeadshot ? 100 : 75) :
+              instantHeadshot ? target.health : magnum ? 25 : Math.min(55, Math.max(1, damage));
+    applyDamage(match, player, target, appliedDamage);
     return;
   }
   if (message.type === "paint" && player.matchId) {
@@ -942,7 +1014,7 @@ function handleMessage(player, raw) {
   }
   if (message.type === "paint_pour" && player.matchId) {
     const match = matches.get(player.matchId), state = player.state;
-    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const kit = playerLoadout(player);
     const now = Date.now(), id = String(message.id || "").slice(0, 48);
     if (!match || match.phase !== "live" || player.health <= 0 || !state || player.operatorId !== "pyromaniac" ||
         kit?.gadget !== "paint-can" || state.activeSlot !== "gadget" || !id ||
@@ -984,7 +1056,7 @@ function handleMessage(player, raw) {
   }
   if (message.type === "paint_ignite" && player.matchId) {
     const match = matches.get(player.matchId), state = player.state;
-    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const kit = playerLoadout(player);
     const now = Date.now(), spill = match?.paintPuddles?.get(String(message.id || ""));
     if (!match || match.phase !== "live" || player.health <= 0 || !state || player.operatorId !== "pyromaniac" ||
         kit?.primary !== "f451" || state.activeSlot !== "primary" || !spill || spill.expiresAt <= now ||
@@ -1081,9 +1153,11 @@ function handleMessage(player, raw) {
   }
   if (message.type === "throw" && player.matchId) {
     const match = matches.get(player.matchId);
-    if (!match || match.phase === "over" || player.health <= 0 || !["frag", "flash", "smoke", "claymore", "molotov"].includes(message.kind)) return;
-    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    if (!match || match.phase === "over" || player.health <= 0 ||
+        !["frag", "blast", "flash", "smoke", "toxic", "claymore", "molotov"].includes(message.kind)) return;
+    const kit = playerLoadout(player);
     if (message.kind === "molotov" && kit.equipment !== "molotov") return;
+    if (["blast", "toxic"].includes(message.kind) && kit.equipment !== message.kind) return;
     const id = String(message.id || "").slice(0, 48);
     if (!id || match.projectiles.has(id) || [...match.projectiles.values()].filter((entry) => entry.owner === player.id).length >= 12) return;
     const tornado = message.kind === "smoke" && player.operatorId === "mr-l";
@@ -1098,7 +1172,7 @@ function handleMessage(player, raw) {
   if (message.type === "mine_hit" && player.matchId) {
     const match = matches.get(player.matchId), id = String(message.id || "");
     const mine = match?.projectiles.get(id), state = player.state;
-    const kit = player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId];
+    const kit = playerLoadout(player);
     const weaponId = ["primary", "secondary", "breaching"].includes(state?.activeSlot) ? kit?.[state.activeSlot] : null;
     const now = Date.now(), snapshotAt = Number(message.snapshotAt), snapshotShooterState = stateAt(player, snapshotAt, now);
     const aim = message.direction || {}, length = Math.hypot(aim.x, aim.y, aim.z);
@@ -1173,17 +1247,22 @@ function handleMessage(player, raw) {
       }
       return;
     }
+    if (projectile.kind === "toxic" && match.phase === "live") {
+      match.toxicZones ||= new Map();
+      match.toxicZones.set(String(message.id), { ownerId: player.id, x, z, radius: 5, expiresAt: Date.now() + 10000, nextTickAt: Date.now() + 500, exposure: new Map() });
+    }
     if (!radius || match.phase !== "live") return;
+    const blastPower = projectile.kind === "blast" ? 90 : 130;
     for (const targetId of [...match.players]) {
       const target = players.get(targetId);
       if (!target || target.team === player.team || target.health <= 0) continue;
       const distance = Math.hypot(target.state.x - x, target.state.y - 1 - y, target.state.z - z);
-      if (distance < radius) applyDamage(match, player, target, Math.max(1, Math.round(130 * (1 - distance / radius))));
+      if (distance < radius) applyDamage(match, player, target, Math.max(1, Math.round(blastPower * (1 - distance / radius))));
     }
     for (const hostage of match.objectives) {
       if (hostage.kind !== "hostage" || !hostage.alive) continue;
       const distance = Math.hypot(hostage.x - x, hostage.y + .9 - y, hostage.z - z);
-      if (distance < radius) hostageHurt(match, player, hostage, Math.max(1, Math.round(130 * (1 - distance / radius))));
+      if (distance < radius) hostageHurt(match, player, hostage, Math.max(1, Math.round(blastPower * (1 - distance / radius))));
     }
     return;
   }
@@ -1201,6 +1280,9 @@ function handleMessage(player, raw) {
       const paint = src !== "hammer" && paintColors.includes(message.paint) ? message.paint : null;
       relayToMatch(match, player, { type: "bar", op: "hit", id, p: message.p, radius: finite(message.radius, 5), power: finite(message.power, 5000), chip: message.chip === true, src, paint,
         paintSkin: paint && weaponSkins.has(message.paintSkin) ? message.paintSkin : "none" });
+    } else if (message.op === "unsteel") {
+      if (player.state.activeSlot !== "breaching" || playerLoadout(player).breaching !== "crowbar") return;
+      relayToMatch(match, player, { type: "bar", op: "unsteel", id });
     } else if (message.op === "repair" || message.op === "steel") relayToMatch(match, player, { type: "bar", op: message.op, id });
     return;
   }
@@ -1217,10 +1299,10 @@ function handleMessage(player, raw) {
   if (message.type === "heal" && player.matchId) {
     const match = matches.get(player.matchId);
     const now = Date.now();
-    if (!match || match.phase !== "live" || player.health <= 0 || player.health >= 100 || player.medkits <= 0 || now - player.lastHealAt < 1000) return;
+    if (!match || match.phase !== "live" || player.health <= 0 || player.health >= playerMaxHealth(player) || player.medkits <= 0 || now - player.lastHealAt < 1000) return;
     player.lastHealAt = now;
     player.medkits--;
-    player.health = Math.min(100, player.health + 50);
+    player.health = Math.min(playerMaxHealth(player), player.health + 50);
     for (const id of match.players) sendPlayer(players.get(id), { type: "player_healed", playerId: player.id, health: player.health });
     return;
   }
@@ -1293,7 +1375,8 @@ function handleMessage(player, raw) {
         mode: ["scanner", "attacker", "camera"].includes(state.droneState.mode) ? state.droneState.mode : null
       } : null,
       activeSlot,
-      equippedItem: activeSlot ? (player.operatorId === "custom" ? player.customLoadout : operatorKits[player.operatorId])[activeSlot] : null,
+      equippedItem: activeSlot ? playerLoadout(player)[activeSlot] : null,
+      marked: Object.values(playerLoadout(player)).includes("cougar-blade") || (player.markedUntil || 0) > now,
       shieldActive: hasActiveShield(player, state)
     };
     player.stateHistory ||= [];
@@ -1333,8 +1416,7 @@ webSockets.on("connection", (socket) => {
     id: crypto.randomUUID(),
     name: `OPERATOR_${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
     operatorId: "mr-m",
-    customPrimary: "mk18",
-    customGadget: "drone",
+    operatorLoadout: { ...operatorKits["mr-m"] },
     customLoadout: { primary: "mk18", secondary: "p45", breaching: "sledgehammer", gadget: "drone", equipment: "frag" },
     socket,
     partyCode: null,

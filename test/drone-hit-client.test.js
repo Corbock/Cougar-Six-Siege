@@ -16,7 +16,7 @@ function client() {
   const context = { Math: math, cam: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0 },
     renderCam: { x: 0, y: 1.8, z: 0 }, selectedOperatorId: "ms-a", keys: new Set(),
     currentKeybinds: { sprint: "shift" }, EYE: 1.8, CROUCH_EYE: 1.05,
-    colliders: [], dummies: [], sent, sendMatch: (message) => sent.push(message),
+    colliders: [], dummies: [], projectiles: [], sent, sendMatch: (message) => sent.push(message),
     multiplayer: { match: { team: 1 }, round: { phase: "live" }, remotePlayers: new Map() },
     curSlot: "primary", recordHit() {}, mark() {}, say() {}, showShieldImpact() {}, paintHit() {},
     hurtDummy(dummy, damage) { dummy.hp -= damage; } };

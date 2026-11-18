@@ -26,6 +26,7 @@ function flameSimulation(targetOperator = "custom", targetDistance = 10) {
     players: new Map([[attacker.id, attacker], [target.id, target]]),
     matches: new Map([[match.id, match]]),
     operatorKits: { pyromaniac: { primary: "f451", secondary: "p45", breaching: "sledgehammer", gadget: "paint-can", equipment: "molotov" } },
+    playerLoadout: (player) => player.operatorId === "custom" ? player.customLoadout : context.operatorKits[player.operatorId],
     sendPlayer: (_player, message) => events.push(message),
     nearestShieldHit: () => Infinity,
     relayShieldImpact() {},
@@ -63,7 +64,8 @@ test("Pyromaniac has the requested locked kit and both incendiary items have usa
   assert.equal(context.ids.has("pyromaniac"), true);
   assert.deepEqual({ ...context.kits.pyromaniac }, { ...pyromaniac.loadout });
   assert.equal(context.slots.find((slot) => slot.id === "primary").items.find((item) => item.id === "f451").type, "FLAMETHROWER");
-  assert.deepEqual([...context.slots.find((slot) => slot.id === "breaching").items.map((item) => item.id)], ["sledgehammer", "karambit"]);
+  assert.deepEqual([...context.slots.find((slot) => slot.id === "breaching").items.map((item) => item.id)],
+    ["sledgehammer", "crowbar", "lunchbox", "karambit", "pencil-2", "cougar-blade"]);
   assert.equal(context.slots.find((slot) => slot.id === "equipment").items.find((item) => item.id === "molotov").type, "INCENDIARY");
   assert.equal(context.slots.find((slot) => slot.id === "primary").items.find((item) => item.id === "f451").presetOnly, true);
   assert.equal(context.slots.find((slot) => slot.id === "equipment").items.find((item) => item.id === "molotov").presetOnly, true);
@@ -77,8 +79,11 @@ test("Pyromaniac has the requested locked kit and both incendiary items have usa
   assert.equal(context.customItems.equipment.includes("molotov"), false);
   assert.equal(context.customItems.secondary.includes("sledgehammer"), false);
   assert.equal(context.customItems.breaching.includes("sledgehammer"), true);
-  const loadoutFilter = section(html, "const loadoutItemsFor =", "if (!karambitUnlocked())");
-  const filterContext = { selectedOperatorId: "custom", karambitUnlocked: () => true };
+  const loadoutFilter = section(html, "const loadoutItemsFor =", "const paintSkinUnlocked =");
+  const filterContext = { selectedOperatorId: "custom", karambitUnlocked: () => true,
+    loadoutSlots: [], customLoadout: {}, loadout: {}, ownedWraps: new Set(),
+    weaponUnlocked: (item) => !item.rarePack,
+    weaponRewardKey: (id) => `weapon:${id}`, itemFamily: (item) => item.family || item.name };
   vm.runInNewContext(`${loadoutFilter}\nglobalThis.filter = loadoutItemsFor;`, filterContext);
   const incendiarySlots = { items: [
     { id: "mk18" }, { id: "f451", presetOnly: true }, { id: "paint-can", presetOnly: true },
@@ -89,10 +94,15 @@ test("Pyromaniac has the requested locked kit and both incendiary items have usa
   assert.deepEqual([...filterContext.filter(incendiarySlots).map(({ id }) => id)], ["mk18", "f451", "paint-can", "frag", "molotov"]);
 
   const models = section(html, "const modelDefs = {", "const finishes =");
-  const modelContext = { Math, box: (...values) => values, cyl: (...values) => values, ball: (...values) => values };
+  const modelContext = {
+    Math,
+    box: (cx, cy, cz, w, h, d, m, rz = 0) => ({ k: "box", c: [cx, cy, cz], s: [w, h, d], m, rz }),
+    cyl: (axis, cx, cy, cz, len, r, m, r2 = r) => ({ k: "cyl", axis, c: [cx, cy, cz], len, r, r2, m }),
+    ball: (cx, cy, cz, r, m, sy = 1) => ({ k: "ball", c: [cx, cy, cz], r, m, sy })
+  };
   vm.runInNewContext(`${models}\nglobalThis.defs = modelDefs;`, modelContext);
   for (const id of ["f451", "molotov", "paint-can"]) assert.ok(modelContext.defs[id].parts.length >= 7, id);
-  assert.equal(modelContext.defs.molotov.parts.filter((part) => part[6] === "wick").length, 3);
+  assert.equal(modelContext.defs.molotov.parts.filter((part) => part.m === "wick").length, 3);
 });
 
 test("Paint-can spills require Pyromaniac and the F 451 lights aimed paint into a fire zone", () => {
@@ -106,6 +116,7 @@ test("Paint-can spills require Pyromaniac and the F 451 lights aimed paint into 
     Math, Number, Set, Date: { now: () => now },
     players: new Map([[player.id, player]]), matches: new Map([[match.id, match]]),
     operatorKits: { pyromaniac: { primary: "f451", gadget: "paint-can" } },
+    playerLoadout: (entry) => entry.operatorId === "custom" ? entry.customLoadout : context.operatorKits[entry.operatorId],
     relayToMatch: (_match, _player, message) => events.push(message)
   };
   const fire = section(server, "const blastRadius =", "const finite =");
@@ -176,6 +187,7 @@ test("the server restores the Paint Can supply at the start of each round", () =
   const match = { id: "match", players: new Set([player.id]), mode: "duel", map: "field", round: 0 };
   const context = {
     Date: { now: () => 1000 }, objectiveModes: new Set(), prepSeconds: 5, objectivePrepSeconds: 5,
+    playerMaxHealth: () => 100,
     players: new Map([[player.id, player]]), spawnPoint: () => ({ x: 0, y: 1.8, z: 0 }),
     buildObjectives: () => [], matchInfo: () => ({}), sendPlayer() {}
   };
@@ -289,6 +301,44 @@ test("Molotovs damage and ignite nearby enemies but not Pyromaniac", () => {
   now = 1500;
   context.tickFireEffects(match, now);
   assert.equal(target.health, 75);
+});
+
+test("Toxic Grenade damage increases with exposure, resets after leaving, and expires", () => {
+  let now = 1000;
+  const attacker = { id: "attacker", matchId: "match", team: 1, health: 100, kills: 0, deaths: 0, operatorId: "custom" };
+  const target = { id: "target", matchId: "match", team: 2, health: 100, operatorId: "custom",
+    state: { x: 1, y: 1.8, z: 0 } };
+  const match = { id: "match", phase: "live", players: [attacker.id, target.id], fireZones: new Map(),
+    toxicZones: new Map([["toxic-id", { ownerId: attacker.id, x: 0, z: 0, radius: 5,
+      expiresAt: 11000, nextTickAt: 1500, exposure: new Map() }]]) };
+  const context = {
+    Math, Date: { now: () => now },
+    players: new Map([[attacker.id, attacker], [target.id, target]]),
+    applyDamage(_match, _attacker, victim, amount) { victim.health = Math.max(0, victim.health - amount); },
+    sendPlayer() {}
+  };
+  const fire = section(server, "const blastRadius =", "const finite =");
+  vm.runInNewContext(`${fire}\nglobalThis.tick = tickFireEffects;`, context);
+
+  now = 1500;
+  context.tick(match, now);
+  assert.equal(target.health, 98);
+  now = 2000;
+  context.tick(match, now);
+  assert.equal(target.health, 94);
+
+  target.state.x = 8;
+  now = 2500;
+  context.tick(match, now);
+  assert.equal(target.health, 94);
+  target.state.x = 1;
+  now = 3000;
+  context.tick(match, now);
+  assert.equal(target.health, 92, "Exposure restarts at the lowest damage after leaving the cloud");
+
+  now = 11000;
+  context.tick(match, now);
+  assert.equal(match.toxicZones.size, 0);
 });
 
 test("Pyromaniac recharges one Molotov every 15 seconds up to two", () => {

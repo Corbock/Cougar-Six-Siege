@@ -56,6 +56,7 @@ test("client minimap excludes enemies and dead teammates, resets objectives, and
       ["enemy", { team: 2, health: 100, state: { x: 7, z: 7 } }]
     ]) };
   const sandbox = { multiplayer, cam, drone: { active: true, returnTo: body }, practiceSpawn: { x: 0, z: 0 },
+    trainingDefuseMode: false,
     isDead: () => false, ownEntry: () => null, minimap: { draw: (data) => draws.push(data) } };
   vm.runInNewContext(html.slice(start, end), sandbox);
   sandbox.updateMinimap();

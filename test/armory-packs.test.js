@@ -53,6 +53,7 @@ test("pack reward pool excludes only camos already unlocked from packs", () => {
 test("packs include every paint, finish, and keychain reward but exclude factory defaults", () => {
   const context = {
     packWeapons: [{ id: "mk18" }],
+    loadoutSlots: [],
     skins: [{ id: "digital" }],
     paintColors: [{ id: "standard", free: true }, { id: "blue" }],
     finishes: [{ id: "blackout", free: true }, { id: "desert" }],
@@ -63,6 +64,21 @@ test("packs include every paint, finish, and keychain reward but exclude factory
   assert.deepEqual([...context.pairs], [
     "mk18:digital", "operator:digital", "paint:blue", "finish:desert", "keychain:tag", "weapon:karambit"
   ]);
+});
+
+test("each rare weapon variant has exactly one Armory reward key", () => {
+  const slots = section("    const loadoutSlots = [", "    const operatorRoster =");
+  const pairs = section("    const skinUnlockKey =", "    let armorySave =");
+  const context = { skins: [], paintColors: [], finishes: [], keychains: [],
+    skinUnlockKey: (weaponId, skinId) => `${weaponId}:${skinId}`,
+    playerPaintUnlockKey: (skinId) => `operator:${skinId}`,
+    weaponRewardKey: (id) => `weapon:${id}`, karambitRewardKey: "weapon:karambit" };
+  vm.runInNewContext(`${slots}\nconst packWeapons = [];\n${pairs}
+    globalThis.rareIds = [...new Set(loadoutSlots.flatMap((slot) => slot.items)
+      .filter((item) => item.rarePack).map((item) => item.id))];
+    globalThis.weaponRewards = packPairs.filter((key) => key.startsWith("weapon:"));`, context);
+  assert.equal(new Set([...context.weaponRewards]).size, context.weaponRewards.length);
+  assert.deepEqual([...context.weaponRewards].sort(), [...context.rareIds.map((id) => `weapon:${id}`), "weapon:karambit"].sort());
 });
 
 test("the 1,000-pack grant is revoked once while earned packs are preserved", () => {
@@ -116,7 +132,11 @@ test("Karambit is hidden until unlocked and can drop at a rare 2% rate", () => {
   const helpers = section("    const karambitUnlocked =", "    const paintSkinUnlocked =");
   const context = {
     karambitRewardKey: "weapon:karambit", ownedWraps: new Set(), selectedOperatorId: "custom",
-    customLoadout: { breaching: "karambit" }, loadout: { breaching: "karambit" }
+    customLoadout: { breaching: "karambit" }, loadout: { primary: "p45", breaching: "karambit" },
+    loadoutSlots: [{ id: "primary", items: [{ id: "p45", name: "P45 Sidearm" }] },
+      { id: "breaching", items: [{ id: "sledgehammer", name: "Sledgehammer" }, { id: "karambit", name: "Karambit" }] }],
+    itemFamily: (item) => item.family || item.name,
+    weaponRewardKey: (id) => `weapon:${id}`
   };
   vm.runInNewContext(`${helpers}
     globalThis.visible = loadoutItemsFor;
@@ -129,7 +149,7 @@ test("Karambit is hidden until unlocked and can drop at a rare 2% rate", () => {
   assert.deepEqual([...context.visible({ items: [{ id: "p45" }, { id: "karambit" }] })].map(({ id }) => id), ["p45", "karambit"]);
 
   const chooser = section("    function choosePackReward(pool) {", "    function playPackSound(");
-  const rolls = [0.019, 0.02, 0, 0.5];
+  const rolls = [0.019, 0, 0.02, 0, 0.5, 0];
   const chooserContext = {
     karambitRewardKey: "weapon:karambit", Math: { random: () => rolls.shift(), floor: Math.floor }
   };
@@ -255,7 +275,9 @@ test("a rare Karambit pack reveal unlocks the weapon with a distinct rare presen
   const reward = { hidden: true };
   const context = {
     packs: 1, packOpening: false, packPairs: ["weapon:karambit"], packWeapons: [],
-    loadoutSlots: [{ id: "breaching", items: [{ id: "karambit", name: "Karambit" }] }],
+    loadoutSlots: [{ id: "breaching", items: [{ id: "karambit", name: "Karambit", family: "Knife" }] }],
+    itemById: () => ({ id: "karambit", name: "Karambit", family: "Knife" }),
+    itemFamily: (item) => item.family || item.name,
     ownedWraps: new Set(), packRewardPool: () => ["weapon:karambit"], choosePackReward: (pool) => pool[0],
     packReward: reward, packRewardSwatch: { style: {}, firstElementChild: { textContent: "" } },
     packStage: { className: "" }, packStageState: { textContent: "" }, packStatusText: "",
@@ -271,5 +293,5 @@ test("a rare Karambit pack reveal unlocks the weapon with a distinct rare presen
   assert.ok(context.ownedWraps.has("weapon:karambit"));
   assert.equal(fields["#pack-reward-name"].textContent, "Karambit");
   assert.match(context.packStage.className, /rare/);
-  assert.equal(context.packRewardSwatch.firstElementChild.textContent, "RARE // KARAMBIT");
+  assert.equal(context.packRewardSwatch.firstElementChild.textContent, "RARE // WEAPON VARIANT");
 });

@@ -16,11 +16,13 @@ function shooting() {
   const target = { id: "target", matchId: "match", team: 2, health: 100,
     state: { x: 0, y: 1.8, z: 10, yaw: 0, crouched: false, lean: 0 } };
   const shooter = { matchId: "match", team: 1, health: 100, operatorId: "custom", customPrimary: "mk18", lastShotAt: 0,
-    customLoadout: { primary: "mk18", secondary: "p45" },
+    customLoadout: { primary: "mk18", secondary: "p45", breaching: "sledgehammer" },
     state: { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: "primary" } };
   const context = { Math, Number, String, Date: { now: () => now }, players: new Map([[target.id, target]]),
     matches: new Map([["match", { phase: "live" }]]), operatorKits: {},
-    hasActiveSniper: (player, state) => state.activeSlot === "primary" && player.customPrimary === "longwatch",
+    playerLoadout: (player) => player.operatorId === "custom" ? player.customLoadout : {},
+    hasActiveSniper: (player, state) => state.activeSlot === "primary" &&
+      ["longwatch", "cmr", "loudwatch"].includes(player.customLoadout.primary),
     nearestShieldHit: () => Infinity, relayShieldImpact() {}, shootHostage() {},
     applyDamage(_match, _shooter, victim, amount) { victim.health = Math.max(0, victim.health - amount); } };
   const geometry = section(server, "function rayBox(", "function shootHostage(");
@@ -104,6 +106,70 @@ test("Magnum body hits deal 25 damage regardless of client-reported damage", () 
   sim.shooter.state.y = 1.3;
   sim.fire();
   assert.equal(sim.target.health, 75);
+});
+
+test("Horn Chopper accepts its faster 50 ms server cadence without speeding up other guns", () => {
+  const horn = shooting();
+  horn.shooter.state.y = 1.3;
+  horn.shooter.customLoadout.primary = "horn-chopper-2000";
+  horn.fire();
+  horn.setNow(1050);
+  horn.fire();
+  assert.equal(horn.target.health, 60);
+
+  const rifle = shooting();
+  rifle.shooter.state.y = 1.3;
+  rifle.fire();
+  rifle.setNow(1050);
+  rifle.fire();
+  assert.equal(rifle.target.health, 80);
+});
+
+test("Slug V, Loudwatch, Cougar Blade, and melee variants use their special damage rules", () => {
+  const slug = shooting();
+  slug.shooter.customLoadout.primary = "slug-v";
+  slug.fire();
+  assert.equal(slug.target.health, 10);
+
+  const loudwatch = shooting();
+  loudwatch.shooter.customLoadout.primary = "loudwatch";
+  loudwatch.fire();
+  assert.equal(loudwatch.target.health, 88, "Loudwatch stays low damage and cannot headshot");
+
+  const blade = shooting();
+  blade.shooter.customLoadout.primary = "cougar-blade";
+  blade.fire();
+  assert.equal(blade.target.health, 60);
+
+  const lunchbox = shooting();
+  lunchbox.shooter.state.activeSlot = "breaching";
+  lunchbox.shooter.customLoadout.breaching = "lunchbox";
+  lunchbox.fire();
+  assert.equal(lunchbox.target.health, 0, "Lunchbox head strikes eliminate in one hit");
+});
+
+test("Loudwatch impact marks and blinds enemies near the impact point", () => {
+  const shooter = { id: "shooter", matchId: "match", team: 1, health: 100, operatorId: "custom",
+    customLoadout: { primary: "loudwatch" }, state: { x: 0, y: 1.8, z: 0, activeSlot: "primary" } };
+  const enemy = { id: "enemy", matchId: "match", team: 2, health: 100,
+    state: { x: 1, y: 1.8, z: 10 } };
+  const ally = { id: "ally", matchId: "match", team: 1, health: 100,
+    state: { x: 1, y: 1.8, z: 10 } };
+  let now = 1000;
+  const sent = [], context = { Date: { now: () => now },
+    matches: new Map([["match", { phase: "live", players: [shooter.id, enemy.id, ally.id] }]]),
+    players: new Map([[shooter.id, shooter], [enemy.id, enemy], [ally.id, ally]]),
+    playerLoadout: (player) => player.customLoadout,
+    sendPlayer: (player, message) => sent.push([player.id, message]) };
+  const handler = section(server, '  if (message.type === "loudwatch_impact"', '  if (message.type === "shoot"');
+  vm.runInNewContext(`function impact(player, message) { ${handler} }`, context);
+  context.impact(shooter, { type: "loudwatch_impact", point: [0, 1.8, 10] });
+  assert.equal(enemy.markedUntil, 7000);
+  assert.ok(sent.some(([id, message]) => id === enemy.id && message.type === "player_blinded"));
+  assert.equal(ally.markedUntil, undefined);
+  now += 100;
+  context.impact(shooter, { type: "loudwatch_impact", point: [0, 1.8, 10] });
+  assert.equal(sent.filter(([, message]) => message.type === "player_blinded").length, 1);
 });
 
 test("fastest configured gun cadence and current shooter aim are accepted", () => {
@@ -198,24 +264,13 @@ test("inspect models retain paint surfaces in their weapon-specific geometry", (
   context.glbParts = glb.parts;
   context.glbMagazine = glb.mag;
   vm.runInNewContext("modelDefs.mk18.parts = glbParts; modelDefs.mk18.mag = glbMagazine", context);
-  const longwatch = context.parseLongwatchGlb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_sniper.glb")).buffer);
-  context.longwatchParts = longwatch.parts;
-  context.longwatchMounts = longwatch.mounts;
-  context.longwatchSight = longwatch.sight;
-  vm.runInNewContext("modelDefs.longwatch.parts = longwatchParts; modelDefs.longwatch.mounts = longwatchMounts; modelDefs.longwatch.sight = longwatchSight", context);
-  const magnum = context.parseMagnumGlb(Uint8Array.from(fs.readFileSync("ItemModels/magnum44.glb")).buffer);
-  assert.ok(magnum.parts.length > 0);
-  assert.ok(magnum.colors.magnumBody && magnum.colors.magnumSteel);
-  context.magnumParts = magnum.parts;
-  vm.runInNewContext("modelDefs.magnum.parts = magnumParts", context);
   for (const id of ["mk18", "vector", "longwatch", "p45", "rattler"]) {
     const model = context.buildInspectModel({ id });
     const paintSurface = id === "mk18" ? "mk18Orange" : "paint";
     assert.ok(model.polys.some((poly) => poly.m === paintSurface && poly.uv), id);
   }
   const magnumModel = context.buildInspectModel({ id: "magnum" });
-  assert.ok(magnumModel.polys.length > 0);
-  assert.ok(magnumModel.polys.every((poly) => ["magnumBody", "magnumSteel"].includes(poly.m)));
+  assert.ok(magnumModel.polys.some((poly) => poly.m === "body" && poly.uv));
 });
 
 test("operator paint skins are not unlocked by eliminations", () => {

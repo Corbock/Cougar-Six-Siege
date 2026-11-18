@@ -194,6 +194,7 @@ test("full-health medkits are usable in freeplay but remain blocked in multiplay
     const messages = [], sent = [], patient = health === null ? null : { health };
     const context = { freeplayMode, multiplayer: { match, round, socket: { send: (message) => sent.push(JSON.parse(message)) } },
       charges: { medkit: 3 }, ownEntry: () => patient, medkitActionStart: -1, tNow: 5,
+      loadoutMaxHealth: () => 100,
       renderCam: { x: 0, y: 1.8, z: 0 }, aimDir: () => [0, 0, 1], say: (message) => messages.push(message) };
     vm.runInNewContext(section("      function useHeld(w)", "      const smokeFade ="), context);
     context.useHeld({ item: { id: "medkit" }, kind: { uses: 3 }, kick: 0 });
@@ -240,7 +241,9 @@ function renderViewmodel(operator, item, droneActive = false) {
     blendFunc: () => {}, depthMask: (v) => calls.push(["depth", v]),
     uniform1f: (_location, value) => calls.push(["alpha", value])
   };
-  const context = { fwd: 0, str: 0, dead: false, optic: null, drone: { active: droneActive, deploying: null },
+  const context = { fwd: 0, str: 0, dead: false, optic: null, bombAction: null,
+    loadout: { secondary: "p45", primary: "mk18", breaching: "sledgehammer", gadget: "shield", equipment: "frag" },
+    drone: { active: droneActive, deploying: null },
     cw: { item: { id: item } }, selectedOperatorId: operator, weapons: { p45: { item: { id: "p45" } } },
     grenadeThrowActionActive: () => false, grenadeThrowActionQuads: () => [],
     medkitActionActive: () => false, medkitActionQuads: () => [{}],

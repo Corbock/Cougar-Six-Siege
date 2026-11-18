@@ -90,7 +90,8 @@ test("each multiplayer round starts with three medkit uses", () => {
   const player = { id: "p1", name: "Player", operatorId: "custom", group: 1 };
   const sent = [], context = { players: new Map([[player.id, player]]), objectiveModes: new Set(),
     objectivePrepSeconds: 10, prepSeconds: 10, spawnPoint: () => ({ x: 0, y: 1.8, z: 0 }),
-    buildObjectives: () => [], matchInfo: () => ({}), sendPlayer: (_player, message) => sent.push(message) };
+    buildObjectives: () => [], matchInfo: () => ({}), sendPlayer: (_player, message) => sent.push(message),
+    playerMaxHealth: () => 100 };
   vm.runInNewContext(section(serverCode, "function startRound(match, type)", "function teamAlive("), context);
   const match = { round: 0, players: new Set([player.id]), mode: "skirmish", swapped: false, map: "field" };
   context.startRound(match, "match_found");
@@ -114,17 +115,20 @@ test("shields intercept shots aimed at other players only when in the shot path"
 });
 
 test("preset and Custom operators activate only their equipped shield and sniper", () => {
-  const context = {};
+  const context = {
+    operatorKits: { "ms-c": { gadget: "shield" }, "hallway-monitor": { primary: "longwatch" }, "ms-a": { primary: "vector" } },
+    playerLoadout: (player) => player.operatorId === "custom" ? player.customLoadout : context.operatorKits[player.operatorId]
+  };
   vm.runInNewContext(section(serverCode, "function hasActiveShield(", "function removePlayer("), context);
   const gadget = { activeSlot: "gadget" };
   assert.equal(context.hasActiveShield({ operatorId: "ms-c" }, gadget), true);
-  assert.equal(context.hasActiveShield({ operatorId: "custom", customGadget: "shield" }, gadget), true);
-  assert.equal(context.hasActiveShield({ operatorId: "custom", customGadget: "drone" }, gadget), false);
+  assert.equal(context.hasActiveShield({ operatorId: "custom", customLoadout: { gadget: "shield" } }, gadget), true);
+  assert.equal(context.hasActiveShield({ operatorId: "custom", customLoadout: { gadget: "drone" } }, gadget), false);
   assert.equal(context.hasActiveShield({ operatorId: "ms-c" }, { activeSlot: "primary" }), false);
   assert.equal(context.hasActiveShield({ operatorId: "ms-c" }, { ...gadget, droneState: {} }), false);
   assert.equal(context.hasActiveSniper({ operatorId: "hallway-monitor", state: { activeSlot: "primary" } }), true);
-  assert.equal(context.hasActiveSniper({ operatorId: "custom", customPrimary: "longwatch", state: { activeSlot: "primary" } }), true);
-  assert.equal(context.hasActiveSniper({ operatorId: "custom", customPrimary: "longwatch", state: { activeSlot: "secondary" } }), false);
+  assert.equal(context.hasActiveSniper({ operatorId: "custom", customLoadout: { primary: "longwatch" }, state: { activeSlot: "primary" } }), true);
+  assert.equal(context.hasActiveSniper({ operatorId: "custom", customLoadout: { primary: "longwatch" }, state: { activeSlot: "secondary" } }), false);
   assert.equal(context.hasActiveSniper({ operatorId: "ms-a", state: { activeSlot: "primary" } }), false);
 });
 

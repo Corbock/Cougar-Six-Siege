@@ -34,33 +34,9 @@ function simulation() {
   context.glbParts = parts;
   context.glbMagazine = mag;
   Object.assign(context.materials, colors);
-  const longwatch = context.parseLongwatchGlb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_sniper.glb")).buffer);
-  context.longwatchParts = longwatch.parts;
-  context.longwatchMagazine = longwatch.mag;
-  context.longwatchMounts = longwatch.mounts;
-  context.longwatchSight = longwatch.sight;
-  Object.assign(context.materials, longwatch.colors);
-  const vector = context.parseVectorGlb(Uint8Array.from(fs.readFileSync("ItemModels/V9_vector.glb")).buffer);
-  context.vectorParts = vector.parts;
-  context.vectorMounts = vector.mounts;
-  context.vectorSight = vector.sight;
-  Object.assign(context.materials, vector.colors);
-  const magnum = context.parseMagnumGlb(Uint8Array.from(fs.readFileSync("ItemModels/magnum44.glb")).buffer);
-  context.magnumParts = magnum.parts;
-  context.magnumMounts = magnum.mounts;
-  context.magnumSight = magnum.sight;
-  Object.assign(context.materials, magnum.colors);
-  const hammer = context.parseHammer12Glb(Uint8Array.from(fs.readFileSync("ItemModels/hammer12.glb")).buffer);
-  context.hammerParts = hammer.parts;
-  context.hammerMounts = hammer.mounts;
-  context.hammerSight = hammer.sight;
-  Object.assign(context.materials, hammer.colors);
   const karambit = context.parseKarambitGlb(Uint8Array.from(fs.readFileSync("ItemModels/karambit.glb")).buffer);
   context.karambitParts = karambit.parts;
   Object.assign(context.materials, karambit.colors);
-  const sledgehammer = context.parseSledgehammerGlb(Uint8Array.from(fs.readFileSync("ItemModels/sledgehammer.glb")).buffer);
-  context.sledgehammerParts = sledgehammer.parts;
-  Object.assign(context.materials, sledgehammer.colors);
   const drone = context.parseDroneGlb(Uint8Array.from(fs.readFileSync("ItemModels/drone.glb")).buffer);
   context.droneParts = drone.parts;
   Object.assign(context.materials, drone.colors);
@@ -72,7 +48,7 @@ function simulation() {
   context.medkitLidParts = medkit.lidParts;
   context.medkitParts = medkit.parts;
   Object.assign(context.materials, medkit.colors);
-  vm.runInNewContext("modelDefs.mk18.parts = glbParts; modelDefs.mk18.mag = glbMagazine; modelDefs.longwatch.parts = longwatchParts; modelDefs.longwatch.mag = longwatchMagazine; modelDefs.longwatch.mounts = longwatchMounts; modelDefs.longwatch.sight = longwatchSight; modelDefs.vector.parts = vectorParts; modelDefs.vector.mounts = vectorMounts; modelDefs.vector.sight = vectorSight; modelDefs.magnum.parts = magnumParts; modelDefs.magnum.mounts = magnumMounts; modelDefs.magnum.sight = magnumSight; modelDefs.hammer.parts = hammerParts; modelDefs.hammer.mounts = hammerMounts; modelDefs.hammer.sight = hammerSight; modelDefs.medkit.parts = medkitParts; modelDefs.karambit.parts = karambitParts; modelDefs.sledgehammer.parts = sledgehammerParts; modelDefs.drone.parts = droneParts", context);
+  vm.runInNewContext("modelDefs.mk18.parts = glbParts; modelDefs.mk18.mag = glbMagazine; modelDefs.medkit.parts = medkitParts; modelDefs.karambit.parts = karambitParts; modelDefs.drone.parts = droneParts", context);
   vm.runInNewContext(section("      function droneModelQuads(", "      function droneLaserQuads(") +
     section("      function droneViewmodelQuads()", "      const skinTex"), context);
   return context;
@@ -103,96 +79,13 @@ test("MK18 uses the supplied GLB triangles and material colors", () => {
   assert.equal(sim.materials.mk18Orange, "#ff660d");
 });
 
-test("Longwatch uses the supplied sniper GLB without replacement geometry", () => {
-  const sim = simulation(), parts = vm.runInNewContext("modelDefs.longwatch.parts", sim);
-  assert.equal(parts.every((part) => part.k === "mesh"), true);
-  assert.ok(parts.length > 0);
-  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(),
-    ["dark", "longwatchLight", "metal", "paint"]);
-  const triangleCount = parts.reduce((count, part) => count + part.triangles.length, 0);
-  assert.equal(triangleCount, 994);
-  assert.equal(vm.runInNewContext("modelDefs.longwatch.mag.length", sim), 0);
-  const world = [];
-  sim.worldItemQuads(world, "longwatch", { x: 10, y: 1.8, z: 3, yaw: Math.PI / 2, pitch: .2, activeSlot: "primary" });
-  assert.equal(world.length, 994);
-  assert.ok(world.flatMap((quad) => quad.pts).every((point) => point.every(Number.isFinite)));
-  const meshPoints = parts.flatMap((part) => part.triangles.flat());
-  const minX = Math.min(...meshPoints.map((point) => point[0]));
-  const maxX = Math.max(...meshPoints.map((point) => point[0]));
-  const minMuzzlePoint = meshPoints.filter((point) => point[0] === maxX);
-  const rearPoints = meshPoints.filter((point) => point[0] === minX);
-  assert.ok(minMuzzlePoint.length > 0 && rearPoints.length > 0);
-  assert.ok(maxX > 0 && minX < 0, "The GLB length should remain centered across local X");
-});
-
-test("Vector uses the supplied V9 GLB geometry, node transform, and material names", () => {
-  const sim = simulation(), parts = vm.runInNewContext("modelDefs.vector.parts", sim);
-  assert.ok(parts.length > 0);
-  assert.ok(parts.every((part) => part.k === "mesh"));
-  assert.equal(parts.reduce((count, part) => count + part.triangles.length, 0), 2201);
-  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(), [
-    "vectorBlack", "vectorBlackLight", "vectorBody", "vectorBrass", "vectorBrown", "vectorDark", "vectorWhite"
-  ]);
-  const points = parts.flatMap((part) => part.triangles.flat());
-  const bounds = [0, 1, 2].map((axis) => [
-    Math.min(...points.map((point) => point[axis])),
-    Math.max(...points.map((point) => point[axis]))
-  ]);
-  assert.ok(bounds[0][0] < -2.9 && bounds[0][1] > 2.9, "The transformed GLB length should span local X");
-  assert.ok(bounds[1][1] > .5 && bounds[1][0] < -.5, "The transformed GLB should retain its vertical geometry");
-  assert.ok(sim.materials.vectorBrass);
-  assert.ok(vm.runInNewContext("modelDefs.vector.mounts.optic[1]", sim) > 0);
-  assert.ok(vm.runInNewContext("modelDefs.vector.mounts.muzzle[0]", sim) > 2.9);
-  assert.equal(vm.runInNewContext("modelDefs.vector.mag.length", sim), 0);
-});
-
-test("Magnum uses the supplied GLB, faces muzzle-forward, and keeps its materials isolated", () => {
-  const sim = simulation(), parts = vm.runInNewContext("modelDefs.magnum.parts", sim);
-  assert.ok(parts.length > 0);
-  assert.ok(parts.every((part) => part.k === "mesh"));
-  assert.equal(parts.reduce((count, part) => count + part.triangles.length, 0), 830);
-  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(), ["magnumBody", "magnumSteel"]);
-  const muzzle = parts.find((part) => part.m === "magnumSteel").triangles.flat();
-  const grip = parts.find((part) => part.m === "magnumBody").triangles.flat();
-  assert.ok(Math.max(...muzzle.map((point) => point[0])) > 2.3);
-  assert.ok(Math.max(...grip.map((point) => point[0])) < 0, "The grip should remain behind the barrel");
-  assert.equal(sim.materials.magnumBody, "#210f03");
-  assert.equal(sim.materials.magnumSteel, "#101010");
-  const world = [];
-  sim.worldItemQuads(world, "magnum", { x: 10, y: 1.8, z: 3, yaw: Math.PI / 2, pitch: .2, activeSlot: "secondary" });
-  assert.equal(world.length, 830);
-  assert.ok(world.flatMap((quad) => quad.pts).every((point) => point.every(Number.isFinite)));
-});
-
-test("Hammer 12 uses the supplied hammer12.glb mesh and material regions", () => {
-  const sim = simulation(), parts = vm.runInNewContext("modelDefs.hammer.parts", sim);
-  assert.ok(parts.length > 0);
-  assert.ok(parts.every((part) => part.k === "mesh"));
-  assert.deepEqual([...new Set(parts.map((part) => part.m))].sort(), ["body", "dark"]);
-  assert.ok(/^#[0-9a-f]{6}$/i.test(sim.materials.body));
-  assert.ok(/^#[0-9a-f]{6}$/i.test(sim.materials.dark));
-  const barrel = parts.find((part) => part.m === "dark").triangles.flat();
-  const receiver = parts.find((part) => part.m === "body").triangles.flat();
-  assert.ok(Math.max(...barrel.map((point) => point[0])) >
-    Math.max(...receiver.map((point) => point[0])), "The barrel should face the positive local X axis");
-  const world = [];
-  sim.worldItemQuads(world, "hammer", { x: 10, y: 1.8, z: 3, yaw: Math.PI / 2, pitch: .2, activeSlot: "primary" });
-  assert.equal(world.length, parts.reduce((count, part) => count + part.triangles.length, 0));
-  assert.ok(world.flatMap((quad) => quad.pts).every((point) => point.every(Number.isFinite)));
-});
-
-test("Sledgehammer uses the supplied GLB mesh and transformed material", () => {
-  const sim = simulation(), parts = vm.runInNewContext("modelDefs.sledgehammer.parts", sim);
-  assert.ok(parts.length > 0);
-  assert.ok(parts.every((part) => part.k === "mesh"));
-  assert.equal(parts.reduce((count, part) => count + part.triangles.length, 0), 178);
-  assert.deepEqual([...new Set(parts.map((part) => part.m))], ["sledgehammerBody"]);
-  const points = parts.flatMap((part) => part.triangles.flat());
-  const span = [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis])) -
-    Math.min(...points.map((point) => point[axis])));
-  assert.ok(span[0] > 7.9 && span[1] > .7 && span[2] > 1.6,
-    `The GLB should retain its handle length and hammer-head dimensions: ${span.join(", ")}`);
-  assert.equal(sim.materials.sledgehammerBody, "#ffffff");
+test("reverted weapon models use the original procedural meshes", () => {
+  const sim = simulation();
+  for (const id of ["longwatch", "vector", "magnum", "hammer", "sledgehammer"]) {
+    const parts = vm.runInNewContext(`modelDefs[${JSON.stringify(id)}].parts`, sim);
+    assert.ok(parts.length > 0, `${id} should have fallback geometry`);
+    assert.ok(parts.every((part) => part.k !== "mesh"), `${id} should not use an imported GLB mesh`);
+  }
 });
 
 test("first-person Magnum sits lower than other pistols in the viewmodel", () => {
@@ -351,17 +244,17 @@ test("MK18's GLB magazine separates and returns during the existing reload anima
 test("Longwatch reload reaches to the right-side bolt and returns to the trigger", () => {
   const context = { Math, ArrayBuffer, DataView, Uint8Array, TextDecoder, K: .06, tNow: 0,
     sprintPose: 0, ads: 0, skinOf: () => null, colorOf: (_weapon, material) => material };
-  vm.runInNewContext(section("    function buildPolys(parts)", "    const inspector =") +
-    section("    function parseMk18Glb(buffer)", "    const inspector =") +
+  vm.runInNewContext(section("    const box = (cx", "    const finishes =") +
+    section("    function buildPolys(parts)", "    const inspector =") +
     section("      function viewmodelQuads(", "      function droneViewmodelQuads("), context);
-  const longwatch = context.parseLongwatchGlb(Uint8Array.from(fs.readFileSync("ItemModels/paintball_sniper.glb")).buffer);
-  const polys = context.buildPolys(longwatch.parts);
+  const parts = vm.runInNewContext("modelDefs.longwatch.parts", context);
+  const polys = context.buildPolys(parts);
   const points = polys.flatMap((poly) => poly.v);
   const mid = [0, 1, 2].map((axis) =>
     (Math.min(...points.map((point) => point[axis])) + Math.max(...points.map((point) => point[axis]))) / 2);
   const weapon = { item: { id: "longwatch" }, kind: { reload: 2 }, cfg: { optic: "none" },
     kick: 0, rear: 0, reloadEnd: 0, reloadStart: 0, flash: 0, mid, tip: 5.6,
-    sight: longwatch.sight, muzzle: [0, 0], polys, magPolys: [], lastShot: -1 };
+    sight: vm.runInNewContext("modelDefs.longwatch.sight", context), muzzle: [0, 0], polys, magPolys: [], lastShot: -1 };
   const render = () => context.viewmodelQuads(weapon, false);
   weapon.lastShot = 1;
   context.tNow = 1.24;
@@ -379,15 +272,19 @@ test("Longwatch reload reaches to the right-side bolt and returns to the trigger
   assert.ok(cocking.flatMap((quad) => quad.pts).every((point) => point.every(Number.isFinite)));
 });
 
-test("Longwatch ADS reaches 4x zoom without an equipped scope while other sights are unchanged", () => {
-  const context = {};
-  vm.runInNewContext(section("      function adsViewScale(", "      const keys = new Set()"), context);
-  assert.equal(context.adsViewScale(1, true), 1.8 / 4);
-  assert.equal(context.adsViewScale(0, true), 1.8);
-  assert.equal(context.adsViewScale(1, false), 1.8 * 1.2);
-  assert.equal(context.adsViewScale(1, false, "longwatch"), 1.8 / 4);
-  assert.equal(context.adsOpticFor("longwatch", "none"), "scope");
-  assert.equal(context.adsOpticFor("mk18", "none"), "none");
+test("Longwatch uses farther ADS zoom than other weapons", () => {
+  const assignment = html.match(/^\s*viewScale = 1\.8 \* \(1 \+ \(drone\.deploying \? 0 : ads\) \* \(equippedWeapon\?\.item\.id === "longwatch" \? \.65 : \.2\)\);$/m);
+  assert.ok(assignment, "Longwatch should zoom farther while aiming");
+  const context = { viewScale: 1.8, drone: { deploying: false }, ads: 1,
+    equippedWeapon: { item: { id: "longwatch" } } };
+  vm.runInNewContext(assignment[0], context);
+  assert.equal(context.viewScale, 1.8 * 1.65);
+  context.equippedWeapon.item.id = "mk18";
+  vm.runInNewContext(assignment[0], context);
+  assert.equal(context.viewScale, 1.8 * 1.2);
+  context.drone.deploying = true;
+  vm.runInNewContext(assignment[0], context);
+  assert.equal(context.viewScale, 1.8);
 });
 
 test("Longwatch defaults to the 4x scope while other weapons default to iron sights", () => {
@@ -395,6 +292,54 @@ test("Longwatch defaults to the 4x scope while other weapons default to iron sig
   vm.runInNewContext(section("    function defaultOpticFor(", "    const customOf ="), context);
   assert.equal(context.defaultOpticFor({ id: "longwatch" }), "scope");
   assert.equal(context.defaultOpticFor({ id: "mk18" }), "none");
+});
+
+test("loadout menus group unlocked variants by weapon family and retain the selected variant", () => {
+  const slots = section("    const loadoutSlots = [", "    const operatorRoster =");
+  const helpers = section("    const weaponUnlocked =", "    const paintSkinUnlocked =");
+  const context = { selectedOperatorId: "custom", karambitRewardKey: "weapon:karambit",
+    weaponRewardKey: (id) => `weapon:${id}`, ownedWraps: new Set(["weapon:mk19"]),
+    karambitUnlocked: () => context.ownedWraps.has("weapon:karambit"),
+    loadout: { primary: "mk19", secondary: "p45", gadget: "drone", equipment: "frag", breaching: "sledgehammer" },
+    customLoadout: { primary: "mk19", secondary: "p45", gadget: "drone", equipment: "frag", breaching: "sledgehammer" } };
+  vm.runInNewContext(`${slots}\nconst itemFamily = (item) => item.family || item.name;\n${helpers}
+    globalThis.slots = loadoutSlots; globalThis.menuItems = loadoutMenuItemsFor;
+    globalThis.selectable = weaponSelectable;`, context);
+  const primary = context.slots.find((slot) => slot.id === "primary");
+  const menuItems = context.menuItems(primary);
+  const families = menuItems.map((item) => item.family);
+  assert.equal(new Set(families).size, families.length);
+  assert.equal(menuItems.find((item) => item.family === "Assault Rifle").id, "mk19");
+  assert.equal(context.selectable(primary.items.find((item) => item.id === "loudwatch")), false);
+  context.ownedWraps.add("weapon:loudwatch");
+  assert.equal(context.selectable(primary.items.find((item) => item.id === "loudwatch")), true);
+});
+
+test("shotgun muzzle options set their distinct square crosshair sizes", () => {
+  assert.match(html, /#field\[data-shotgun-muzzle="bare"\] #field-shotgun-cross \{ display: block; width: 16px; height: 16px; \}/);
+  assert.match(html, /#field\[data-shotgun-muzzle="sawed-off"\] #field-shotgun-cross \{ display: block; width: 32px; height: 32px; \}/);
+  assert.match(html, /#field\[data-shotgun-muzzle="long-barrel"\] #field-shotgun-cross \{ display: block; width: 8px; height: 8px; \}/);
+  assert.match(html, /cw\.item\.family === "Shotgun" \? cw\.cfg\.muzzle : null/);
+});
+
+test("equipping the Cougar Blade fills all loadout slots and replacing it restores the prior kit", () => {
+  const slots = section("    const loadoutSlots = [", "    const operatorRoster =");
+  const helpers = section("    const itemFamily =", "    const persistLoadout =");
+  const original = { primary: "mk18", secondary: "p45", gadget: "drone", equipment: "frag", breaching: "sledgehammer" };
+  const context = { selectedOperatorId: "custom", loadout: { ...original }, customLoadout: { ...original },
+    cougarReturnLoadout: null, operatorInfo: () => ({ loadout: original }) };
+  vm.runInNewContext(`${slots}\n${helpers}
+    globalThis.selectItem = setLoadoutItem; globalThis.slots = loadoutSlots;
+    globalThis.maxHealth = loadoutMaxHealth;`, context);
+  const blade = context.slots[0].items.find((item) => item.id === "cougar-blade");
+  context.selectItem(context.slots[0], blade);
+  assert.ok(Object.values(context.loadout).every((id) => id === "cougar-blade"));
+  assert.equal(context.maxHealth(), 300);
+  const pistol = context.slots.find((slot) => slot.id === "secondary").items.find((item) => item.id === "p45");
+  context.selectItem(context.slots.find((slot) => slot.id === "secondary"), pistol);
+  assert.deepEqual({ ...context.loadout }, original);
+  assert.deepEqual({ ...context.customLoadout }, original);
+  assert.equal(context.maxHealth(), 100);
 });
 
 test("reloading keeps the weapon in its normal aim pose instead of tipping it down", () => {
@@ -417,11 +362,11 @@ test("reloading keeps the weapon in its normal aim pose instead of tipping it do
 test("all equipped item types produce world geometry at the player", () => {
   const sim = simulation();
   for (const [slot, ids] of Object.entries({
-    primary: ["mk18", "vector", "hammer", "longwatch"],
-    secondary: ["p45", "rattler", "magnum"],
-    gadget: ["drone", "camera-drone", "steel-bars", "medkit"],
-    equipment: ["frag", "flash", "smoke", "claymore"],
-    breaching: ["sledgehammer", "karambit"]
+    primary: ["mk18", "mk19", "burst3", "vector", "horn-chopper-2000", "hammer", "slug-v", "double-pump", "longwatch", "cmr", "loudwatch", "cougar-blade"],
+    secondary: ["p45", "dualies", "rattler", "magnum", "blunder-b", "cougar-blade"],
+    gadget: ["drone", "camera-drone", "steel-bars", "medkit", "cougar-blade"],
+    equipment: ["frag", "blast", "flash", "smoke", "toxic", "claymore", "cougar-blade"],
+    breaching: ["sledgehammer", "crowbar", "lunchbox", "karambit", "pencil-2", "cougar-blade"]
   })) {
     for (const id of ids) {
       const quads = [], state = { x: 10, y: 1.8, z: 3, yaw: Math.PI / 2, pitch: .2, activeSlot: slot };
@@ -438,7 +383,8 @@ test("Breaching is the fifth loadout slot and defaults to key 5", () => {
   const context = {};
   vm.runInNewContext(`${slots}\nglobalThis.slots = loadoutSlots;`, context);
   assert.equal(context.slots[4].id, "breaching");
-  assert.deepEqual([...context.slots[4].items.map((item) => item.id)], ["sledgehammer", "karambit"]);
+  assert.deepEqual([...context.slots[4].items.map((item) => item.id)],
+    ["sledgehammer", "crowbar", "lunchbox", "karambit", "pencil-2", "cougar-blade"]);
   const binds = section("    const defaultKeybinds = {", "    const keybindLabels =");
   vm.runInNewContext(`${binds}\nglobalThis.binds = defaultKeybinds;`, context);
   assert.equal(context.binds.switchWeapon5, "5");
