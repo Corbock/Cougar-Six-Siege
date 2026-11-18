@@ -9,7 +9,9 @@ npm install
 npm start
 ```
 
-Open `http://localhost:8000` or share the server's reachable address with other players. The Node server hosts the page and its WebSocket matchmaking service on the same port. For public play, deploy the server somewhere all players can reach over HTTPS/WSS; a local development server is only reachable by other devices when the host network allows it.
+Open `http://localhost:8000` or share the server's reachable address with other players. The Node server hosts the page and its WebSocket matchmaking service on the same port. For public play, deploy this Node server somewhere all players can reach over HTTPS/WSS; a local development server is only reachable by other devices when the host network allows it. The previous `c6-siege-online.onrender.com` service is suspended and is no longer used.
+
+If you host the page on GitHub Pages instead, point it at your deployed game server by adding `?server=wss://YOUR-SERVER/ws` to the page URL (URL-encode the value if needed). The configured URL must be a `ws://` or `wss://` WebSocket endpoint. Deploying the Node server and opening its URL directly requires no extra configuration.
 
 ## Matchmaking
 

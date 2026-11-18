@@ -812,7 +812,6 @@
     const selection = {};
     Object.entries(catalogs).forEach(([key, catalog]) => { selection[key] = { mode: catalog.modes[0], map: catalog.maps[0] }; });
     const isSelectable = (section) => Boolean(catalogs[section]);
-    const ONLINE_SERVER_URL = "wss://c6-siege-online.onrender.com/ws";
     const cleanName = (value) => String(value || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 16);
     function playerName() {
       let name = cleanName(localStorage.getItem("cougarPlayerName") || sessionStorage.getItem("cougarPlayerName"));
@@ -938,7 +937,23 @@
     function connectMultiplayer() {
       if (multiplayer.socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(multiplayer.socket.readyState)) return;
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      const serverUrl = location.hostname.endsWith("github.io") ? ONLINE_SERVER_URL : `${protocol}//${location.host}/ws`;
+      const configuredUrl = new URLSearchParams(location.search).get("server");
+      let serverUrl;
+      if (configuredUrl) {
+        try {
+          const parsedUrl = new URL(configuredUrl);
+          if (!["ws:", "wss:"].includes(parsedUrl.protocol)) throw new Error("Use a ws:// or wss:// URL.");
+          serverUrl = parsedUrl.href;
+        } catch (error) {
+          lobbyStatus(`Invalid matchmaking server URL: ${error.message}`, true);
+          return;
+        }
+      } else if (location.hostname.endsWith("github.io")) {
+        lobbyStatus("Set ?server=wss://YOUR-SERVER/ws to connect this GitHub Pages site to your game server.", true);
+        return;
+      } else {
+        serverUrl = `${protocol}//${location.host}/ws`;
+      }
       const socket = multiplayer.socket = new WebSocket(serverUrl);
       const wakeTimer = setTimeout(() => { if (socket.readyState === WebSocket.CONNECTING) lobbyStatus("Waking the game server. This can take up to a minute..."); }, 4000);
       socket.addEventListener("open", () => clearTimeout(wakeTimer));
