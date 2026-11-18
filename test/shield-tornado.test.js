@@ -138,7 +138,7 @@ test("compact medkit opens away from the player, shows remaining bandages, then 
     .flatMap((quad) => quad.pts).reduce((sum, point) => sum + point[axis], 0) /
     (lidTriangles * 3);
   assert.ok(lidCenter(1.3, 1) > lidCenter(.5, 1) + .04, "GLB lid should hinge upward");
-  assert.ok(lidCenter(1.3, 2) < lidCenter(.5, 2) - .02, "GLB lid should flip away from the medkit front");
+  assert.ok(lidCenter(1.3, 2) > lidCenter(.5, 2) + .02, "GLB lid should open away from its player-facing front");
   const open = drawAt(1.3);
   const remainingRollCaps = (count) => {
     context.charges.medkit = count;

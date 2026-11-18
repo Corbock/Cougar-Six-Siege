@@ -1949,7 +1949,7 @@
         transform: ([x, y, z], center, scale) => [
           (x - center[0]) * scale,
           (center[2] - z) * scale,
-          (y - center[1]) * scale
+          (center[1] - y) * scale
         ]
       });
       const bodyParts = [], lidParts = [];
@@ -5563,8 +5563,8 @@
         const caseY = mix(mix(-.78, -.2, pull), -1.12, drop);
         const caseZ = .76;
         const lidOpen = smooth((elapsed - .62) / .48);
-        const lidAngle = -1.8 * lidOpen;
-        const modelScale = [.09, .09, .1], hingeY = .65 * modelScale[1], hingeZ = -.76 * modelScale[2];
+        const lidAngle = 1.8 * lidOpen;
+        const modelScale = [.09, .09, .1], hingeY = .65 * modelScale[1], hingeZ = .76 * modelScale[2];
         const medkitPoint = (point, lid = false) => {
           const local = [point[0] * modelScale[0], point[1] * modelScale[1], point[2] * modelScale[2]];
           if (!lid) return [caseX + local[0], caseY + local[1], caseZ + local[2]];
