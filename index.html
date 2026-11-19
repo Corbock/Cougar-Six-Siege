@@ -14,7 +14,7 @@
       --ink: #f3f2ec;
       --muted: #9c9f98;
       --line: rgba(235, 239, 226, .18);
-      --acid: #d3ef59;
+      --acid: #e85a50;
       --red: #df563c;
       --panel: rgba(16, 18, 16, .86);
     }
@@ -240,6 +240,19 @@
     .field-hud button { pointer-events: auto; padding: 8px 14px; border: 1px solid var(--line); background: rgba(11,13,11,.8); color: inherit; font: inherit; cursor: pointer; }
     .field-hud button:hover { border-color: var(--acid); color: var(--acid); }
     .field-hud small { display: block; opacity: .8; letter-spacing: .8px; }
+    .field-menu { position: absolute; z-index: 5; top: 0; left: 0; bottom: 0; width: min(440px, 100%); overflow-y: auto; padding: 22px; border-right: 1px solid rgba(232,90,80,.5); background: rgba(15,17,16,.97); box-shadow: 12px 0 42px #0009; }
+    .field-menu[hidden], .field-menu [hidden] { display: none !important; }
+    .field-menu-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+    .field-menu-header h2 { margin: 0; color: var(--acid); font: 700 25px/1 "Barlow Condensed", sans-serif; }
+    .field-menu-close { width: 36px; height: 36px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-size: 22px; }
+    .field-menu-actions, .field-operator-list { display: grid; gap: 8px; }
+    .field-menu-button, .field-operator-button { width: 100%; padding: 13px 14px; border: 1px solid var(--line); background: #1d201e; color: var(--ink); cursor: pointer; text-align: left; font: 700 16px/1.2 "Barlow Condensed", sans-serif; }
+    .field-menu-button:hover:not(:disabled), .field-operator-button:hover:not(:disabled), .field-operator-button[aria-pressed="true"] { border-color: var(--acid); background: #30201f; }
+    .field-menu-button:disabled, .field-operator-button:disabled { opacity: .5; cursor: not-allowed; }
+    .field-menu-back { width: auto; margin-bottom: 16px; padding: 8px 12px; }
+    .field-operator-button small { display: block; margin-top: 5px; color: #b7bab1; font: 400 11px/1.4 "DM Sans", sans-serif; }
+    .field-menu-status { color: #b7bab1; font: 400 12px/1.5 "DM Sans", sans-serif; }
+    .field-menu .settings-panel { display: block; width: 100%; max-height: none; overflow: visible; border: 0; padding: 0; background: transparent; }
     .field-scoreboard { position: absolute; top: 54px; left: 50%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; width: min(760px, calc(100vw - 520px)); padding: 8px 12px; border: 1px solid rgba(230,235,220,.2); background: rgba(11,13,11,.72); color: #f3f2ec; font: 600 10px/1.5 "DM Sans", sans-serif; text-align: center; text-shadow: 0 1px 4px #000; transform: translateX(-50%); pointer-events: none; }
     .field-scoreboard span:first-child { text-align: left; }
     .field-scoreboard span:last-child { text-align: right; }
@@ -473,6 +486,30 @@
     }
     .toast.visible { opacity: 1; transform: translateY(0); }
     .toast-mark { color: var(--acid); font: 700 19px/1 "Barlow Condensed", sans-serif; }
+    .connection::before, .lobby-connection.connected::before { box-shadow: 0 0 12px #e85a5080; }
+    .play-button:hover, .lobby-button.primary:hover:not(:disabled), .pack-open:hover:not(:disabled) { background: #fa8074; }
+    .keybind-input.recording { background: rgba(232,90,80,.1); }
+    .party-code, .pack-equip, .toast { border-color: rgba(232,90,80,.45); }
+    .operator.selected, .option.selected, .slot-tab.active, .item.selected, .choice.selected { background: rgba(66,36,35,.78); }
+    .packs-collection-count, .pack-reward-swatch span, .pack-reward small { color: var(--acid); }
+    .pack-stage { --pack-glow: rgba(232,90,80,.22); }
+    .pack-stage::before { border-color: rgba(232,90,80,.16); box-shadow: 0 0 0 22px rgba(232,90,80,.025), 0 0 0 48px rgba(232,90,80,.018); }
+    .pack-stage::after { background: linear-gradient(180deg, transparent 48%, rgba(232,90,80,.13) 50%, transparent 52%); }
+    .pack-stage.opening { --pack-glow: rgba(232,90,80,.38); }
+    .pack-stage.revealed { --pack-glow: rgba(232,90,80,.48); }
+    .pack-stage.rare { --pack-glow: rgba(174,123,255,.52); }
+    .pack-sachet { border-color: #df837a; background: linear-gradient(115deg, #6b3835, #402827 53%, #101713); box-shadow: inset 0 0 0 4px #101611aa, inset 16px 0 24px #f4a19a12, inset -12px 0 22px #0009; }
+    .pack-sachet::before { background: #f0aaa477; }
+    .pack-sachet-seal { border-color: #efaba488; background: repeating-linear-gradient(90deg, #a95f59 0 2px, #673c39 2px 5px, #8f4b46 5px 7px); }
+    .pack-sachet-brand, .pack-sachet-copy { color: #e7c2bd; }
+    .pack-sachet strong { border-color: #df837a; background: radial-gradient(circle, #613b39 0, #342726 66%, #111713 68%); box-shadow: 0 0 0 5px #101611aa, 0 0 24px #e85a5055; color: #ffd2cd; text-shadow: 0 0 16px #e85a5077; }
+    .pack-sachet-ripline { border-color: #f3c1bb99; }
+    .pack-sachet-mouth { border-color: #ec8980; background: linear-gradient(90deg, #ce6259, #ffaaa0 50%, #b44e47); box-shadow: 0 0 20px #e85a50aa; }
+    .pack-tear-strip { border-color: #e59990; background: repeating-linear-gradient(90deg, #291d1d 0 5px, #bc6e67 5px 8px); }
+    .pack-reward { border-color: #e59990; background: linear-gradient(135deg, rgba(57,38,38,.99), rgba(12,16,13,.99) 72%); box-shadow: 0 0 16px #e85a5080, 0 0 52px #e85a5045, 0 20px 46px #000e; }
+    .pack-open { background: linear-gradient(110deg, #e85a50, #bc4038); box-shadow: 0 5px 18px #e85a5026; }
+    .pack-open:hover:not(:disabled) { box-shadow: 0 0 22px #e85a505c; }
+    @keyframes pack-ready-pulse { 50% { box-shadow: 0 0 24px #e85a5066, 0 5px 18px #e85a5026; } }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
     @keyframes arrive { from { opacity: .25; transform: scale(1.06); } to { opacity: 1; transform: scale(1.025); } }
@@ -602,7 +639,7 @@
         </section>
         <section class="settings-panel" id="settings-panel" aria-labelledby="keybind-heading">
           <h2 id="keybind-heading">KEYBINDS</h2>
-          <p class="settings-note">Choose an action, then press a key. For ADS, you can also press the right or middle mouse button here. Escape cancels. Look, fire, arrow keys and Escape to exit are fixed.</p>
+          <p class="settings-note">Choose an action, then press a key. For ADS, you can also press the right or middle mouse button here. Escape cancels. Look, fire, arrow keys, Tab and Escape are fixed.</p>
           <p class="settings-note" id="keybind-status" role="status" aria-live="polite"></p>
           <div class="keybind-list" id="keybind-list"></div>
           <button id="reset-keybinds" class="reset-button">RESET TO DEFAULT</button>
@@ -683,13 +720,30 @@
       <div class="field-hud">
         <span><span id="field-map-name">THE FIELD</span><small id="field-controls"></small></span>
         <span id="field-pos"></span>
-        <button id="field-exit">EXIT (ESC)</button>
+        <button id="field-exit">OPTIONS (TAB)</button>
       </div>
       <div class="field-scoreboard" aria-label="Match scoreboard"><span id="scoreboard-team1"></span><strong id="scoreboard-score">0 — 0</strong><span id="scoreboard-team2"></span></div>
       <div class="field-minimap" role="img" aria-label="Minimap: white arrow is you, blue square is your spawn, yellow diamonds are objectives, green circles are teammates">
         <canvas id="minimap-canvas" width="480" height="320"></canvas>
         <div class="minimap-legend"><span><b style="color:#fff">▲</b>YOU</span><span><b style="color:#64b6ff">■</b>SPAWN</span><span><b style="color:#ffd75b">◆</b>OBJECTIVE</span><span><b style="color:#67d68c">●</b>TEAM</span><span><b style="color:#65e4ef">●</b>DRONE</span></div>
       </div>
+      <section id="field-menu" class="field-menu" aria-label="Match options" hidden>
+        <header class="field-menu-header"><h2 id="field-menu-title">OPTIONS</h2><button id="field-menu-close" class="field-menu-close" type="button" aria-label="Close options">×</button></header>
+        <div id="field-menu-main" class="field-menu-actions">
+          <button id="field-menu-settings" class="field-menu-button" type="button">SETTINGS</button>
+          <button id="field-menu-operators" class="field-menu-button" type="button">CHANGE OPERATOR</button>
+          <button id="field-menu-leave" class="field-menu-button" type="button">LEAVE GAME</button>
+        </div>
+        <div id="field-menu-operator-view" hidden>
+          <button class="field-menu-button field-menu-back" type="button" data-field-menu-back>← BACK</button>
+          <p id="field-menu-operator-status" class="field-menu-status" role="status"></p>
+          <div id="field-operator-list" class="field-operator-list"></div>
+        </div>
+        <div id="field-menu-settings-view" hidden>
+          <button class="field-menu-button field-menu-back" type="button" data-field-menu-back>← BACK</button>
+          <div id="field-menu-settings-content"></div>
+        </div>
+      </section>
     </div>
     <div class="match-lobby" id="match-lobby" role="dialog" aria-label="Party and matchmaking" aria-modal="true">
       <div class="lobby-panel">
@@ -1006,13 +1060,16 @@
           multiplayer.round = roundFrom(message);
           multiplayer.remotePlayers.clear();
           fieldView.beginRound(message.spawn);
+          fieldView.openOperatorMenu();
         }
         if (message.type === "round_end" && multiplayer.round) {
           multiplayer.round = { ...multiplayer.round, phase: message.matchWinner ? "over" : "roundEnd", wins: message.wins, winner: message.winner, reason: message.reason || "", endsAt: performance.now() + message.phaseMs };
           if (message.matchWinner && multiplayer.match?.team === message.winner) awardMatchPack(multiplayer.match.matchId);
         }
+        if (message.type === "operator_rejected" && multiplayer.match) fieldView.restoreOperator(message.operatorId, message.loadout);
         if (message.type === "snapshot" && message.matchId === multiplayer.match?.matchId) {
           multiplayer.round = { ...roundFrom(message), winner: multiplayer.round?.winner ?? null, reason: multiplayer.round?.reason ?? "" };
+          fieldView.updateOperatorMenu();
           multiplayer.lastSnapshotAt = message.serverTime;
           multiplayer.match.players = message.players;
           multiplayer.objectives = message.objectives || [];
@@ -1175,7 +1232,7 @@
       { id: "secondary", label: "SECONDARY", stats: true, items: [
         { id: "p45", name: "P45 Sidearm", family: "Pistol", type: "PISTOL", desc: "Accurate and quick to draw.", dmg: 4, rng: 5, mob: 9 },
         { id: "dualies", name: "Dualies", family: "Pistol", type: "PISTOL", desc: "Dual-wielded rapid-fire P45 sidearms. Cannot be used with Ms C's shield.", dmg: 4, rng: 4, mob: 8, rarePack: true,
-          weapon: { rate: 9, mag: 24, reload: 1.8, dualies: true } },
+          weapon: { rate: 9, mag: 24, reload: 1.8, auto: true, dualies: true } },
         { id: "rattler", name: "Rattler", family: "SMG", type: "MACHINE PISTOL", desc: "Automatic fire in a compact frame.", dmg: 3, rng: 3, mob: 9 },
         { id: "magnum", name: "Magnum .44", family: "Pistol", type: "REVOLVER", desc: "Heavy hitting, slow to reload.", dmg: 8, rng: 6, mob: 7 },
         { id: "blunder-b", name: "Blunder B", family: "Shotgun", type: "SHOTGUN", desc: "A compact cone-muzzled shotgun with a tight spread and quick reload.", dmg: 5, rng: 3, mob: 8,
@@ -1420,26 +1477,106 @@
       ] }
     };
     modelDefs["camera-drone"] = modelDefs.drone;
-    modelDefs.mk19 = { ...modelDefs.mk18, parts: [...modelDefs.mk18.parts, box(0, .48, 0, 3.2, .08, .74, "metal")] };
-    modelDefs.burst3 = { ...modelDefs.mk18, parts: [...modelDefs.mk18.parts, box(-3.1, -.25, 0, 2.8, .42, .62, "dark")] };
-    modelDefs["horn-chopper-2000"] = { ...modelDefs.vector, parts: [...modelDefs.vector.parts,
-      ...[0, 1, 2, 3].map((index) => cyl("x", 4.3, (index - 1.5) * .22, (index - 1.5) * .22, 5, .12, "metal")),
-      box(-1.4, -.1, 0, 2.3, .45, .68, "dark")] };
+    modelDefs.mk19 = { mounts: { optic: [.15, .86, 0], muzzle: [7.2, .04, 0], grip: [2.1, -.55, 0] }, sight: [-.2, .82, 0], parts: [
+      box(-4.05, .02, 0, .3, 1.16, .78, "dark"), box(-3.1, .02, 0, 1.8, .48, .58, "metal"),
+      box(-3.05, .36, 0, 1.45, .18, .66, "body"), box(-2.18, -.25, 0, .34, .3, .56, "metal"),
+      box(-.35, .02, 0, 3.35, .82, .9, "body"), box(-.25, .48, 0, 3.35, .18, .94, "metal"),
+      box(2.35, .02, 0, 2.35, .68, .82, "dark"), box(2.3, .43, 0, 2.5, .15, .9, "metal"),
+      ...[1.45, 1.85, 2.25, 2.65, 3.05].flatMap((x) => [
+        box(x, .02, .42, .18, .18, .035, "metal"), box(x, .02, -.42, .18, .18, .035, "metal")
+      ]),
+      box(.15, .68, 0, 4.4, .12, .68, "dark"),
+      ...[-1.85, -1.5, -1.15, -.8, -.45, -.1, .25, .6, .95, 1.3, 1.65, 2, 2.35, 2.7, 3.05].map((x) =>
+        box(x, .76, 0, .1, .06, .72, "metal")),
+      box(.35, .13, .48, .95, .3, .05, "dark"), box(.35, .13, .51, .58, .14, .025, "metal"),
+      cyl("z", -.02, .14, .56, .18, .1, "metal"), box(-1.25, .56, 0, .44, .1, .2, "dark"),
+      box(-.72, -.64, 0, .68, .16, .58, "dark"), box(-.72, -.9, 0, .58, .72, .5, "dark", -.12),
+      box(-.72, -.9, .27, .38, .44, .04, "metal", -.12),
+      box(.26, -.5, 0, .38, .12, .46, "metal"), cyl("y", .37, -.52, 0, .38, .045, "metal"),
+      cyl("x", 4.6, .04, 0, 4.8, .14, "metal"), box(4.35, .35, 0, .42, .5, .54, "metal"),
+      box(4.55, .7, 0, .16, .38, .2, "dark"), box(4.55, .91, 0, .12, .1, .12, "metal"),
+      cyl("x", 7.05, .04, 0, .48, .23, "dark"), cyl("x", 7.27, .04, 0, .08, .18, "metal"),
+      ...[-.12, 0, .12].map((y) => box(.87, .03 + y, .51, .42, .035, .025, "accent"))
+    ], mag: [box(.3, -.93, 0, .66, 1.34, .54, "paint", -.1), box(.3, -1.6, 0, .62, .14, .5, "dark"),
+      ...[-.14, .14].flatMap((z) => [
+        box(.3, -.87, z, .42, .82, .035, "dark", -.1), box(.3, -.87, z * 1.13, .3, .08, .025, "metal", -.1)
+      ])] };
+    modelDefs.burst3 = { mounts: { optic: [.15, .84, 0], muzzle: [6.9, .04, 0], grip: [2.8, -.58, 0] }, sight: [-.2, .86, 0], parts: [
+      box(-.15, .02, 0, 3.6, .82, .82, "body"), box(-.18, .48, 0, 3.2, .16, .9, "dark"),
+      box(2.15, .02, 0, 2.7, .74, .82, "body"), box(2.2, .43, 0, 2.5, .12, .9, "metal"),
+      ...[1.2, 1.75, 2.3, 2.85, 3.4].flatMap((x) => [
+        box(x, .02, .44, .27, .12, .035, "dark"), box(x, .02, -.44, .27, .12, .035, "dark")
+      ]),
+      box(-2.85, .02, 0, 2, .58, .7, "dark"), box(-3.15, .37, 0, 1.35, .2, .74, "body"),
+      box(-4, .02, 0, .28, .96, .82, "metal"), box(-.85, -.75, 0, .72, 1.3, .58, "dark", -.12),
+      box(-.85, -.82, .31, .48, .82, .055, "body", -.12), box(-.85, -.82, -.31, .48, .82, .055, "body", -.12),
+      box(-.05, -.55, 0, 1.1, .12, .56, "dark"), box(.35, .13, .44, .82, .28, .05, "dark"),
+      box(.35, .13, .48, .38, .12, .025, "metal"), cyl("z", -.78, .08, .44, .13, .15, "metal"),
+      ...[-.08, 0, .08].map((y) => box(-.34, .2 + y, .46, .06, .045, .025, "accent")),
+      box(.15, .72, 0, 3.5, .12, .58, "metal"),
+      ...[-.9, -.55, -.2, .15, .5, .85, 1.2, 1.55, 1.9, 2.25, 2.6, 2.95, 3.3, 3.65].map((x) =>
+        box(x, .81, 0, .12, .06, .64, "dark")),
+      cyl("x", 4.75, .04, 0, 4.1, .14, "metal"), cyl("x", 6.78, .04, 0, .42, .24, "dark"),
+      box(5.25, .48, 0, .18, .72, .18, "metal"), box(5.25, .86, 0, .12, .12, .12, "dark"),
+      box(-1.75, .58, 0, .28, .42, .28, "metal"), box(-1.75, .81, 0, .12, .12, .12, "dark")
+    ], mag: [box(.25, -.88, 0, .62, 1.04, .5, "paint", -.08), box(.25, -1.38, 0, .56, .12, .46, "dark"),
+      ...[-.12, .12].flatMap((z) => [
+        box(.25, -.8, z, .38, .62, .035, "dark", -.08), box(.25, -.8, z * 1.14, .26, .08, .025, "metal", -.08)
+      ])] };
+    modelDefs["horn-chopper-2000"] = { mounts: { optic: [-.5, .85, 0], muzzle: [7.05, 0, 0], grip: [1.05, -.68, 0] }, sight: [-1, .9, 0], parts: [
+      box(-.8, 0, 0, 3.2, 1.24, 1.18, "body"), box(-.85, .68, 0, 2.7, .18, 1.25, "metal"),
+      box(-2.75, .02, 0, .85, 1.08, 1.08, "dark"), cyl("x", -3.25, .02, 0, .3, .5, "metal"),
+      box(-1.7, -.94, 0, .65, 1.2, .62, "dark", -.16), box(-1.7, -.95, .33, .42, .65, .05, "metal", -.16),
+      box(-.55, -.62, 0, 1.1, .12, .68, "dark"), box(-.65, 1.08, 0, 1.8, .16, .42, "dark"),
+      box(-1.42, .87, 0, .16, .42, .42, "metal"), box(.12, .87, 0, .16, .42, .42, "metal"),
+      cyl("x", 1.05, 0, 0, .9, .8, "dark"), cyl("x", 1.52, 0, 0, .18, .72, "metal"),
+      ...[0, 1, 2, 3, 4, 5].flatMap((index) => {
+        const angle = index * Math.PI / 3, y = Math.cos(angle) * .52, z = Math.sin(angle) * .52;
+        return [cyl("x", 4.2, y, z, 5.45, .13, "metal"), cyl("x", 6.91, y, z, .24, .17, "dark")]
+          .map((part) => ({ ...part, rotor: true }));
+      }),
+      ...[2.05, 5.9].map((x) => ({ ...cyl("x", x, 0, 0, .25, .76, "dark"), rotor: true })),
+      { ...cyl("x", 4.2, 0, 0, 5.5, .18, "dark"), rotor: true },
+      box(.25, -.88, 0, .7, .55, .72, "metal"), box(1.05, -.96, 0, .55, .75, .56, "dark")
+    ], mag: [cyl("z", -.35, -1.45, 0, 1.14, .82, "paint"), cyl("z", -.35, -1.45, .6, .12, .72, "dark"),
+      cyl("z", -.35, -1.45, -.6, .12, .72, "dark"), cyl("z", -.35, -1.45, .68, .06, .25, "metal")] };
     modelDefs.cmr = { ...modelDefs.longwatch, parts: [...modelDefs.longwatch.parts, box(.5, -1.05, 0, .75, .85, .58, "metal")] };
     modelDefs.loudwatch = { ...modelDefs.longwatch, parts: [...modelDefs.longwatch.parts,
       box(.45, -.88, 0, .58, .92, .48, "red"), box(8.35, .02, 0, .5, .4, .45, "accent")] };
-    modelDefs["slug-v"] = { ...modelDefs.hammer, parts: [...modelDefs.hammer.parts, box(2.4, .43, 0, 4, .12, .8, "metal")] };
-    modelDefs["double-pump"] = { ...modelDefs.hammer, parts: [...modelDefs.hammer.parts,
-      cyl("x", 4.2, .3, -.24, 5, .16, "metal"), box(-2.2, -.82, 0, 1.2, 1.05, .72, "dark")] };
+    modelDefs["slug-v"] = { mounts: { optic: [0, .65, 0], muzzle: [7, .1, 0], grip: [3.4, -.65, 0] }, sight: [-.8, .7, 0], parts: [
+      box(-.25, 0, 0, 3.3, .9, .8, "body"), box(-.2, .5, 0, 3.25, .14, .84, "metal"),
+      box(-2.8, -.1, 0, 2.5, .65, .65, "body"), box(-4.12, -.16, 0, .25, .95, .72, "dark"),
+      box(-1.15, -.83, 0, .62, 1.15, .55, "dark", -.16), box(-.3, -.55, 0, 1, .12, .5, "metal"),
+      cyl("x", 4.15, .1, 0, 5.7, .21, "metal"), cyl("x", 6.92, .1, 0, .2, .26, "dark"),
+      cyl("x", 3.5, -.43, 0, 4.4, .13, "dark"), box(3.2, -.65, 0, 2, .48, .68, "body"),
+      ...[2.45, 2.8, 3.15, 3.5, 3.85].flatMap((x) => [box(x, -.65, .35, .1, .3, .03, "dark"), box(x, -.65, -.35, .1, .3, .03, "dark")]),
+      box(.35, .1, .42, .8, .26, .04, "dark"), box(4.8, .46, 0, .18, .42, .18, "metal"),
+      box(4.8, .7, 0, .1, .1, .1, "accent"), box(-1.1, .68, 0, .25, .18, .3, "dark")
+    ] };
+    modelDefs["double-pump"] = { mounts: { optic: [0, .7, 0], muzzle: [7, .1, 0], grip: [3.2, -.65, 0] }, sight: [-.8, .72, 0], parts: [
+      box(-.25, 0, 0, 3.2, .95, 1.05, "body"), box(-.3, .52, 0, 3, .13, 1.1, "metal"),
+      box(-2.85, -.1, 0, 2.6, .72, .68, "body"), box(-4.2, -.16, 0, .24, 1.02, .76, "dark"),
+      box(-1.15, -.85, 0, .65, 1.2, .56, "dark", -.16), box(-.25, -.57, 0, 1.05, .12, .55, "metal"),
+      ...[-.25, .25].flatMap((z) => [cyl("x", 4.2, .1, z, 5.6, .2, "metal"), cyl("x", 6.94, .1, z, .12, .23, "dark")]),
+      box(3.1, -.4, 0, 2.3, .44, 1.02, "body"), box(3.1, -.62, 0, 2.1, .12, .92, "dark"),
+      ...[2.3, 2.7, 3.1, 3.5, 3.9].map((x) => box(x, -.4, .52, .12, .28, .03, "dark")),
+      box(.4, .08, .55, .7, .3, .04, "dark"), box(5.1, .5, 0, .2, .3, .18, "metal"),
+      box(5.1, .69, 0, .1, .1, .1, "accent"), box(-1, .68, 0, .3, .18, .35, "dark")
+    ] };
     modelDefs["blunder-b"] = { ...modelDefs.hammer, parts: [...modelDefs.hammer.parts,
       cyl("x", 1.8, .08, 0, 2.5, .3, "metal"), cyl("x", 3.1, .08, 0, .18, .52, "dark")] };
     const offsetPistolParts = (parts, offset) => parts.map((part) => ({ ...part, c: [part.c[0], part.c[1], part.c[2] + offset] }));
     modelDefs.dualies = { ...modelDefs.p45,
-      parts: [...modelDefs.p45.parts, ...offsetPistolParts(modelDefs.p45.parts, -.85)],
-      mag: [...modelDefs.p45.mag, ...offsetPistolParts(modelDefs.p45.mag, -.85)] };
-    modelDefs.crowbar = { ...modelDefs.sledgehammer, parts: [
-      cyl("x", 0, 0, 0, 6, .14, "red"), cyl("x", 2.8, .55, 0, 1.2, .13, "metal"),
-      cyl("y", 3.2, .7, 0, .7, .14, "metal")] };
+      parts: [...modelDefs.p45.parts, ...offsetPistolParts(modelDefs.p45.parts, -3.4)],
+      mag: [...modelDefs.p45.mag, ...offsetPistolParts(modelDefs.p45.mag, -3.4)] };
+    modelDefs.crowbar = { mounts: {}, parts: [
+      cyl("x", 0, 0, 0, 6.8, .15, "metal"), cyl("x", -1.05, 0, 0, 1.55, .19, "dark"),
+      ...[-1.72, -.38].map((x) => cyl("x", x, 0, 0, .12, .2, "red")),
+      box(3.15, .16, 0, .42, .3, .4, "metal"), box(2.92, .43, 0, .72, .16, .36, "metal", .55),
+      box(2.69, .76, 0, .52, .15, .36, "metal", 1.18), box(2.39, .92, 0, .55, .13, .34, "edge", 1.92),
+      box(-3.28, .04, 0, .5, .22, .42, "metal"),
+      box(-3.49, .12, .14, .52, .1, .12, "edge", -.22), box(-3.49, .12, -.14, .52, .1, .12, "edge", -.22)
+    ] };
     modelDefs.lunchbox = { ...modelDefs.sledgehammer, parts: [
       box(2.8, 0, 0, 2, 1.5, 1.3, "metal"), box(2.8, .1, .67, 1.1, .55, .08, "accent"),
       cyl("x", 0, 0, 0, 5, .18, "dark")] };
@@ -1447,9 +1584,19 @@
       cyl("x", 0, 0, 0, 5, .09, "red"), cyl("x", 2.48, 0, 0, .18, .09, "dark"),
       box(-1.95, 0, 0, .48, .2, .22, "metal")] };
     modelDefs["cougar-blade"] = { mounts: {}, parts: [
-      ...[0, 1, 2, 3, 4].map((index) => box(1.7 + index * .42, .05 + index * .08, 0, 1.1, .27 - index * .035, .3, "glass", -.08)),
-      box(-.5, 0, 0, 1.5, .38, .42, "metal"), box(-1.55, 0, 0, .25, 1.05, .26, "accent"),
-      box(-2.65, 0, 0, 2, .24, .24, "dark")] };
+      ...[[.55, .02, 1.3, .52, .02], [1.2, .12, 1.32, .48, .08], [1.85, .27, 1.25, .4, .14],
+        [2.45, .46, 1.1, .32, .2], [2.98, .68, .88, .25, .27], [3.38, .91, .62, .17, .34]]
+        .flatMap(([x, y, width, height, angle]) => [
+          box(x, y, 0, width, height, .26, "glass", angle),
+          box(x, y + height * .38, .015, width * .88, .055, .27, "edge", angle)
+        ]),
+      box(3.78, 1.13, 0, .36, .12, .2, "edge", .44),
+      box(-.42, 0, 0, .3, .86, .64, "metal"), box(-.42, .39, 0, .44, .16, .78, "accent", -.18),
+      box(-.42, -.39, 0, .44, .16, .78, "accent", .18),
+      cyl("x", -1.48, 0, 0, 1.9, .22, "dark"),
+      ...[-2.2, -1.83, -1.46, -1.09, -.72].map((x) => box(x, 0, .225, .12, .34, .04, "metal", -.3)),
+      cyl("x", -2.5, 0, 0, .22, .3, "metal"), box(-2.62, 0, 0, .16, .43, .36, "accent")
+    ] };
     modelDefs.blast = { ...modelDefs.frag, parts: [...modelDefs.frag.parts, cyl("y", 0, .8, 0, .2, .8, "red")] };
     modelDefs.toxic = { ...modelDefs.smoke, parts: [...modelDefs.smoke.parts, box(0, 0, .68, .75, 1.1, .05, "accent")] };
 
@@ -1664,10 +1811,14 @@
       const out = [];
       if (item.family === "Shotgun" && mounts.muzzle) {
         const [x, y, z] = mounts.muzzle;
-        if (cfg.muzzle === "sawed-off")
-          out.push(cyl("x", x + .2, y, z, .4, .44, "metal"), cyl("x", x + .42, y, z, .08, .5, "dark"));
-        else if (cfg.muzzle === "long-barrel")
-          out.push(cyl("x", x + 1.6, y, z, 3.2, .18, "metal"), cyl("x", x + 3.2, y, z, .08, .14, "dark"));
+        const barrels = item.id === "double-pump" ? [z - .25, z + .25] : [z];
+        barrels.forEach((barrelZ) => {
+          if (cfg.muzzle === "sawed-off")
+            out.push(cyl("x", x + .2, y, barrelZ, .4, item.id === "double-pump" ? .23 : .44, "metal"),
+              cyl("x", x + .42, y, barrelZ, .08, item.id === "double-pump" ? .25 : .5, "dark"));
+          else if (cfg.muzzle === "long-barrel")
+            out.push(cyl("x", x + 1.6, y, barrelZ, 3.2, .18, "metal"), cyl("x", x + 3.2, y, barrelZ, .08, .14, "dark"));
+        });
       }
       if (item.family !== "Shotgun" && mounts.optic && cfg.optic === "dot") {
         const [x, y, z] = mounts.optic;
@@ -1739,6 +1890,7 @@
         polys.push(poly);
       };
       parts.forEach((p) => {
+        const firstPoly = polys.length;
         if (p.k === "box") {
           const [cx, cy, cz] = p.c, [x0, y0, z0, x1, y1, z1] = [cx - p.s[0] / 2, cy - p.s[1] / 2, cz - p.s[2] / 2, cx + p.s[0] / 2, cy + p.s[1] / 2, cz + p.s[2] / 2];
           const ca = Math.cos(p.rz || 0), sa = Math.sin(p.rz || 0);
@@ -1761,6 +1913,7 @@
             add([pt(a0, b0), pt(a1, b0), pt(a1, b1), pt(a0, b1)], p.m, p.c);
           }
         }
+        if (p.rotor) for (let index = firstPoly; index < polys.length; index++) polys[index].rotor = true;
       });
       return polys;
     }
@@ -2532,7 +2685,7 @@
         document.querySelector("#pack-reward-name").textContent = reward.title;
         document.querySelector("#pack-reward-detail").textContent = reward.detail;
         packRewardSwatch.style.backgroundImage = reward.skin ? `url("${reward.skin.src}")` :
-          `linear-gradient(145deg, ${reward.color || "#d3ef59"}, #121713)`;
+          `linear-gradient(145deg, ${reward.color || "#e85a50"}, #121713)`;
         packRewardSwatch.firstElementChild.textContent = reward.previewLabel || (reward.skin ? "WEAPON CAMO" : "ARSENAL CREDIT");
         packReward.hidden = false;
         packStage.className = `pack-stage revealed${reward.rarity ? ` ${reward.rarity}` : ""}`;
@@ -2554,9 +2707,31 @@
       showToast("MATCH WON · 1 ARMORY PACK EARNED");
     }
     packOpenButton.addEventListener("click", openArmoryPack);
+    const armoryTestCode = "CORBOK";
+    let armoryCodeBuffer = "";
+    function handleArmoryTestCode(event) {
+      if (activeSection !== "PACKS") {
+        armoryCodeBuffer = "";
+        return;
+      }
+      if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.key.length !== 1) return;
+      armoryCodeBuffer = (armoryCodeBuffer + event.key.toUpperCase()).slice(-armoryTestCode.length);
+      if (armoryCodeBuffer !== armoryTestCode) return;
+      armoryCodeBuffer = "";
+      const variantKeys = packPairs.filter((key) => key.startsWith("weapon:"));
+      const newlyUnlocked = variantKeys.some((key) => !ownedWraps.has(key));
+      variantKeys.forEach((key) => ownedWraps.add(key));
+      if (newlyUnlocked) {
+        packStatusText = "TEST UNLOCK: all weapon variants unlocked.";
+        saveArmory();
+        renderArmory();
+      }
+      showToast("ALL WEAPON VARIANTS UNLOCKED FOR TESTING");
+    }
+    document.addEventListener("keydown", handleArmoryTestCode);
     renderArmory();
 
-    function selectOperator(id) {
+    function selectOperator(id, notifyServer = true) {
       const operator = operatorRoster.find((entry) => entry.id === id);
       if (!operator) return;
       selectedOperatorId = operator.id;
@@ -2581,7 +2756,7 @@
         document.querySelector("#mission-label").textContent = `OPERATOR: ${operator.name.toUpperCase()}`;
       }
       if (activeSection === "LOADOUT") renderLoadout();
-      if (multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "select_operator", operatorId: operator.id, loadout }));
+      if (notifyServer && multiplayer.socket?.readyState === 1) multiplayer.socket.send(JSON.stringify({ type: "select_operator", operatorId: operator.id, loadout }));
     }
 
     function setSection(section) {
@@ -2762,7 +2937,8 @@
         document.querySelector("#keybind-status").textContent = "Rebinding cancelled.";
         recordingKeybind = null;
         renderKeybinds();
-        document.querySelector(`[data-action="${action}"]`).focus();
+        if (!document.querySelector("#field-menu").hidden) fieldView.dismissMenu();
+        else document.querySelector(`[data-action="${action}"]`).focus();
       } else if (event.ctrlKey || event.altKey || event.metaKey || !validBind(key)) {
         document.querySelector("#keybind-status").textContent = "Use a letter, number, Space or Shift.";
       } else {
@@ -3458,7 +3634,8 @@
         const sight = cfg.optic !== "none" && def.mounts.optic ? def.mounts.optic : def.sight || def.mounts.optic || [0, 0, 0];
         return { item, kind, cfg, polys, magPolys, mid, tip, rear, stats, sight, muzzle: [def.mounts.muzzle ? def.mounts.muzzle[1] : 0, def.mounts.muzzle ? def.mounts.muzzle[2] : 0],
           ammo: old ? Math.min(mag, old.ammo) : mag, reserve: old ? Math.min(mag * 6, old.reserve) : mag * 4, next: 0, reloadEnd: 0, swingStart: -1,
-          inspectStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0, lastShot: -1,
+          inspectStart: -1, swingHit: false, kick: 0, flash: 0, flameUntil: 0, equippedAt: old?.equippedAt ?? 0, lastShot: -1, dualiesSide: 0,
+          rotorAngle: old?.rotorAngle ?? 0, rotorSpinUntil: 0,
           crowbarUses: old?.crowbarUses ?? 3 };
       }
       const wpn = () => weapons[loadout[curSlot]];
@@ -3521,7 +3698,10 @@
           return [state.x + lateral * c + forward * s, base + (state.crouched ? .97 : 1.3) + x * sp + y * cp,
             state.z - lateral * s + forward * c];
         };
-        polys.forEach((poly) => list.push({ pts: poly.v.map(transform), uv: poly.uv,
+        const rotorAngle = itemId === "horn-chopper-2000" && Number.isFinite(state.rotorAngle) ? state.rotorAngle : 0;
+        const rotorCos = Math.cos(rotorAngle), rotorSin = Math.sin(rotorAngle);
+        polys.forEach((poly) => list.push({ pts: poly.v.map((point) => transform(poly.rotor ?
+          [point[0], point[1] * rotorCos - point[2] * rotorSin, point[1] * rotorSin + point[2] * rotorCos] : point)), uv: poly.uv,
           color: poly.m === "paint" || (poly.m === "mk18Orange" && paintSkin) ? (paint || paintColors[0].c) :
             poly.m === "keychain" ? charm.color : materials[poly.m],
           skin: poly.m === "paint" || poly.m === "mk18Orange" ? paintSkin :
@@ -5262,6 +5442,8 @@
           return;
         }
         w.ammo -= rounds; w.next = tNow + 1 / k.rate; w.kick = 1; w.flash = .05;
+        if (w.item.id === "horn-chopper-2000") w.rotorSpinUntil = tNow + .1;
+        if (w.item.id === "dualies") w.dualiesSide = w.dualiesSide === 1 ? 0 : 1;
         if (w.item.id === "longwatch") w.lastShot = tNow;
         if (k.pellets || k.burst) w.shotId = `${multiplayer.playerId}:s${++projSeq}`;
         const reach = ["longwatch", "cmr", "loudwatch"].includes(w.item.id) ? Infinity :
@@ -5309,6 +5491,8 @@
           } else w.flameUntil = 0;
         }
         if (wantsFire && !w.reloadEnd && tNow >= w.next && w.swingStart < 0) { fire(w); pressedAt = -1; }
+        if (w.item.id === "horn-chopper-2000" && w.rotorSpinUntil > tNow)
+          w.rotorAngle = ((w.rotorAngle || 0) + Math.max(0, elapsed) * 18) % (Math.PI * 2);
         w.kick = Math.max(0, w.kick - (tNow - lastT) * 9); w.flash = Math.max(0, w.flash - (tNow - lastT));
       }
       let mouseDown = false, mouseAim = false, sprintPose = 0, lastT = 0, pressedAt = -1;
@@ -5345,12 +5529,14 @@
         let vs = 1;
         if (w.kind.held) { vs = w.kind.vs; [offX, offY, offZ] = w.kind.at; offY += bob - k * .04; offZ -= k * .08; ang = k * .25; }
         if (shieldSidearm) { offX = .24; offY = -.24 + bob; offZ = .43 + w.rear * K - k * .05; }
-        if (["PISTOL", "MACHINE PISTOL", "REVOLVER"].includes(w.item.type) && w.item.id !== "magnum") offY += .18;
+        if (["PISTOL", "MACHINE PISTOL", "REVOLVER"].includes(w.item.type) && w.item.id !== "magnum" &&
+          (shieldSidearm || !["p45", "dualies"].includes(w.item.id))) offY += .18;
         if (shieldSidearm && w.reloadEnd) offY += .1 * Math.sin(Math.PI * reloadProgress);
         offY += sprintPose * .02;
         offX += sprintPose * .09;
         offZ += sprintPose * .05;
         ang += sprintPose * .32;
+        if (w.item.id === "dualies") offX -= .17;
         const aim = w.kind.held || w.kind.melee || shieldSidearm ? 0 : ads * (1 - sprintPose);
         vs = 1 - aim * .18;
         if (aim) {
@@ -5363,10 +5549,13 @@
         const place = (q) => {
           const x = q[0] - w.mid[0], y = q[1] - w.mid[1], z = q[2] - w.mid[2];
           const xr = x * ca - y * sa, yr = x * sa + y * ca;
-          return [z * K * vs + offX, yr * K * vs + offY, xr * K * vs + offZ];
+          const dualiesKick = w.item.id === "dualies" && ((z > 0) === Boolean(w.dualiesSide)) ? w.kick * .025 : 0;
+          return [z * K * vs + offX, yr * K * vs + offY + dualiesKick, xr * K * vs + offZ];
         };
+        const rotorCos = Math.cos(w.rotorAngle || 0), rotorSin = Math.sin(w.rotorAngle || 0);
         const list = w.polys.filter((poly) => w.item.id !== "shield" || poly.m !== "glass" || poly.v.every((point) => point[0] === -.01))
-          .map((poly) => ({ pts: poly.v.map(place), color: colorOf(w, poly.m), uv: poly.uv,
+          .map((poly) => ({ pts: poly.v.map((point) => place(poly.rotor ?
+            [point[0], point[1] * rotorCos - point[2] * rotorSin, point[1] * rotorSin + point[2] * rotorCos] : point)), color: colorOf(w, poly.m), uv: poly.uv,
             skin: (poly.m === "paint" || poly.m === "mk18Orange") && w.item.dmg ? selectedPaintSkin() :
               (poly.m === "body" || poly.m === "mk18Body") ? skinOf(w) : null,
             shieldGlass: w.item.id === "shield" && poly.m === "glass" }));
@@ -5487,7 +5676,8 @@
           }
         }
         if (w.flash > 0 && !w.kind.melee) {
-          const mx = w.mid[0] + w.tip + .1, my = w.mid[1] + w.muzzle[0], mz = w.mid[2] + w.muzzle[1], r = .9 + Math.random() * .5;
+          const mx = w.mid[0] + w.tip + .1, my = w.mid[1] + w.muzzle[0];
+          const mz = w.mid[2] + w.muzzle[1] + (w.item.id === "dualies" ? (w.dualiesSide ? 1.7 : -1.7) : 0), r = .9 + Math.random() * .5;
           list.push({ pts: [[mx, my - r, mz], [mx + r * 2, my, mz], [mx, my + r, mz], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#ffd96b" });
           list.push({ pts: [[mx, my, mz - r], [mx + r * 2, my, mz], [mx, my, mz + r], [mx - r * .3, my, mz]].map((q) => place([q[0], q[1], q[2]])), color: "#fff1b8" });
         }
@@ -6118,7 +6308,7 @@
         updateObjectiveHud(match, round);
         const watching = dead && multiplayer.remotePlayers.get(spectate.id);
         spectateEl.style.display = dead ? "block" : "none";
-        spectateEl.innerHTML = dead ? `${watching ? `SPECTATING ${watching.name}` : "NO TEAMMATES ALIVE"}<small style="display:block;font-size:13px;opacity:.8;letter-spacing:1.2px">CLICK / TAB next teammate · RIGHT CLICK previous</small>` : "";
+        spectateEl.innerHTML = dead ? `${watching ? `SPECTATING ${watching.name}` : "NO TEAMMATES ALIVE"}<small style="display:block;font-size:13px;opacity:.8;letter-spacing:1.2px">CLICK next teammate · RIGHT CLICK previous</small>` : "";
       }
 
       function frame(now) {
@@ -6226,6 +6416,7 @@
             targetId: entry.targetId?.startsWith("player-") ? entry.targetId.slice(7) : null }));
           const sidearmConfig = customOf({ id: "p45" });
           multiplayer.socket.send(JSON.stringify({ type: "state", state: { ...bodyState, activeSlot: curSlot, equippedPaint: paintColor(cw.item),
+            rotorAngle: cw.item.id === "horn-chopper-2000" ? cw.rotorAngle : 0,
             equippedSkin: cw.cfg.skin, equippedKeychain: cw.cfg.keychain, paintSkin: appearance.paintSkin, sidearmPaint: paintColor({ id: "p45" }),
             sidearmSkin: sidearmConfig.skin, sidearmKeychain: sidearmConfig.keychain, dronePaint: paintColor({ id: "drone" }), companions,
             droneState: drone.active ? { x: renderCam.x, y: renderCam.y, z: renderCam.z, yaw: cam.yaw, pitch: cam.pitch, mode: drone.mode } : null } }));
@@ -6345,7 +6536,97 @@
       }
 
       const locked = () => document.pointerLockElement === canvas;
-      canvas.addEventListener("click", () => { if (!locked()) canvas.requestPointerLock(); });
+      const fieldMenu = document.querySelector("#field-menu");
+      const menuMain = document.querySelector("#field-menu-main");
+      const menuOperators = document.querySelector("#field-menu-operator-view");
+      const menuSettings = document.querySelector("#field-menu-settings-view");
+      const operatorList = document.querySelector("#field-operator-list");
+      const settingsHome = settingsPanel.parentNode, settingsNext = settingsPanel.nextSibling;
+      const canChangeOperator = () => !multiplayer.match ||
+        (multiplayer.round?.phase === "prep" && performance.now() < multiplayer.round.endsAt);
+      function updateOperatorMenu() {
+        if (fieldMenu.hidden) return;
+        const allowed = canChangeOperator();
+        document.querySelector("#field-menu-operators").disabled = !allowed;
+        document.querySelector("#field-menu-operator-status").textContent = allowed ?
+          (multiplayer.match ? "Choose your operator during preparation." : "Choose your operator.") :
+          "Operator changes are available during preparation only.";
+        operatorList.querySelectorAll("button").forEach((button) => {
+          button.disabled = !allowed;
+          button.setAttribute("aria-pressed", String(button.dataset.id === selectedOperatorId));
+        });
+      }
+      function setMenuView(view) {
+        menuMain.hidden = view !== "main";
+        menuOperators.hidden = view !== "operators";
+        menuSettings.hidden = view !== "settings";
+        document.querySelector("#field-menu-title").textContent = view === "settings" ? "SETTINGS" : view === "operators" ? "CHANGE OPERATOR" : "OPTIONS";
+        if (view === "settings") {
+          document.querySelector("#field-menu-settings-content").appendChild(settingsPanel);
+          renderKeybinds();
+        } else {
+          recordingKeybind = null;
+          settingsHome.insertBefore(settingsPanel, settingsNext);
+        }
+        updateOperatorMenu();
+      }
+      function openMenu(view = "main") {
+        if (!running) return;
+        keys.clear(); heldCodes.clear(); mouseDown = false; mouseAim = false;
+        fieldMenu.hidden = false;
+        setMenuView(view);
+        hint.style.display = "none";
+        if (locked()) document.exitPointerLock();
+        document.querySelector("#field-menu-close").focus();
+      }
+      function dismissMenu() {
+        if (fieldMenu.hidden) return;
+        setMenuView("main");
+        fieldMenu.hidden = true;
+        hint.style.display = running && !locked() ? "grid" : "none";
+      }
+      function openOperatorMenu() {
+        if (running && multiplayer.match && canChangeOperator()) openMenu("operators");
+      }
+      function restoreOperator(id, serverLoadout) {
+        if (!operatorRoster.some((operator) => operator.id === id)) return;
+        selectOperator(id, false);
+        if (serverLoadout && typeof serverLoadout === "object") Object.assign(loadout, serverLoadout);
+        Object.keys(weapons).forEach((weaponId) => delete weapons[weaponId]);
+        refreshWeapons(); curSlot = "primary";
+        updateOperatorMenu();
+        say("OPERATOR CHANGE WAS TOO LATE");
+      }
+      operatorRoster.forEach((operator) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "field-operator-button";
+        button.dataset.id = operator.id;
+        const name = document.createElement("span"), ability = document.createElement("small");
+        name.textContent = operator.name;
+        ability.textContent = operator.ability;
+        button.append(name, ability);
+        button.addEventListener("click", () => {
+          if (!canChangeOperator()) return updateOperatorMenu();
+          cancelDroneDeploy();
+          if (drone.active) recallDrone();
+          drone.companions = []; drone.tags.clear(); drone.uses = 3;
+          selectOperator(operator.id);
+          Object.keys(weapons).forEach((id) => delete weapons[id]);
+          refreshWeapons(); curSlot = "primary";
+          Object.keys(charges).forEach((key) => delete charges[key]);
+          barCount = selectedOperatorId === "skanska" ? Infinity : defending() ? 12 : 6;
+          nextGrenadeRecharge = tNow + 15;
+          updateOperatorMenu();
+        });
+        operatorList.appendChild(button);
+      });
+      document.querySelector("#field-menu-close").addEventListener("click", dismissMenu);
+      document.querySelector("#field-menu-settings").addEventListener("click", () => setMenuView("settings"));
+      document.querySelector("#field-menu-operators").addEventListener("click", () => { if (canChangeOperator()) setMenuView("operators"); });
+      fieldMenu.querySelectorAll("[data-field-menu-back]").forEach((button) => button.addEventListener("click", () => setMenuView("main")));
+      document.querySelector("#field-menu-leave").addEventListener("click", close);
+      canvas.addEventListener("click", () => { if (fieldMenu.hidden && !locked()) canvas.requestPointerLock(); });
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
       document.addEventListener("mousedown", (e) => { if (running && locked() && isDead() && (e.button === 0 || e.button === 2)) { spectateTarget(e.button === 0 ? 1 : -1); return; } });
       document.addEventListener("mousedown", (e) => {
@@ -6361,7 +6642,7 @@
       document.addEventListener("mousedown", (e) => { if (running && locked() && !drone.deploying && `mouse${e.button}` === currentKeybinds.ads) { e.preventDefault(); mouseAim = true; } });
       document.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; if (`mouse${e.button}` === currentKeybinds.ads) mouseAim = false; });
       document.addEventListener("pointerlockchange", () => {
-        hint.style.display = running && !locked() ? "grid" : "none";
+        hint.style.display = running && fieldMenu.hidden && !locked() ? "grid" : "none";
         if (!locked()) { mouseDown = false; mouseAim = false; }
       });
       document.addEventListener("mousemove", (e) => {
@@ -6372,12 +6653,14 @@
       document.addEventListener("keydown", (e) => {
         if (!running) return;
         const key = inputKey(e);
-        if (key === "escape") return close();
+        if (key === "escape") { if (!fieldMenu.hidden) { e.preventDefault(); dismissMenu(); } return; }
+        if (key === "tab") { e.preventDefault(); if (!e.repeat) { if (fieldMenu.hidden) openMenu(); else dismissMenu(); } return; }
+        if (!fieldMenu.hidden) return;
         if (key === currentKeybinds.recallDrone && drone.deploying) { e.preventDefault(); cancelDroneDeploy(); return; }
         if (key === currentKeybinds.recallDrone && drone.active) { recallDrone(); return; }
         if (key === currentKeybinds.scan && drone.active && drone.mode !== "camera") { e.preventDefault(); if (!e.repeat) scanDrone(); return; }
         if (drone.deploying) { if (key.startsWith("arrow") || key === " ") e.preventDefault(); return; }
-        if (isDead()) { if (key === "tab") { e.preventDefault(); if (!e.repeat) spectateTarget(1); } keys.add(key); return; }
+        if (isDead()) { keys.add(key); return; }
         if (!drone.active) {
           if (key === currentKeybinds.crouch && !e.repeat) {
             const feet = cam.y - eyeHeight;
@@ -6404,6 +6687,7 @@
       window.addEventListener("blur", () => { keys.clear(); heldCodes.clear(); mouseAim = false; });
       const hint = document.querySelector("#field-hint");
       function close() {
+        dismissMenu();
         running = false; mouseDown = false; mouseAim = false; el.classList.remove("open"); keys.clear(); heldCodes.clear();
         delete el.dataset.optic;
         cancelDroneDeploy();
@@ -6414,13 +6698,13 @@
         freeplayMode = false; trainingDefuseMode = false; interactState.id = null; objectiveView.clear();
         if (locked()) document.exitPointerLock();
       }
-      document.querySelector("#field-exit").addEventListener("click", close);
-      return { close, beginRound, say, blind, addDrop, dropTaken, remoteThrow, remoteExplosion, remotePaintSpill, remotePaintSpillUpdate, remotePaintIgnited, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false, mode = "freeplay" } = {}) {
+      document.querySelector("#field-exit").addEventListener("click", () => openMenu());
+      return { close, beginRound, openOperatorMenu, updateOperatorMenu, dismissMenu, restoreOperator, say, blind, addDrop, dropTaken, remoteThrow, remoteExplosion, remotePaintSpill, remotePaintSpillUpdate, remotePaintIgnited, syncTornadoes, droneDestroyed, remoteDroneShot, remotePaint, remoteBarricade, remoteShieldImpact, operatorMeshQuads, open({ practice = false, mode = "freeplay" } = {}) {
         freeplayMode = practice;
         trainingDefuseMode = practice && mode === "defuse";
         tNow = performance.now() / 1000;
         const b = (action) => bindLabel(currentKeybinds[action]);
-        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · I inspect Karambit · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")}/${b("switchWeapon5")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · ESC exit`;
+        document.querySelector("#field-controls").textContent = `${b("moveForward")}/${b("moveLeft")}/${b("moveBackward")}/${b("moveRight")} move · MOUSE look · CLICK fire/deploy · ${b("ads")} ADS · ${b("leanLeft")}/${b("leanRight")} lean · ${b("crouch")} crouch · ${b("reload")} reload · I inspect Karambit · ${b("barricade")} barricade · ${b("switchWeapon1")}/${b("switchWeapon2")}/${b("switchWeapon3")}/${b("switchWeapon4")}/${b("switchWeapon5")} slots · ${b("sprint")} sprint · ${b("scan")} jump/scanner scan · CAMERA DRONE: SPACE ascend/C descend/click scan · ${b("recallDrone")} recall drone · ${b("interact")} hold to interact · TAB options`;
         cancelDroneDeploy();
         if (drone.active) recallDrone();
         clearBarricades();
@@ -6457,7 +6741,8 @@
         }
         refreshWeapons(); resetBarricades(); resetDummies(); curSlot = "primary"; lastT = 0;
         running = true; last = performance.now(); lastRender = 0; lastHudAt = 0; requestAnimationFrame(frame);
-        canvas.requestPointerLock && canvas.requestPointerLock();
+        if (!practice && multiplayer.match && canChangeOperator()) openOperatorMenu();
+        else canvas.requestPointerLock && canvas.requestPointerLock();
       } };
     })();
     async function openField(options) {

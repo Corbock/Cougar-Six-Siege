@@ -33,6 +33,30 @@ function shooting() {
   } };
 }
 
+test("operators can only be changed during an active match's preparation phase", () => {
+  const handler = section(server, '  if (message.type === "select_operator")', '  if (message.type === "create_party")');
+  const match = { phase: "prep", phaseEnd: 2000 };
+  const player = { matchId: "match", operatorId: "mr-m", customLoadout: {} };
+  const context = { matches: new Map([["match", match]]), operatorIds: new Set(["mr-m", "custom"]),
+    operatorKits: { "mr-m": {}, custom: {} }, customItems: { primary: ["cougar-blade"] }, weaponFamilies: {},
+    playerLoadout: (entry) => entry.customLoadout, sendPlayer: (_entry, message) => { context.rejection = message; },
+    playerMaxHealth: (entry) => entry.customLoadout.primary === "cougar-blade" && entry.operatorId === "custom" ? 300 : 100,
+    Date: { now: () => 1000 } };
+  vm.runInNewContext(`function select(player, message) { ${handler} }`, context);
+  context.select(player, { type: "select_operator", operatorId: "custom", loadout: { primary: "cougar-blade" } });
+  assert.equal(player.operatorId, "custom");
+  assert.equal(player.health, 300);
+  match.phase = "live";
+  context.select(player, { type: "select_operator", operatorId: "mr-m" });
+  assert.equal(player.operatorId, "custom");
+  assert.equal(context.rejection.type, "operator_rejected");
+  assert.equal(context.rejection.operatorId, "custom");
+  match.phase = "prep";
+  match.phaseEnd = 1000;
+  context.select(player, { type: "select_operator", operatorId: "mr-m" });
+  assert.equal(player.operatorId, "custom");
+});
+
 test("only primaries and the magnum eliminate on uncovered headshots", () => {
   for (const [slot, secondary, expected] of [["primary", "p45", 0], ["secondary", "magnum", 0], ["secondary", "p45", 80], ["secondary", "rattler", 80]]) {
     const sim = shooting();

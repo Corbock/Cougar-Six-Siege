@@ -79,6 +79,156 @@ test("MK18 uses the supplied GLB triangles and material colors", () => {
   assert.equal(sim.materials.mk18Orange, "#ff660d");
 });
 
+test("Burst 3 has a standalone rifle model and magazine", () => {
+  const sim = simulation();
+  const model = vm.runInNewContext("modelDefs.burst3", sim);
+  assert.ok(model.parts.length > 30, "Burst 3 should have a complete procedural silhouette");
+  assert.ok(model.mag.length > 0, "Burst 3 should have its own magazine");
+  assert.ok(model.parts.every((part) => part.k !== "mesh"), "Burst 3 should not depend on the MK18 GLB");
+  assert.notEqual(model.parts, vm.runInNewContext("modelDefs.mk18.parts", sim));
+  assert.deepEqual(Object.keys(model.mounts).sort(), ["grip", "muzzle", "optic"]);
+});
+
+test("Mk. 19 has a standalone rifle body, magazine, and attachment mounts", () => {
+  const sim = simulation();
+  const model = vm.runInNewContext("modelDefs.mk19", sim);
+  assert.ok(model.parts.length > 30, "Mk. 19 should have a complete procedural silhouette");
+  assert.ok(model.mag.length > 0, "Mk. 19 should have its extended magazine");
+  assert.ok(model.parts.every((part) => part.k !== "mesh"), "Mk. 19 should not depend on the MK18 GLB");
+  assert.deepEqual(Object.keys(model.mounts).sort(), ["grip", "muzzle", "optic"]);
+});
+
+test("Horn Chopper has six rotating barrels and a drum magazine", () => {
+  const sim = simulation();
+  const model = vm.runInNewContext("modelDefs['horn-chopper-2000']", sim);
+  const barrels = model.parts.filter((part) => part.rotor && part.k === "cyl" && part.len === 5.45);
+  assert.equal(barrels.length, 6);
+  assert.ok(barrels.every((part) => part.r === .13 && Math.abs(Math.hypot(part.c[1], part.c[2]) - .52) < 1e-10));
+  assert.ok(model.mag.some((part) => part.k === "cyl" && part.m === "paint"));
+  const polys = sim.buildPolys(model.parts);
+  assert.ok(polys.some((poly) => poly.rotor));
+  assert.ok(polys.some((poly) => !poly.rotor));
+});
+
+test("shotgun variants have distinct bodies and equal twin barrels and attachments", () => {
+  const sim = simulation();
+  const slug = vm.runInNewContext("modelDefs['slug-v']", sim);
+  const double = vm.runInNewContext("modelDefs['double-pump']", sim);
+  assert.ok(slug.parts.length > 15 && double.parts.length > 15);
+  const slugBarrels = slug.parts.filter((part) => part.k === "cyl" && part.axis === "x" && part.len === 5.7);
+  assert.equal(slugBarrels.length, 1);
+  const barrels = double.parts.filter((part) => part.k === "cyl" && part.axis === "x" && part.len === 5.6);
+  assert.equal(barrels.length, 2);
+  assert.equal(barrels[0].r, barrels[1].r);
+  assert.equal(barrels[0].c[1], barrels[1].c[1]);
+  assert.equal(barrels[0].c[2], -barrels[1].c[2]);
+  for (const muzzle of ["long-barrel", "sawed-off"]) {
+    const attachments = sim.attachmentParts({ id: "double-pump", family: "Shotgun" }, { muzzle });
+    assert.equal(attachments.length, 4);
+    assert.equal(attachments[0].len, attachments[2].len);
+    assert.equal(attachments[0].r, attachments[2].r);
+    assert.equal(attachments[0].c[2], -attachments[2].c[2]);
+  }
+});
+
+test("Horn Chopper barrels spin only after firing and rotate in both views", () => {
+  const sim = simulation();
+  Object.assign(sim, { K: .06, tNow: 1, lastT: .98, sprintPose: 0, ads: 0, crouched: false,
+    mouseDown: true, pressedAt: 0, drone: { deploying: false }, multiplayer: { playerId: "test" },
+    paintCanPouring: false, paintCanActiveSpillId: null,
+    cam: { yaw: 0, pitch: 0 }, canFire: () => true, locked: () => true, isSprinting: () => false,
+    grenadeThrowActionActive: () => false, medkitActionActive: () => false, barricadeActionActive: () => false,
+    trace() {}, skinOf: () => null, colorOf: (_weapon, material) => material });
+  vm.runInNewContext(section("      function fire(w) {", "      let mouseDown =") +
+    section("      function viewmodelQuads(", "      function droneViewmodelQuads("), sim);
+  const model = vm.runInNewContext("modelDefs['horn-chopper-2000']", sim);
+  const polys = sim.buildPolys(model.parts);
+  const weapon = { item: { id: "horn-chopper-2000" }, kind: { auto: true, rate: 20, mag: 100 },
+    stats: { dmg: 2, rng: 3 }, ammo: 100, reserve: 100, reloadEnd: 0, next: 0, swingStart: -1, inspectStart: -1,
+    kick: 0, flash: 0, rotorAngle: 0, rotorSpinUntil: 0, polys, magPolys: [], mid: [0, 0, 0], rear: 3,
+    tip: 7, muzzle: [0, 0], sight: [0, 0, 0] };
+  sim.updateWeapon(weapon, .02);
+  assert.ok(weapon.rotorAngle > 0);
+  assert.equal(weapon.ammo, 99);
+  const angle = weapon.rotorAngle;
+  sim.mouseDown = false; sim.pressedAt = -1; sim.tNow = 1.2;
+  sim.updateWeapon(weapon, .02);
+  assert.equal(weapon.rotorAngle, angle, "Rotor should stop after firing ends");
+  weapon.kick = 0; weapon.flash = 0;
+  const spinning = sim.viewmodelQuads(weapon, false);
+  weapon.rotorAngle = 0;
+  const stationary = sim.viewmodelQuads(weapon, false);
+  const rotorIndex = polys.findIndex((poly) => poly.rotor);
+  const bodyIndex = polys.findIndex((poly) => !poly.rotor);
+  assert.notDeepEqual(spinning[rotorIndex].pts, stationary[rotorIndex].pts);
+  assert.deepEqual(spinning[bodyIndex].pts, stationary[bodyIndex].pts);
+  const state = { x: 0, y: 1.8, z: 0, yaw: 0, activeSlot: "primary" };
+  const worldIdle = [], worldSpinning = [];
+  sim.worldItemQuads(worldIdle, weapon.item.id, state);
+  sim.worldItemQuads(worldSpinning, weapon.item.id, { ...state, rotorAngle: angle });
+  assert.notDeepEqual(worldSpinning[rotorIndex].pts, worldIdle[rotorIndex].pts);
+  assert.deepEqual(worldSpinning[bodyIndex].pts, worldIdle[bodyIndex].pts);
+});
+
+test("Dualies position a pistol in each hand", () => {
+  const sim = simulation();
+  const pistolCenters = vm.runInNewContext("modelDefs.dualies.parts", sim)
+    .filter((part) => part.k === "box" && part.s[0] === 3 && part.s[1] === .7 && part.s[2] === .6)
+    .map((part) => part.c[2]).sort((a, b) => a - b);
+  assert.equal(pistolCenters.length, 2);
+  assert.ok(pistolCenters[1] - pistolCenters[0] >= 3.2, "Pistol centers should span both hands in the viewmodel");
+});
+
+test("Dualies viewmodel places one pistol on each side of the screen", () => {
+  const context = { Math, K: .06, tNow: 1, sprintPose: 0, ads: 0,
+    skinOf: () => null, colorOf: (_weapon, material) => material };
+  vm.runInNewContext(section("      function viewmodelQuads(", "      function droneViewmodelQuads("), context);
+  const weapon = { item: { id: "dualies" }, kind: {}, kick: 0, rear: 0, mid: [0, 0, -1.7], tip: 0,
+    sight: [0, 0, 0], muzzle: [0, 0], polys: [
+      { v: [[0, 0, -.05], [0, .1, .05]], m: "body" },
+      { v: [[0, 0, -3.45], [0, .1, -3.35]], m: "body" }
+    ], magPolys: [], reloadEnd: 0, reloadStart: 0, flash: 0, lastShot: -1 };
+  const centers = context.viewmodelQuads(weapon, false).map((poly) =>
+    poly.pts.reduce((sum, point) => sum + point[0] / poly.pts.length, 0));
+  const sortedCenters = centers.sort((a, b) => a - b);
+  assert.ok(sortedCenters[0] < 0 && sortedCenters[1] > 0, "The pistols should straddle the screen center");
+  assert.ok(Math.abs(centers[0] + centers[1]) < .01, "The pair should be centered as a whole");
+});
+
+test("holding fire uses rapid automatic shots and alternates Dualies", () => {
+  const slots = section("    const loadoutSlots = [", "    const operatorRoster =");
+  const configContext = {};
+  vm.runInNewContext(`${slots}\nglobalThis.dualies = loadoutSlots.flatMap((slot) => slot.items).find((item) => item.id === "dualies");`, configContext);
+  assert.equal(configContext.dualies.weapon.auto, true);
+  assert.equal(configContext.dualies.weapon.rate, 9);
+
+  const firing = section("      function fire(w) {", "      function startReload(w) {");
+  const context = { Math, tNow: 0, multiplayer: { playerId: "test" }, projSeq: 0,
+    cam: { pitch: 0, yaw: 0 }, trace() {}, startReload() {} };
+  vm.runInNewContext(`${firing}\nglobalThis.fireShot = fire;`, context);
+  const weapon = { item: { id: "dualies" }, kind: { auto: true, rate: 9, mag: 24 }, ammo: 24,
+    stats: { dmg: 4 }, dualiesSide: 0, kick: 0, flash: 0, next: 0 };
+  context.fireShot(weapon);
+  assert.equal(weapon.dualiesSide, 1);
+  assert.equal(weapon.next, 1 / 9);
+  context.tNow = weapon.next;
+  context.fireShot(weapon);
+  assert.equal(weapon.dualiesSide, 0);
+  assert.equal(weapon.ammo, 22);
+});
+
+test("Crowbar and Blade of the Cougar retain their detailed silhouettes", () => {
+  const sim = simulation();
+  const crowbar = vm.runInNewContext("modelDefs.crowbar.parts", sim);
+  assert.ok(crowbar.some((part) => part.k === "cyl" && part.len === 6.8), "Crowbar should retain its long steel shaft");
+  assert.ok(crowbar.filter((part) => part.k === "box").length >= 6, "Crowbar should have a formed hook and split chisel");
+
+  const blade = vm.runInNewContext("modelDefs['cougar-blade'].parts", sim);
+  assert.ok(blade.length >= 20, "Blade of the Cougar should have curved blade and grip details");
+  assert.ok(blade.some((part) => part.m === "glass"));
+  assert.ok(blade.some((part) => part.m === "edge"));
+});
+
 test("reverted weapon models use the original procedural meshes", () => {
   const sim = simulation();
   for (const id of ["longwatch", "vector", "magnum", "hammer", "sledgehammer"]) {
@@ -88,7 +238,7 @@ test("reverted weapon models use the original procedural meshes", () => {
   }
 });
 
-test("first-person Magnum sits lower than other pistols in the viewmodel", () => {
+test("P45 and Dualies use the lower normal weapon position", () => {
   const sim = simulation();
   Object.assign(sim, { K: .06, tNow: 0, sprintPose: 0, ads: 0, skinOf: () => null,
     colorOf: (_weapon, material) => material });
@@ -104,7 +254,11 @@ test("first-person Magnum sits lower than other pistols in the viewmodel", () =>
     const points = sim.viewmodelQuads({ ...weapon, item }, false).flatMap((quad) => quad.pts);
     return points.reduce((sum, point) => sum + point[1] / points.length, 0);
   };
-  assert.ok(averageY({ id: "magnum", type: "REVOLVER" }) < averageY({ id: "p45", type: "PISTOL" }));
+  assert.ok(averageY({ id: "magnum", type: "REVOLVER" }) < averageY({ id: "rattler", type: "MACHINE PISTOL" }));
+  for (const id of ["p45", "dualies"]) {
+    assert.ok(Math.abs(averageY({ id, type: "PISTOL" }) - averageY({ id: "magnum", type: "REVOLVER" })) < 1e-10,
+      `${id} should use the lower normal weapon position`);
+  }
 });
 
 test("the bomb and defuser GLB preserves its transformed mesh and material regions", () => {

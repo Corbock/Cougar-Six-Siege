@@ -815,7 +815,8 @@ function handleMessage(player, raw) {
     return;
   }
   if (message.type === "select_operator") {
-    if (!player.matchId && operatorIds.has(message.operatorId)) {
+    const match = player.matchId ? matches.get(player.matchId) : null;
+    if ((!player.matchId || (match?.phase === "prep" && Date.now() < match.phaseEnd)) && operatorIds.has(message.operatorId)) {
       player.operatorId = message.operatorId;
       player.operatorLoadout = { ...operatorKits[message.operatorId] };
       if (message.loadout && typeof message.loadout === "object") {
@@ -828,6 +829,9 @@ function handleMessage(player, raw) {
             player.operatorLoadout[slot] = itemId;
         }
       }
+      if (match) player.health = playerMaxHealth(player);
+    } else if (match) {
+      sendPlayer(player, { type: "operator_rejected", operatorId: player.operatorId, loadout: playerLoadout(player) });
     }
     return;
   }
@@ -1365,6 +1369,7 @@ function handleMessage(player, raw) {
       equippedKeychain: weaponKeychains.has(state.equippedKeychain) ? state.equippedKeychain : "none",
       sidearmSkin: weaponSkins.has(state.sidearmSkin) ? state.sidearmSkin : "none",
       sidearmKeychain: weaponKeychains.has(state.sidearmKeychain) ? state.sidearmKeychain : "none",
+      rotorAngle: activeSlot && playerLoadout(player)[activeSlot] === "horn-chopper-2000" ? number(state.rotorAngle, Math.PI * 2) : 0,
       companions,
       droneState: !player.cameraDroneDestroyed && state.droneState && typeof state.droneState === "object" ? {
         x: number(state.droneState.x, positionLimit),

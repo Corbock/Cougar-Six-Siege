@@ -81,6 +81,37 @@ test("each rare weapon variant has exactly one Armory reward key", () => {
   assert.deepEqual([...context.weaponRewards].sort(), [...context.rareIds.map((id) => `weapon:${id}`), "weapon:karambit"].sort());
 });
 
+test("CORBOK in the Armory unlocks and saves every weapon variant only", () => {
+  const saved = [], rendered = [], notices = [], listeners = {};
+  const code = section("    const armoryTestCode = \"CORBOK\";",
+    "    document.addEventListener(\"keydown\", handleArmoryTestCode);") +
+    "    document.addEventListener(\"keydown\", handleArmoryTestCode);";
+  const context = {
+    activeSection: "PACKS",
+    packPairs: ["weapon:dualies", "weapon:karambit", "mk18:ember", "paint:blue"],
+    ownedWraps: new Set(["weapon:dualies", "mk18:ember"]),
+    packStatusText: "",
+    saveArmory: () => saved.push(true),
+    renderArmory: () => rendered.push(true),
+    showToast: (message) => notices.push(message),
+    document: { addEventListener: (type, listener) => { listeners[type] = listener; } }
+  };
+  vm.runInNewContext(`${code}\nglobalThis.press = handleArmoryTestCode;`, context);
+  const type = (value) => [...value].forEach((key) => context.press({ key, repeat: false }));
+
+  context.activeSection = "LOADOUT";
+  type("CORBOK");
+  assert.deepEqual([...context.ownedWraps].sort(), ["mk18:ember", "weapon:dualies"]);
+  context.activeSection = "PACKS";
+  type("corbok");
+  assert.deepEqual([...context.ownedWraps].sort(), ["mk18:ember", "weapon:dualies", "weapon:karambit"]);
+  assert.equal(context.packStatusText, "TEST UNLOCK: all weapon variants unlocked.");
+  assert.equal(saved.length, 1);
+  assert.equal(rendered.length, 1);
+  assert.deepEqual(notices, ["ALL WEAPON VARIANTS UNLOCKED FOR TESTING"]);
+  assert.equal(typeof listeners.keydown, "function");
+});
+
 test("the 1,000-pack grant is revoked once while earned packs are preserved", () => {
   const initialization = section("    let armorySave =", "    const karambitUnlocked =");
   const save = section("    function saveArmory() {", "    if (armoryJustRevoked)");
