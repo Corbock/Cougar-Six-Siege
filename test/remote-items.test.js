@@ -607,6 +607,8 @@ test("medkit uses its GLB mesh with separate animated lid geometry", () => {
   assert.ok(sim.medkitLidParts.length > 0);
   assert.ok(parts.some((part) => part.m === "medkitRed"));
   assert.ok(parts.some((part) => part.m === "medkitWhite"));
+  const frontDetails = parts.find((part) => part.m === "medkitDetail").triangles.flat();
+  assert.ok(frontDetails.every((point) => point[2] < 0), "GLB's marked face should face the player");
   const quads = [];
   sim.worldItemQuads(quads, "medkit", { x: 0, y: 1.8, z: 0, yaw: 0, pitch: 0, activeSlot: "gadget" });
   assert.ok(quads.some((quad) => quad.color === sim.materials.medkitRed), "Medical cross should render in red");
