@@ -1,17 +1,21 @@
 # Cougar-Six-Siege
 
-## Run
+## Run locally
 
-Install the server dependency and start the game server:
+Install dependencies and start the game server:
 
 ```sh
-npm install
+npm ci
 npm start
 ```
 
-Open the **Ports** view in VS Code, forward port `8000`, and open its forwarded address. The Node server hosts both the game page and WebSocket matchmaking on that port, so the client connects to `/ws` on the same address. To let other people join, change the forwarded port's visibility to **Public** and share its HTTPS address; the browser will use WSS for matchmaking.
+Open `http://localhost:8000`. The Node server serves the game and WebSocket matchmaking on the same port.
 
-This keeps the WebSocket server inside the Codespace and uses no separate hosting provider. Codespaces can suspend or stop when idle, so the server is available only while the Codespace is running; Codespaces cannot guarantee 24/7 uptime.
+## Deploy on Render
+
+The repository includes a Render Blueprint in `render.yaml`. Push it to GitHub, create a **Blueprint** in the [Render Dashboard](https://dashboard.render.com/), and select this repository. Render builds and starts the web service; open its `onrender.com` URL to play. The game page and matchmaking WebSocket (`/ws`) are hosted together, and HTTPS automatically uses secure WebSockets.
+
+The Blueprint uses Render's free instance plan. Free instances can spin down when idle, so the first connection after inactivity may take a little while and players can be disconnected during restarts. Matchmaking, parties, and active games are kept in server memory and do not persist across restarts. Use an always-on paid instance if you need to avoid free-instance spin-downs.
 
 ## Matchmaking
 
