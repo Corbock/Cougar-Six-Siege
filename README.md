@@ -9,9 +9,9 @@ npm install
 npm start
 ```
 
-Open `http://localhost:8000` or share the server's reachable address with other players. The Node server hosts the page and its WebSocket matchmaking service on the same port. For public play, deploy this Node server somewhere all players can reach over HTTPS/WSS; a local development server is only reachable by other devices when the host network allows it. The previous `c6-siege-online.onrender.com` service is suspended and is no longer used.
+Open the **Ports** view in VS Code, forward port `8000`, and open its forwarded address. The Node server hosts both the game page and WebSocket matchmaking on that port, so the client connects to `/ws` on the same address. To let other people join, change the forwarded port's visibility to **Public** and share its HTTPS address; the browser will use WSS for matchmaking.
 
-If you host the page on GitHub Pages instead, point it at your deployed game server by adding `?server=wss://YOUR-SERVER/ws` to the page URL (URL-encode the value if needed). The configured URL must be a `ws://` or `wss://` WebSocket endpoint. Deploying the Node server and opening its URL directly requires no extra configuration.
+This keeps the WebSocket server inside the Codespace and uses no separate hosting provider. Codespaces can suspend or stop when idle, so the server is available only while the Codespace is running; Codespaces cannot guarantee 24/7 uptime.
 
 ## Matchmaking
 

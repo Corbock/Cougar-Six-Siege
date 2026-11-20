@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: c6-siege-online
-    runtime: node
-    plan: free
-    buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /healthz

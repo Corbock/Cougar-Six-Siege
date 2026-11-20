@@ -48,7 +48,7 @@ test("every map can be voted for in each matchmaking mode and selected for a mat
   sockets.forEach((socket, i) => socket.on("message", (data) => messages[i].push(JSON.parse(data))));
   await Promise.all(sockets.map((socket) => new Promise((resolve, reject) => { socket.once("open", resolve); socket.once("error", reject); })));
   const send = (i, message) => sockets[i].send(JSON.stringify(message));
-  for (const [mode, winner] of [["quick", "foundry"], ["ranked", "foundry"], ["defuse", "harbor"], ["rescue", "field"], ["duel", "harbor"]]) {
+  for (const [mode, winner] of [["quick", "foundry"], ["standard", "field"], ["ranked", "foundry"], ["defuse", "harbor"], ["rescue", "field"], ["duel", "harbor"]]) {
     let start = messages[0].length;
     send(0, { type: "queue", mode });
     const lobby = await waitFor(() => messages[0].slice(start).find((m) => m.type === "lobby_update"), `No ${mode} lobby`);
